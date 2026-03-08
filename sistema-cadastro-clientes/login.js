@@ -2,7 +2,7 @@
 // Autor: Sistema de Cadastro
 // Data: 2024
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = '/api';
 const CURRENT_USER_KEY = 'currentUser';
 const TOKEN_KEY = 'authToken';
 

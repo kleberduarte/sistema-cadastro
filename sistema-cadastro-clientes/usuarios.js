@@ -61,7 +61,7 @@ async function registerUser(e) {
     }
     
     try {
-        const response = await fetch('http://localhost:8080/api/auth/register', {
+        const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -101,7 +101,7 @@ async function registerUser(e) {
 // Carregar usuários da API
 async function loadUsers() {
     try {
-        const response = await fetch('http://localhost:8080/api/auth/users', {
+        const response = await fetch('/api/auth/users', {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -222,7 +222,7 @@ function deleteUser(id) {
 async function confirmDelete() {
     if (userIdToDelete) {
         try {
-            const response = await fetch(`http://localhost:8080/api/auth/users/${userIdToDelete}`, {
+            const response = await fetch(`/api/auth/users/${userIdToDelete}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': 'Bearer ' + getToken()
@@ -322,7 +322,7 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
     }
     
     try {
-        const response = await fetch(`http://localhost:8080/api/auth/users/${userId}`, {
+        const response = await fetch(`/api/auth/users/${userId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

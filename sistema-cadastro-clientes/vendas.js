@@ -30,7 +30,7 @@ function setupEventListeners() {
 // Carregar produtos da API
 async function loadProducts() {
     try {
-        const response = await fetch('http://localhost:8080/api/produtos', {
+        const response = await fetch('/api/produtos', {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -356,7 +356,7 @@ async function finalizeSale() {
             if (product) {
                 const newStock = product.quantidadeEstoque - item.quantity;
                 
-                const response = await fetch(`http://localhost:8080/api/produtos/${item.productId}`, {
+                const response = await fetch(`/api/produtos/${item.productId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -666,4 +666,5 @@ function getCartTotalWithDiscount() {
     });
     return Math.max(0, subtotal - currentDiscount);
 }
+
 

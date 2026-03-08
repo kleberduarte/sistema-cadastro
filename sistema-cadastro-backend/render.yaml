@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: sistema-cadastro-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar -Dspring.profiles.active=prod app.jar
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: sistema-cadastro-db
+          property: host
+      - key: DB_USER
+        fromDatabase:
+          name: sistema-cadastro-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: sistema-cadastro-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: sistema-cadastro-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: sistema-cadastro-db
+          property: url
+
+databases:
+  - name: sistema-cadastro-db
+    databaseName: athos
+    user: athos
+    plan: free
+

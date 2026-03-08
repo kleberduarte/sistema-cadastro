@@ -59,7 +59,7 @@ function setupEventListeners() {
 // Carregar produtos da API
 async function loadProducts() {
     try {
-        const response = await fetch('http://localhost:8080/api/produtos', {
+        const response = await fetch('/api/produtos', {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -170,7 +170,7 @@ async function handleSubmit(e) {
     try {
         if (editingProductId) {
             // Atualizar produto existente
-            const response = await fetch(`http://localhost:8080/api/produtos/${editingProductId}`, {
+            const response = await fetch(`/api/produtos/${editingProductId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ async function handleSubmit(e) {
             }
         } else {
             // Criar novo produto
-            const response = await fetch('http://localhost:8080/api/produtos', {
+            const response = await fetch('/api/produtos', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -308,7 +308,7 @@ function deleteProduct(id) {
 async function confirmDelete() {
     if (productIdToDelete) {
         try {
-            const response = await fetch(`http://localhost:8080/api/produtos/${productIdToDelete}`, {
+            const response = await fetch(`/api/produtos/${productIdToDelete}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': 'Bearer ' + getToken()
@@ -420,4 +420,5 @@ function resetForm() {
         cancelEdit();
     }
 }
+
 

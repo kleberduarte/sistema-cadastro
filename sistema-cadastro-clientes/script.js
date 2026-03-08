@@ -92,7 +92,7 @@ function setupEventListeners() {
 // Carregar clientes da API
 async function loadClients() {
     try {
-        const response = await fetch('http://localhost:8080/api/clientes', {
+        const response = await fetch('/api/clientes', {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -223,7 +223,7 @@ async function handleSubmit(e) {
     try {
         if (editingClientId) {
             // Atualizar cliente existente via API
-            const response = await fetch(`http://localhost:8080/api/clientes/${editingClientId}`, {
+            const response = await fetch(`/api/clientes/${editingClientId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -242,7 +242,7 @@ async function handleSubmit(e) {
             }
         } else {
             // Criar novo cliente via API
-            const response = await fetch('http://localhost:8080/api/clientes', {
+            const response = await fetch('/api/clientes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -326,7 +326,7 @@ async function searchClients() {
     }
     
     try {
-        const response = await fetch(`http://localhost:8080/api/clientes/search?q=${encodeURIComponent(searchTerm)}`, {
+        const response = await fetch(`/api/clientes/search?q=${encodeURIComponent(searchTerm)}`, {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -381,7 +381,7 @@ function deleteClient(id) {
 async function confirmDelete() {
     if (clientIdToDelete) {
         try {
-            const response = await fetch(`http://localhost:8080/api/clientes/${clientIdToDelete}`, {
+            const response = await fetch(`/api/clientes/${clientIdToDelete}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': 'Bearer ' + getToken()
@@ -562,4 +562,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+
 
