@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDV - Ponto de Venda</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>💰 PDV - Ponto de Venda</h1>
+                <div class="user-menu">
+                    <button class="btn btn-secondary btn-small" onclick="window.location.href='index.html'">🏠 Início</button>
+                    <button class="btn btn-secondary btn-small menu-item-admin" onclick="window.location.href='produtos.html'">📦 Produtos</button>
+                    <button class="btn btn-secondary btn-small menu-item-admin" onclick="window.location.href='usuarios.html'">👥 Usuários</button>
+                    <button class="btn btn-secondary btn-small" onclick="logout()">🚪 Sair</button>
+                    <span id="userDisplay">Olá, Usuário</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="pdv-main">
+            <!-- Área de Produtos -->
+            <div class="pdv-products-section">
+                <section class="search-section">
+                    <h2>🔍 Buscar Produtos</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Buscar por nome ou categoria...">
+                    </div>
+                </section>
+
+                <section class="products-grid-section">
+                    <h2>📋 Produtos Disponíveis <span id="productCount">(0)</span></h2>
+                    <div id="productsGrid" class="products-grid">
+                        <!-- Produtos serão inseridos aqui via JavaScript -->
+                    </div>
+                    <div id="noProductsMessage" class="no-data">
+                        Nenhum produto disponível no momento.
+                    </div>
+                </section>
+            </div>
+
+            <!-- Área do Carrinho -->
+            <div class="pdv-cart-section">
+                <section class="cart-section">
+                    <h2>🛒 Carrinho de Compras</h2>
+                    <div id="cartItems" class="cart-items">
+                        <!-- Itens do carrinho serão inseridos aqui -->
+                        <div class="cart-empty">
+                            <p>Seu carrinho está vazio</p>
+                            <p>Clique em um produto para adicionar</p>
+                        </div>
+                    </div>
+                    
+                    <div class="cart-summary">
+                        <div class="discount-section">
+                            <label for="discountType">Desconto:</label>
+                            <select id="discountType" onchange="toggleDiscountInput()">
+                                <option value="none">Sem desconto</option>
+                                <option value="percent">Porcentagem (%)</option>
+                                <option value="value">Valor fixo (R$)</option>
+                            </select>
+                            <input type="number" id="discountValue" placeholder="0" min="0" step="0.01" style="display: none;" oninput="applyDiscount()">
+                            <button class="btn btn-small btn-secondary" onclick="applyDiscount()">Aplicar</button>
+                        </div>
+                        <div class="discount-info" id="discountInfo" style="display: none;">
+                            <span>Desconto: </span>
+                            <span id="discountAmount">- R$ 0,00</span>
+                            <button class="btn-remove" onclick="removeDiscount()">🗑️</button>
+                        </div>
+                        <div class="cart-total">
+                            <span>Total:</span>
+                            <span id="cartTotal">R$ 0,00</span>
+                        </div>
+                        <div class="cart-actions">
+                            <button class="btn btn-secondary" onclick="clearCart()">🗑️ Limpar Carrinho</button>
+                            <button class="btn btn-primary" onclick="finalizeSale()">💵 Finalizar Venda</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Histórico de Vendas do Dia -->
+                <section class="history-section">
+                    <h2>📊 Vendas de Hoje <span id="todaySalesCount">(0)</span></h2>
+                    <div id="todaySales" class="today-sales">
+                        <!-- Vendas do dia serão inseridas aqui -->
+                    </div>
+                    <div class="today-total">
+                        <span>Total do Dia:</span>
+                        <span id="todayTotal">R$ 0,00</span>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2024 Sistema de Cadastro - PDV</p>
+        </footer>
+    </div>
+
+    <!-- Modal de Comprovante -->
+    <div id="receiptModal" class="modal">
+        <div class="modal-content receipt-content">
+            <div class="receipt">
+                <h3>🧾 COMPROVANTE DE VENDA</h3>
+                <div class="receipt-info">
+                    <p><strong>Data:</strong> <span id="receiptDate"></span></p>
+                    <p><strong>Hora:</strong> <span id="receiptTime"></span></p>
+                    <p><strong>Operador:</strong> <span id="receiptOperator"></span></p>
+                </div>
+                <div class="receipt-items">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Qtd</th>
+                                <th>Valor</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="receiptItems">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="receipt-total">
+                    <p><strong>TOTAL:</strong> <span id="receiptTotal"></span></p>
+                </div>
+                <div class="receipt-footer">
+                    <p>Obrigado pela preferência!</p>
+                    <p>Volte sempre!</p>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="printReceipt()">🖨️ Imprimir</button>
+                <button class="btn btn-secondary" onclick="closeReceiptModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="vendas.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários - Sistema de Cadastro</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>👥 Gerenciar Usuários</h1>
+                <div class="user-menu">
+                    <button class="btn btn-secondary btn-small" onclick="window.location.href='index.html'">🏠 Clientes</button>
+                    <button class="btn btn-secondary btn-small" onclick="window.location.href='vendas.html'">💰 PDV</button>
+                    <button class="btn btn-secondary btn-small" onclick="window.location.href='produtos.html'">📦 Produtos</button>
+                    <button class="btn btn-secondary btn-small" onclick="logout()">🚪 Sair</button>
+                    <span id="userDisplay">Olá, Usuário</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="form-section">
+                <h2>➕ Cadastrar Novo Usuário</h2>
+                <form id="registerUserForm" class="register-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newUsername">Usuário:</label>
+                            <input type="text" id="newUsername" required placeholder="Digite o usuário">
+                        </div>
+                        <div class="form-group">
+                            <label for="newUserRole">Perfil:</label>
+                            <select id="newUserRole" required>
+                                <option value="VENDEDOR">Vendedor</option>
+                                <option value="ADM">Administrador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newUserPassword">Senha:</label>
+                            <input type="password" id="newUserPassword" required placeholder="Digite a senha">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmUserPassword">Confirmar Senha:</label>
+                            <input type="password" id="confirmUserPassword" required placeholder="Confirme a senha">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">💾 Cadastrar Usuário</button>
+                    </div>
+                    <div class="form-error" id="registerUserError"></div>
+                    <div class="form-success" id="registerUserSuccess"></div>
+                </form>
+            </section>
+
+            <section class="search-section">
+                <h2>🔍 Buscar Usuários</h2>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Buscar por nome de usuário...">
+                    <button type="button" id="searchBtn" class="btn btn-search">Buscar</button>
+                </div>
+            </section>
+
+            <section class="list-section">
+                <h2>📋 Usuários Cadastrados <span id="userCount">(0)</span></h2>
+                <div class="table-container">
+                    <table id="userTable">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Perfil</th>
+                                <th>Data de Criação</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userList">
+                            <!-- Usuários serão inseridos aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noUsersMessage" class="no-data">
+                    Nenhum usuário cadastrado ainda.
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>© 2024 Sistema de Cadastro de Clientes</p>
+        </footer>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Confirmar Exclusão</h3>
+            <p>Tem certeza que deseja excluir este usuário?</p>
+            <p id="userToDelete" class="client-name"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" onclick="confirmDelete()">Sim, Excluir</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Editar Usuário -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <h3>✏️ Editar Usuário</h3>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label for="editUsername">Usuário:</label>
+                    <input type="text" id="editUsername" required placeholder="Digite o usuário">
+                </div>
+                <div class="form-group">
+                    <label for="editUserRole">Perfil:</label>
+                    <select id="editUserRole" required>
+                        <option value="VENDEDOR">Vendedor</option>
+                        <option value="ADM">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editPassword">Nova Senha (deixe em branco para manter):</label>
+                    <input type="password" id="editPassword" placeholder="Digite a nova senha">
+                </div>
+                <div class="form-error" id="editUserError"></div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">💾 Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="usuarios.js"></script>
+    <script>
+        // Verificar se é admin para acessar esta página
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!checkPermission('adm')) return;
+        });
+    </script>
+</body>
+</html>
+
+

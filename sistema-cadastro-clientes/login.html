@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Cadastro de Clientes</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-box {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-header h1 {
+            color: #667eea;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .login-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .login-form .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .login-form label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        .login-form input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .login-form input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .login-form input.error {
+            border-color: #e74c3c;
+        }
+        
+        .login-error {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .login-error.show {
+            display: block;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .user-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .user-info span {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>🏢 Sistema de Clientes</h1>
+                <p>Acesse sua conta para continuar</p>
+            </div>
+            
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Usuário:</label>
+                    <input type="text" id="username" name="username" required placeholder="Digite seu usuário">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input type="password" id="password" name="password" required placeholder="Digite sua senha">
+                </div>
+                
+                <div class="login-error" id="loginError">
+                    Usuário ou senha incorretos!
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-login">🔐 Entrar</button>
+            </form>
+            
+            <div class="register-link">
+                <p>Primeiro acesso? <a href="#" onclick="showRegister()">Cadastre-se</a></p>
+            </div>
+        </div>
+        
+        <!-- Modal de Cadastro de Usuário -->
+        <div id="registerModal" class="modal">
+            <div class="modal-content">
+                <h3>📝 Novo Usuário</h3>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="newUsername">Usuário:</label>
+                        <input type="text" id="newUsername" required placeholder="Digite um usuário">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword">Senha:</label>
+                        <input type="password" id="newPassword" required placeholder="Digite uma senha">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Senha:</label>
+                        <input type="password" id="confirmPassword" required placeholder="Confirme a senha">
+                    </div>
+                    
+                    <div class="login-error" id="registerError"></div>
+                    
+                    <div class="modal-buttons">
+                        <button type="submit" class="btn btn-primary">💾 Cadastrar</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeRegisterModal()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios de Vendas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>📊 Relatórios de Vendas</h1>
+                <div class="user-menu">
+                    <button class="btn btn-secondary btn-small" onclick="window.location.href='index.html'">🏠 Início</button>
+                    <button class="btn btn-secondary btn-small" onclick="window.location.href='vendas.html'">💰 PDV</button>
+                    <button class="btn btn-secondary btn-small" onclick="window.location.href='produtos.html'">📦 Produtos</button>
+                    <button class="btn btn-secondary btn-small" onclick="window.location.href='usuarios.html'">👥 Usuários</button>
+                    <button class="btn btn-secondary btn-small" onclick="logout()">🚪 Sair</button>
+                    <span id="userDisplay">Olá, Usuário</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="form-section">
+                <h2>🔍 Filtros</h2>
+                <div class="filter-container">
+                    <div class="filter-group">
+                        <label for="filterType">Tipo de Filtro:</label>
+                        <select id="filterType" onchange="toggleFilterFields()">
+                            <option value="today">Hoje</option>
+                            <option value="day">Por Dia</option>
+                            <option value="month">Por Mês</option>
+                            <option value="year">Por Ano</option>
+                            <option value="period">Período Personalizado</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group" id="dayFilter" style="display: none;">
+                        <label for="filterDay">Selecione o Dia:</label>
+                        <input type="date" id="filterDay">
+                    </div>
+
+                    <div class="filter-group" id="monthFilter" style="display: none;">
+                        <label for="filterMonth">Selecione o Mês:</label>
+                        <input type="month" id="filterMonth">
+                    </div>
+
+                    <div class="filter-group" id="yearFilter" style="display: none;">
+                        <label for="filterYear">Selecione o Ano:</label>
+                        <select id="filterYear">
+                            <option value="">Selecione o ano</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group" id="startDateFilter" style="display: none;">
+                        <label for="startDate">Data Início:</label>
+                        <input type="date" id="startDate">
+                    </div>
+
+                    <div class="filter-group" id="endDateFilter" style="display: none;">
+                        <label for="endDate">Data Fim:</label>
+                        <input type="date" id="endDate">
+                    </div>
+
+                    <div class="filter-actions">
+                        <button type="button" class="btn btn-primary" onclick="applyFilter()">🔎 Filtrar</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearFilter()">🔄 Limpar</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="list-section">
+                <h2>📈 Resumo das Vendas</h2>
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-icon">💰</div>
+                        <div class="summary-info">
+                            <h3>Total Vendido</h3>
+                            <p id="totalSales">R$ 0,00</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">🧾</div>
+                        <div class="summary-info">
+                            <h3>Número de Vendas</h3>
+                            <p id="salesCount">0</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">📦</div>
+                        <div class="summary-info">
+                            <h3>Itens Vendidos</h3>
+                            <p id="itemsCount">0</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">💵</div>
+                        <div class="summary-info">
+                            <h3>Ticket Médio</h3>
+                            <p id="averageTicket">R$ 0,00</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="list-section">
+                <div class="section-header">
+                    <h2>📋 Detalhamento das Vendas <span id="reportTitle">(Hoje)</span></h2>
+                    <button type="button" class="btn btn-primary" onclick="exportToCSV()">📥 Exportar CSV</button>
+                </div>
+                <div class="table-container">
+                    <table id="salesTable">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Operador</th>
+                                <th>Itens</th>
+                                <th>Total</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesList">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noSalesMessage" class="no-data">
+                    Nenhuma venda encontrada para o período selecionado.
+                </div>
+            </section>
+
+            <section class="list-section">
+                <h2>🏆 Produtos Mais Vendidos</h2>
+                <div class="table-container">
+                    <table id="topProductsTable">
+                        <thead>
+                            <tr>
+                                <th>Posição</th>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Valor Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topProductsList">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noProductsMessage" class="no-data">
+                    Nenhum produto vendido no período.
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>© 2024 Sistema de Cadastro - Relatórios</p>
+        </footer>
+    </div>
+
+    <div id="saleDetailModal" class="modal">
+        <div class="modal-content">
+            <h3>🧾 Detalhes da Venda</h3>
+            <div class="sale-detail-info">
+                <p><strong>Data:</strong> <span id="detailDate"></span></p>
+                <p><strong>Hora:</strong> <span id="detailTime"></span></p>
+                <p><strong>Operador:</strong> <span id="detailOperator"></span></p>
+            </div>
+            <div class="sale-detail-items">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Qtd</th>
+                            <th>Valor</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailItems">
+                    </tbody>
+                </table>
+            </div>
+            <div class="sale-detail-total">
+                <p><strong>Total:</strong> <span id="detailTotal"></span></p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="printSaleDetails()">🖨️ Imprimir</button>
+                <button class="btn btn-secondary" onclick="closeSaleDetailModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="relatorios.js"></script>
+</body>
+</html>
+
