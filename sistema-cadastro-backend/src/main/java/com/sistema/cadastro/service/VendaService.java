@@ -2,9 +2,11 @@ package com.sistema.cadastro.service;
 
 import com.sistema.cadastro.dto.VendaRequest;
 import com.sistema.cadastro.dto.VendaResponse;
+import com.sistema.cadastro.model.Produto;
 import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.model.Venda;
 import com.sistema.cadastro.model.VendaItem;
+import com.sistema.cadastro.repository.ProdutoRepository;
 import com.sistema.cadastro.repository.UsuarioRepository;
 import com.sistema.cadastro.repository.VendaRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class VendaService {
 
     private final VendaRepository vendaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ProdutoRepository produtoRepository;
 
     @Transactional
     public VendaResponse criarVenda(VendaRequest request) {
@@ -40,18 +43,42 @@ public class VendaService {
         venda.setUsuario(usuario);
         venda.setNomeOperador(usuario.getUsername());
         
-        // Converter itens
-        List<VendaItem> itens = request.getItens().stream()
-                .map(itemReq -> {
-                    VendaItem item = new VendaItem();
-                    item.setProdutoId(itemReq.getProdutoId());
-                    item.setNome(itemReq.getNome());
-                    item.setPreco(itemReq.getPreco());
-                    item.setQuantidade(itemReq.getQuantidade());
-                    item.setSubtotal(itemReq.getSubtotal());
-                    return item;
-                })
-                .collect(Collectors.toList());
+        // Converter itens e fazer baixa no estoque
+        List<VendaItem> itens = new ArrayList<>();
+        for (VendaRequest.VendaItemRequest itemReq : request.getItens()) {
+            // Buscar produto e fazer baixa no estoque
+            Optional<Produto> produtoOpt = produtoRepository.findById(itemReq.getProdutoId());
+            if (produtoOpt.isEmpty()) {
+                throw new RuntimeException("Produto não encontrado: " + itemReq.getProdutoId());
+            }
+            
+            Produto produto = produtoOpt.get();
+            
+            // Verificar se há estoque suficiente
+            if (produto.getQuantidadeEstoque() < itemReq.getQuantidade()) {
+                throw new RuntimeException("Estoque insuficiente para o produto: " + produto.getNome());
+            }
+            
+            // Decrementar estoque
+            produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - itemReq.getQuantidade());
+            
+            // Se o tipo for UNIDADE ou CAIXA e o estoque chegou a zero, excluir o produto
+            // Para tipo NULL, apenas salvar (não excluir)
+            if (produto.getTipo() != null && produto.getQuantidadeEstoque() <= 0) {
+                produtoRepository.delete(produto);
+            } else {
+                produtoRepository.save(produto);
+            }
+            
+            // Criar item da venda
+            VendaItem item = new VendaItem();
+            item.setProdutoId(itemReq.getProdutoId());
+            item.setNome(itemReq.getNome());
+            item.setPreco(itemReq.getPreco());
+            item.setQuantidade(itemReq.getQuantidade());
+            item.setSubtotal(itemReq.getSubtotal());
+            itens.add(item);
+        }
         
         venda.setItens(itens);
         

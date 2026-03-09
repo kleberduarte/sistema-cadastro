@@ -177,7 +177,7 @@ function renderProducts(productList = products) {
     });
 }
 
-// Buscar produtos
+// Buscar produtos (por nome, categoria ou código EAN)
 function searchProducts() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
     
@@ -189,8 +189,10 @@ function searchProducts() {
     const filteredProducts = products.filter(product => {
         const nome = product.nome || '';
         const categoria = product.categoria || '';
+        const codigoProduto = product.codigoProduto || '';
         return nome.toLowerCase().includes(searchTerm) || 
-               categoria.toLowerCase().includes(searchTerm);
+               categoria.toLowerCase().includes(searchTerm) ||
+               codigoProduto.toLowerCase().includes(searchTerm);
     });
     
     renderProducts(filteredProducts);
@@ -428,7 +430,7 @@ async function finalizeSale() {
             const vendaResponse = await response.json();
             sale.id = vendaResponse.id;
             sale.date = vendaResponse.dataVenda;
-            showAlert('Venda salva na API com sucesso!', 'success');
+            showAlert('Venda salva com sucesso!', 'success');
         } else {
             console.error('Erro ao salvar venda na API, salvando localmente');
             showAlert('Erro ao salvar na API. Venda salva localmente.', 'warning');
@@ -436,41 +438,6 @@ async function finalizeSale() {
     } catch (error) {
         console.error('Erro ao salvar venda na API:', error);
         showAlert('Erro ao salvar na API. Venda salva localmente.', 'warning');
-    }
-    
-    // Atualizar estoque de cada produto na API
-    try {
-        for (const item of cart) {
-            const product = products.find(p => p.id === item.productId);
-            if (product) {
-                const newStock = product.quantidadeEstoque - item.quantity;
-                
-                const response = await fetch(`http://localhost:8080/api/produtos/${item.productId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + getToken()
-                    },
-                    body: JSON.stringify({
-                        nome: product.nome,
-                        descricao: product.descricao,
-                        preco: product.preco,
-                        categoria: product.categoria,
-                        quantidadeEstoque: newStock
-                    })
-                });
-                
-                if (!response.ok) {
-                    console.error('Erro ao atualizar estoque do produto:', product.nome);
-                }
-            }
-        }
-        
-        showAlert('Estoque atualizado com sucesso!', 'success');
-        
-    } catch (error) {
-        console.error('Erro ao atualizar estoque:', error);
-        showAlert('Erro ao atualizar estoque. A venda foi registrada localmente.', 'error');
     }
     
     // Adicionar venda ao histórico local
