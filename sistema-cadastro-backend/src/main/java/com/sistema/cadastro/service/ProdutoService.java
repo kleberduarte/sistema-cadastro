@@ -25,7 +25,9 @@ public class ProdutoService {
         produto.setPreco(request.getPreco());
         produto.setQuantidadeEstoque(request.getQuantidadeEstoque());
         produto.setCategoria(request.getCategoria());
-        
+        produto.setCodigoProduto(request.getCodigoProduto());
+        produto.setTipo(request.getTipo());
+
         Produto saved = produtoRepository.save(produto);
         return toResponse(saved);
     }
@@ -54,6 +56,8 @@ public class ProdutoService {
         produto.setPreco(request.getPreco());
         produto.setQuantidadeEstoque(request.getQuantidadeEstoque());
         produto.setCategoria(request.getCategoria());
+        produto.setCodigoProduto(request.getCodigoProduto());
+        produto.setTipo(request.getTipo());
         
         Produto updated = produtoRepository.save(produto);
         return toResponse(updated);
@@ -86,8 +90,11 @@ public class ProdutoService {
         response.setPreco(produto.getPreco());
         response.setQuantidadeEstoque(produto.getQuantidadeEstoque());
         response.setCategoria(produto.getCategoria());
+        response.setCodigoProduto(produto.getCodigoProduto());
+        response.setTipo(produto.getTipo());
         response.setCreatedAt(produto.getCreatedAt());
         response.setUpdatedAt(produto.getUpdatedAt());
+        
         return response;
     }
 }

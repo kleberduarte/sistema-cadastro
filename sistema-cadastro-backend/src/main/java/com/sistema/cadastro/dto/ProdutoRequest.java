@@ -29,4 +29,6 @@ public class ProdutoRequest {
     private Integer quantidadeEstoque;
     
     private String categoria;
+    private String codigoProduto;
+    private String tipo; // CAIXA ou UNIDADE
 }

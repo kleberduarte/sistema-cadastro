@@ -108,6 +108,11 @@ function validateForm(formData) {
         errors.category = 'Selecione uma categoria';
     }
     
+    // Validar tipo
+    if (!formData.tipo || formData.tipo === '') {
+        errors.tipo = 'Selecione o tipo';
+    }
+    
     return errors;
 }
 
@@ -153,7 +158,9 @@ async function handleSubmit(e) {
         descricao: document.getElementById('description').value.trim(),
         preco: isNaN(priceValue) ? 0 : priceValue,
         quantidadeEstoque: parseInt(document.getElementById('quantity').value) || 0,
-        categoria: document.getElementById('category').value
+        categoria: document.getElementById('category').value,
+        codigoProduto: document.getElementById('productCode').value.trim(),
+        tipo: document.getElementById('tipo').value
     };
     
     // Validar formulário
@@ -248,6 +255,7 @@ function renderProducts(productList = products) {
         
         row.innerHTML = `
             <td>${escapeHtml(product.nome)}</td>
+            <td>${escapeHtml(product.codigoProduto || '-')}</td>
             <td>${escapeHtml((product.descricao || '').substring(0, 50))}${(product.descricao || '').length > 50 ? '...' : ''}</td>
             <td>${formattedPrice}</td>
             <td class="${stockClass}">${stockIcon}${product.quantidadeEstoque}</td>
@@ -285,9 +293,11 @@ function searchProducts() {
         const nome = product.nome || '';
         const descricao = product.descricao || '';
         const categoria = product.categoria || '';
+        const codigoProduto = product.codigoProduto || '';
         return nome.toLowerCase().includes(searchTerm) ||
                descricao.toLowerCase().includes(searchTerm) ||
-               categoria.toLowerCase().includes(searchTerm);
+               categoria.toLowerCase().includes(searchTerm) ||
+               codigoProduto.toLowerCase().includes(searchTerm);
     });
     
     renderProducts(filteredProducts);
@@ -382,6 +392,8 @@ function editProduct(id) {
         });
         document.getElementById('quantity').value = product.quantidadeEstoque;
         document.getElementById('category').value = product.categoria || '';
+        document.getElementById('productCode').value = product.codigoProduto || '';
+        document.getElementById('tipo').value = product.tipo || '';
         
         // Alterar modo do formulário
         document.getElementById('submitBtn').textContent = '💾 Salvar Alterações';

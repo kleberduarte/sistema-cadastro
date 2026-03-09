@@ -14,11 +14,49 @@ document.addEventListener('DOMContentLoaded', function() {
     applyFilter();
 });
 
-// Carregar vendas do localStorage
-function loadSales() {
-    const storedSales = localStorage.getItem('sales');
-    if (storedSales) {
-        sales = JSON.parse(storedSales);
+// Carregar vendas da API
+async function loadSales() {
+    try {
+        const response = await fetch('http://localhost:8080/api/vendas', {
+            headers: {
+                'Authorization': 'Bearer ' + getToken()
+            }
+        });
+        
+        if (response.ok) {
+            const vendas = await response.json();
+            // Converter formato da API para formato local
+            sales = vendas.map(venda => ({
+                id: venda.id,
+                date: venda.dataVenda,
+                operator: venda.nomeOperador,
+                items: venda.itens.map(item => ({
+                    productId: item.produtoId,
+                    name: item.nome,
+                    price: parseFloat(item.preco),
+                    quantity: item.quantidade,
+                    subtotal: parseFloat(item.subtotal)
+                })),
+                subtotal: parseFloat(venda.subtotal),
+                discount: parseFloat(venda.desconto || 0),
+                total: parseFloat(venda.total)
+            }));
+            console.log('Vendas carregadas da API:', sales);
+        } else {
+            console.error('Erro ao carregar vendas da API');
+            // Fallback para localStorage
+            const storedSales = localStorage.getItem('sales');
+            if (storedSales) {
+                sales = JSON.parse(storedSales);
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao carregar vendas:', error);
+        // Fallback para localStorage
+        const storedSales = localStorage.getItem('sales');
+        if (storedSales) {
+            sales = JSON.parse(storedSales);
+        }
     }
 }
 
