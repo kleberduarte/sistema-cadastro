@@ -9,6 +9,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "produtos")
@@ -35,6 +36,12 @@ public class Produto {
 
     @Column(length = 50)
     private String categoria;
+
+    @Column(name = "codigo_produto", length = 50)
+    private String codigoProduto;
+
+    @Column(length = 20)
+    private String tipo; // CAIXA ou UNIDADE
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
