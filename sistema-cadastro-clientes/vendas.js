@@ -9,15 +9,20 @@ let sales = [];
 let currentDiscount = 0;
 let discountType = 'none';
 
+// Limpar dados antigos do localStorage (deve ser definida antes do uso)
+function clearOldLocalStorage() {
+    localStorage.removeItem('sales');
+}
+
 // Carregar dados ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
     if (!checkAuth()) return;
     displayUserName();
     setupMenuByRole();
+    clearOldLocalStorage(); // Limpar dados antigos do localStorage
     loadProducts();
-    loadSales();
+    loadTodaySales();  // Carrega vendas de hoje da API
     setupEventListeners();
-    renderTodaySales();
 });
 
 // Configurar event listeners
@@ -58,7 +63,56 @@ async function loadProducts() {
     renderProducts();
 }
 
-// Carregar vendas do localStorage
+// Carregar vendas de hoje da API
+async function loadTodaySales() {
+    try {
+        const response = await fetch('http://localhost:8080/api/vendas/hoje', {
+            headers: {
+                'Authorization': 'Bearer ' + getToken()
+            }
+        });
+        
+        if (response.ok) {
+            const vendas = await response.json();
+            // Converter formato da API para formato local
+            sales = vendas.map(venda => ({
+                id: venda.id,
+                date: venda.dataVenda,
+                operator: venda.nomeOperador,
+                items: venda.itens.map(item => ({
+                    productId: item.produtoId,
+                    name: item.nome,
+                    price: parseFloat(item.preco),
+                    quantity: item.quantidade,
+                    subtotal: parseFloat(item.subtotal)
+                })),
+                subtotal: parseFloat(venda.subtotal),
+                discount: parseFloat(venda.desconto || 0),
+                total: parseFloat(venda.total)
+            }));
+            console.log('Vendas de hoje carregadas da API:', sales);
+        } else {
+            console.error('Erro ao carregar vendas de hoje da API');
+            // Fallback para localStorage
+            loadSalesFromLocalStorage();
+        }
+    } catch (error) {
+        console.error('Erro ao carregar vendas de hoje:', error);
+        // Fallback para localStorage
+        loadSalesFromLocalStorage();
+    }
+    renderTodaySales();
+}
+
+// Carregar vendas do localStorage (fallback)
+function loadSalesFromLocalStorage() {
+    const storedSales = localStorage.getItem('sales');
+    if (storedSales) {
+        sales = JSON.parse(storedSales);
+    }
+}
+
+// Carregar vendas do localStorage (para uso geral)
 function loadSales() {
     const storedSales = localStorage.getItem('sales');
     if (storedSales) {
@@ -277,11 +331,8 @@ function renderCart() {
         cartItems.appendChild(cartItem);
     });
     
-    // Atualizar total
-    cartTotal.textContent = total.toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    });
+    // Atualizar total usando função que considera desconto
+    updateCartTotal();
 }
 
 // Limpar carrinho
@@ -330,9 +381,22 @@ async function finalizeSale() {
     
     // Obter dados do usuário
     const currentUser = localStorage.getItem(CURRENT_USER_KEY);
-    const user = currentUser ? JSON.parse(currentUser) : { username: 'Operador' };
+    const user = currentUser ? JSON.parse(currentUser) : { username: 'Operador', id: null };
     
-    // Criar registro de venda
+    // Criar registro de venda para API
+    const vendaRequest = {
+        usuarioId: user.id,
+        itens: cart.map(item => ({
+            produtoId: item.productId,
+            nome: item.name,
+            preco: item.price,
+            quantidade: item.quantity,
+            subtotal: item.price * item.quantity
+        })),
+        desconto: currentDiscount
+    };
+    
+    // Criar registro de venda local (para fallback)
     const sale = {
         id: Date.now(),
         date: new Date().toISOString(),
@@ -349,8 +413,33 @@ async function finalizeSale() {
         total: total
     };
     
+    // Salvar venda na API
     try {
-        // Atualizar estoque de cada produto na API
+        const response = await fetch('http://localhost:8080/api/vendas', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getToken()
+            },
+            body: JSON.stringify(vendaRequest)
+        });
+        
+        if (response.ok) {
+            const vendaResponse = await response.json();
+            sale.id = vendaResponse.id;
+            sale.date = vendaResponse.dataVenda;
+            showAlert('Venda salva na API com sucesso!', 'success');
+        } else {
+            console.error('Erro ao salvar venda na API, salvando localmente');
+            showAlert('Erro ao salvar na API. Venda salva localmente.', 'warning');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar venda na API:', error);
+        showAlert('Erro ao salvar na API. Venda salva localmente.', 'warning');
+    }
+    
+    // Atualizar estoque de cada produto na API
+    try {
         for (const item of cart) {
             const product = products.find(p => p.id === item.productId);
             if (product) {
@@ -384,7 +473,7 @@ async function finalizeSale() {
         showAlert('Erro ao atualizar estoque. A venda foi registrada localmente.', 'error');
     }
     
-    // Adicionar venda ao histórico
+    // Adicionar venda ao histórico local
     sales.push(sale);
     saveSales();
     
