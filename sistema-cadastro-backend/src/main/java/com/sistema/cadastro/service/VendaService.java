@@ -62,13 +62,8 @@ public class VendaService {
             // Decrementar estoque
             produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - itemReq.getQuantidade());
             
-            // Se o tipo for UNIDADE ou CAIXA e o estoque chegou a zero, excluir o produto
-            // Para tipo NULL, apenas salvar (não excluir)
-            if (produto.getTipo() != null && produto.getQuantidadeEstoque() <= 0) {
-                produtoRepository.delete(produto);
-            } else {
-                produtoRepository.save(produto);
-            }
+            // Salvar atualização do estoque
+            produtoRepository.save(produto);
             
             // Criar item da venda
             VendaItem item = new VendaItem();

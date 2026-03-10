@@ -639,31 +639,42 @@ function applyDiscount() {
     const discountType = document.getElementById('discountType').value;
     const discountValue = parseFloat(document.getElementById('discountValue').value);
     
-    if (discountType === 'none') {
-        currentDiscount = 0;
-    } else if (isNaN(discountValue) || discountValue < 0) {
-        showAlert('Valor de desconto inválido', 'error');
+    // Verificar se o carrinho está vazio
+    if (cart.length === 0) {
+        showAlert('Carrinho vazio. Adicione produtos primeiro.', 'error');
         return;
-    } else {
-        // Calcular total atual do carrinho
-        let subtotal = 0;
-        cart.forEach(item => {
-            subtotal += item.price * item.quantity;
-        });
-        
-        if (discountType === 'percent') {
-            if (discountValue > 100) {
-                showAlert('Porcentagem não pode exceder 100%', 'error');
-                return;
-            }
-            currentDiscount = (subtotal * discountValue) / 100;
-        } else {
-            if (discountValue > subtotal) {
-                showAlert('Desconto não pode exceder o total', 'error');
-                return;
-            }
-            currentDiscount = discountValue;
+    }
+    
+    // Verificar se o tipo de desconto está selecionado
+    if (discountType === 'none') {
+        showAlert('Selecione um tipo de desconto (porcentagem ou valor fixo)', 'error');
+        return;
+    }
+    
+    // Verificar se o valor do desconto foi informado
+    if (isNaN(discountValue) || discountValue <= 0) {
+        showAlert('Informe um valor de desconto válido', 'error');
+        return;
+    }
+    
+    // Calcular total atual do carrinho
+    let subtotal = 0;
+    cart.forEach(item => {
+        subtotal += item.price * item.quantity;
+    });
+    
+    if (discountType === 'percent') {
+        if (discountValue > 100) {
+            showAlert('Porcentagem não pode exceder 100%', 'error');
+            return;
         }
+        currentDiscount = (subtotal * discountValue) / 100;
+    } else {
+        if (discountValue > subtotal) {
+            showAlert('Desconto não pode exceder o total', 'error');
+            return;
+        }
+        currentDiscount = discountValue;
     }
     
     // Mostrar informações do desconto
@@ -676,8 +687,6 @@ function applyDiscount() {
             style: 'currency',
             currency: 'BRL'
         });
-    } else {
-        discountInfo.style.display = 'none';
     }
     
     updateCartTotal();
