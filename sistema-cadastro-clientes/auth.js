@@ -1,7 +1,13 @@
 
+
 // Sistema de Autenticação e Autorização - Integração com Backend REST API
 // Autor: Sistema de Cadastro
 // Data: 2024
+
+// Constantes de configuração
+const CURRENT_USER_KEY = 'currentUser';
+const TOKEN_KEY = 'authToken';
+const API_URL = 'http://localhost:8080/api';
 
 // Lista de tokens invalidados (simple blacklist em memória)
 let invalidatedTokens = new Set();
