@@ -26,12 +26,6 @@ function displayUserName() {
     }
 }
 
-// Função de logout
-function logout() {
-    localStorage.removeItem(CURRENT_USER_KEY);
-    window.location.href = 'login.html';
-}
-
 // Carregar clientes do localStorage ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
     if (!checkAuth()) return;

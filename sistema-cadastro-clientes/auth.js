@@ -1,10 +1,10 @@
+
 // Sistema de Autenticação e Autorização - Integração com Backend REST API
 // Autor: Sistema de Cadastro
 // Data: 2024
 
-const API_URL = 'http://localhost:8080/api';
-const CURRENT_USER_KEY = 'currentUser';
-const TOKEN_KEY = 'authToken';
+// Lista de tokens invalidados (simple blacklist em memória)
+let invalidatedTokens = new Set();
 
 // Obter token atual
 function getToken() {
@@ -18,6 +18,13 @@ function checkAuth() {
         window.location.href = 'login.html';
         return false;
     }
+    
+    // Verificar se token foi invalidado
+    if (invalidatedTokens.has(token)) {
+        logout();
+        return false;
+    }
+    
     return true;
 }
 
@@ -72,8 +79,14 @@ function displayUserName() {
     }
 }
 
-// Função de logout
+// Função de logout - agora invalida o token
 function logout() {
+    const token = getToken();
+    if (token) {
+        // Adicionar token à blacklist
+        invalidatedTokens.add(token);
+    }
+    
     localStorage.removeItem(CURRENT_USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
     window.location.href = 'login.html';
@@ -108,6 +121,11 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     };
     
     if (token) {
+        // Verificar se token foi invalidado antes de fazer chamada
+        if (invalidatedTokens.has(token)) {
+            logout();
+            return null;
+        }
         options.headers['Authorization'] = `Bearer ${token}`;
     }
     
@@ -153,4 +171,5 @@ async function deleteRequest(endpoint) {
     const response = await apiCall(endpoint, 'DELETE');
     return response && response.ok;
 }
+
 
