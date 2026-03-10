@@ -93,17 +93,16 @@ function toggleFilterFields() {
 // Aplicar filtro
 function applyFilter() {
     const filterType = document.getElementById('filterType').value;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     
     let startDate, endDate;
     let title = '';
     
     switch (filterType) {
         case 'today':
-            startDate = new Date(today);
-            endDate = new Date(today);
-            endDate.setHours(23, 59, 59, 999);
+            // Usar fuso horário local para evitar problema com UTC
+            const todayStr = new Date().toISOString().split('T')[0];
+            startDate = new Date(todayStr + 'T00:00:00');
+            endDate = new Date(todayStr + 'T23:59:59.999');
             title = '(Hoje)';
             break;
             
@@ -113,10 +112,9 @@ function applyFilter() {
                 showAlert('Selecione uma data', 'error');
                 return;
             }
-            startDate = new Date(dayInput);
-            startDate.setHours(0, 0, 0, 0);
-            endDate = new Date(dayInput);
-            endDate.setHours(23, 59, 59, 999);
+            // Usar fuso horário local para evitar problema com UTC
+            startDate = new Date(dayInput + 'T00:00:00');
+            endDate = new Date(dayInput + 'T23:59:59.999');
             title = '(' + formatDateBR(dayInput) + ')';
             break;
             
@@ -145,22 +143,24 @@ function applyFilter() {
             break;
             
         case 'period':
-            startDate = new Date(document.getElementById('startDate').value);
-            endDate = new Date(document.getElementById('endDate').value);
+            const startDateInput = document.getElementById('startDate').value;
+            const endDateInput = document.getElementById('endDate').value;
             
-            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            if (!startDateInput || !endDateInput) {
                 showAlert('Selecione as datas corretamente', 'error');
                 return;
             }
+            
+            // Usar fuso horário local para evitar problema com UTC
+            startDate = new Date(startDateInput + 'T00:00:00');
+            endDate = new Date(endDateInput + 'T23:59:59.999');
             
             if (startDate > endDate) {
                 showAlert('Data inicial não pode ser maior que a final', 'error');
                 return;
             }
             
-            startDate.setHours(0, 0, 0, 0);
-            endDate.setHours(23, 59, 59, 999);
-            title = '(' + formatDateBR(document.getElementById('startDate').value) + ' a ' + formatDateBR(document.getElementById('endDate').value) + ')';
+            title = '(' + formatDateBR(startDateInput) + ' a ' + formatDateBR(endDateInput) + ')';
             break;
     }
     
@@ -355,7 +355,8 @@ function formatCurrency(value) {
 }
 
 function formatDateBR(dateString) {
-    const date = new Date(dateString);
+    // Usar fuso horário local para evitar problema com UTC
+    const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('pt-BR');
 }
 
