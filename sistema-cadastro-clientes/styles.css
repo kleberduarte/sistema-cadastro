@@ -164,6 +164,15 @@ section h2 {
     background: #c0392b;
 }
 
+.btn-warning {
+    background: #f39c12;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #e67e22;
+}
+
 .btn-edit {
     background: #f39c12;
     color: white;
@@ -353,17 +362,211 @@ footer {
     }
 
     table {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
 
     th, td {
-        padding: 10px;
+        padding: 8px;
     }
 
     .btn {
         width: 100%;
         margin-right: 0;
         margin-bottom: 10px;
+    }
+
+    .container {
+        margin: 0;
+        border-radius: 0;
+        min-height: 100vh;
+    }
+
+    body {
+        padding: 0;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .modal-content {
+        padding: 20px;
+        width: 95%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-content h3 {
+        font-size: 1.2rem;
+    }
+
+    .filter-container {
+        flex-direction: column;
+    }
+
+    .filter-group {
+        width: 100%;
+    }
+
+    .filter-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .filter-actions .btn {
+        width: 100%;
+    }
+
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .section-header .btn {
+        width: 100%;
+    }
+
+    .register-form .form-row {
+        flex-direction: column;
+    }
+
+    .register-form .form-actions {
+        flex-direction: column;
+    }
+
+    .register-form .form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Telas muito pequenas (celulares) */
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 1.3rem;
+    }
+
+    header {
+        padding: 10px 15px;
+    }
+
+    .user-menu {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    main {
+        padding: 10px;
+    }
+
+    section h2 {
+        font-size: 1.2rem;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
+
+    table {
+        font-size: 0.75rem;
+    }
+
+    th, td {
+        padding: 6px 4px;
+    }
+
+    .table-container {
+        margin: 0 -10px;
+    }
+
+    .product-card {
+        padding: 10px;
+    }
+
+    .product-card-header h3 {
+        font-size: 0.9rem;
+    }
+
+    .product-price {
+        font-size: 1rem;
+    }
+
+    .cart-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .cart-item-info,
+    .cart-item-quantity,
+    .cart-item-subtotal {
+        width: 100%;
+        text-align: center;
+    }
+
+    .cart-item-quantity {
+        justify-content: center;
+    }
+
+    .discount-section {
+        flex-direction: column;
+    }
+
+    .discount-section select,
+    .discount-section input {
+        width: 100%;
+    }
+
+    .discount-section .btn {
+        width: 100%;
+    }
+
+    .cart-actions {
+        flex-direction: column;
+    }
+
+    .sale-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 5px;
+    }
+
+    .summary-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .receipt-content {
+        padding: 10px;
+    }
+
+    .receipt {
+        padding: 15px;
+    }
+
+    .receipt h3 {
+        font-size: 1.2rem;
+    }
+
+    .receipt-info,
+    .receipt-items table,
+    .receipt-total {
+        font-size: 0.85rem;
     }
 }
 
@@ -956,6 +1159,70 @@ footer {
     }
 }
 
+@media (max-width: 600px) {
+    .pdv-main {
+        padding: 10px;
+    }
+
+    .products-grid-section,
+    .cart-section,
+    .history-section {
+        padding: 15px;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 10px;
+        max-height: 400px;
+    }
+
+    .cart-section h2,
+    .products-grid-section h2,
+    .history-section h2 {
+        font-size: 1.2rem;
+    }
+
+    .cart-items {
+        max-height: 250px;
+    }
+
+    .discount-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .discount-section select,
+    .discount-section input {
+        width: 100%;
+    }
+
+    .discount-section .btn {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .discount-info {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .cart-total {
+        font-size: 1.1rem;
+    }
+
+    .cart-total span:last-child {
+        font-size: 1.3rem;
+    }
+
+    .cart-actions {
+        flex-direction: column;
+    }
+
+    .history-section {
+        margin-top: 20px;
+    }
+}
+
 /* =======================
    ESTILOS DE RELATÓRIOS
    ======================= */
@@ -1100,38 +1367,6 @@ footer {
     background: #f8f9fa;
     border-radius: 8px;
     margin-bottom: 15px;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .filter-container {
-        flex-direction: column;
-    }
-    
-    .filter-group {
-        width: 100%;
-    }
-    
-    .filter-actions {
-        width: 100%;
-    }
-    
-    .filter-actions .btn {
-        flex: 1;
-    }
-    
-    .summary-cards {
-        grid-template-columns: 1fr;
-    }
-    
-    .section-header {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .section-header .btn {
-        width: 100%;
-    }
 }
 
 /* Cabeçalho de seção com botão */

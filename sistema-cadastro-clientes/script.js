@@ -22,7 +22,10 @@ function displayUserName() {
     const currentUser = localStorage.getItem(CURRENT_USER_KEY);
     if (currentUser) {
         const user = JSON.parse(currentUser);
-        document.getElementById('userDisplay').textContent = 'Olá, ' + user.username;
+        const userDisplayElement = document.getElementById('userDisplay') || document.getElementById('userName');
+        if (userDisplayElement) {
+            userDisplayElement.textContent = 'Olá, ' + user.username;
+        }
     }
 }
 
@@ -38,49 +41,59 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupEventListeners() {
     // Formulário de cadastro
     const form = document.getElementById('clientForm');
-    form.addEventListener('submit', handleSubmit);
+    if (form) {
+        form.addEventListener('submit', handleSubmit);
+    }
     
     // Campo de busca
     const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', searchClients);
+    if (searchInput) {
+        searchInput.addEventListener('input', searchClients);
+    }
     
     // Botão de busca
     const searchBtn = document.getElementById('searchBtn');
-    searchBtn.addEventListener('click', searchClients);
+    if (searchBtn) {
+        searchBtn.addEventListener('click', searchClients);
+    }
     
     // Máscara para telefone
     const phoneInput = document.getElementById('phone');
-    phoneInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 0) {
-            if (value.length <= 2) {
-                value = '(' + value;
-            } else if (value.length <= 6) {
-                value = '(' + value.substring(0, 2) + ') ' + value.substring(2);
-            } else {
-                value = '(' + value.substring(0, 2) + ') ' + value.substring(2, 7) + '-' + value.substring(7, 11);
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0) {
+                if (value.length <= 2) {
+                    value = '(' + value;
+                } else if (value.length <= 6) {
+                    value = '(' + value.substring(0, 2) + ') ' + value.substring(2);
+                } else {
+                    value = '(' + value.substring(0, 2) + ') ' + value.substring(2, 7) + '-' + value.substring(7, 11);
+                }
             }
-        }
-        e.target.value = value;
-    });
+            e.target.value = value;
+        });
+    }
     
     // Máscara para CPF
     const cpfInput = document.getElementById('cpf');
-    cpfInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 0) {
-            if (value.length <= 3) {
-                value = value;
-            } else if (value.length <= 6) {
-                value = value.substring(0, 3) + '.' + value.substring(3);
-            } else if (value.length <= 9) {
-                value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6);
-            } else {
-                value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6, 9) + '-' + value.substring(9, 11);
+    if (cpfInput) {
+        cpfInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0) {
+                if (value.length <= 3) {
+                    value = value;
+                } else if (value.length <= 6) {
+                    value = value.substring(0, 3) + '.' + value.substring(3);
+                } else if (value.length <= 9) {
+                    value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6);
+                } else {
+                    value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6, 9) + '-' + value.substring(9, 11);
+                }
             }
-        }
-        e.target.value = value;
-    });
+            e.target.value = value;
+        });
+    }
 }
 
 // Carregar clientes da API
@@ -266,6 +279,11 @@ function renderClients(clientList = clients) {
     const noClientsMessage = document.getElementById('noClientsMessage');
     const clientCount = document.getElementById('clientCount');
     
+    // Verificar se os elementos existem (pode não existir em todas as páginas)
+    if (!clientListElement || !noClientsMessage || !clientCount) {
+        return;
+    }
+    
     // Atualizar contador
     clientCount.textContent = `(${clientList.length})`;
     
@@ -426,11 +444,14 @@ function showAlert(message, type) {
 }
 
 // Fechar modal ao clicar fora
-document.getElementById('confirmModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
-});
+const confirmModal = document.getElementById('confirmModal');
+if (confirmModal) {
+    confirmModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+}
 
 // Editar cliente - carregar dados no formulário
 function editClient(id) {
