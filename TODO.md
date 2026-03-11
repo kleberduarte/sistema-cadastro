@@ -14,6 +14,7 @@ Quando é feita uma venda, o produto não está sendo baixado no estoque.
 - **Status**: ✅ Compilação bem-sucedida
 
 ## Próximos Passos
-1. ~~Reiniciar o backend para aplicar as alterações~~ - ✅ Concluído - Sistema iniciado
+1. ~~Reiniciar o backend para aplicar as alterações~~ - ✅ Concluído
 2. Testar a realização de uma venda para verificar se o estoque é decrementado corretamente
+3. ~~Correção filtro relatórios~~ - ✅ Correção aplicada - evitar problemas de fuso horário
 
