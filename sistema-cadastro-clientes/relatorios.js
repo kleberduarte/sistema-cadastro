@@ -118,9 +118,13 @@ function applyFilter() {
                 showAlert('Selecione uma data', 'error');
                 return;
             }
-            // Usar fuso horário local para evitar problema com UTC
-            startDate = new Date(dayInput + 'T00:00:00');
-            endDate = new Date(dayInput + 'T23:59:59.999');
+            // Usar formato YYYY-MM-DD local para evitar problema com UTC
+            const dayParts = dayInput.split('-');
+            const dayYear = parseInt(dayParts[0]);
+            const dayMonth = parseInt(dayParts[1]) - 1;
+            const dayDay = parseInt(dayParts[2]);
+            startDate = new Date(dayYear, dayMonth, dayDay, 0, 0, 0, 0);
+            endDate = new Date(dayYear, dayMonth, dayDay, 23, 59, 59, 999);
             title = '(' + formatDateBR(dayInput) + ')';
             break;
             
@@ -170,13 +174,12 @@ function applyFilter() {
             break;
     }
     
-    // Filtrar vendas - comparar apenas a data (ignorando fuso horário)
+    // Filtrar vendas - comparar apenas a data (ignorando horário e fuso horário)
     filteredSales = sales.filter(sale => {
-        // Converter a data da venda para data local sem horário
-        const saleDate = new Date(sale.date);
-        const saleDateStr = saleDate.toISOString().split('T')[0];
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = endDate.toISOString().split('T')[0];
+        // Converter a data da venda para data local usando o construtor Date
+        const saleDateStr = sale.date.split('T')[0];
+        const startDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+        const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
         
         return saleDateStr >= startDateStr && saleDateStr <= endDateStr;
     });
