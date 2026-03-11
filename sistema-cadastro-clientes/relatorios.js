@@ -1,3 +1,4 @@
+
 // Sistema de Relatórios de Vendas
 // Autor: Sistema de Cadastro
 // Data: 2024
@@ -99,8 +100,13 @@ function applyFilter() {
     
     switch (filterType) {
         case 'today':
-            // Usar fuso horário local para evitar problema com UTC
-            const todayStr = new Date().toISOString().split('T')[0];
+            // Usar datas no formato YYYY-MM-DD para evitar problemas de fuso horário
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+            
             startDate = new Date(todayStr + 'T00:00:00');
             endDate = new Date(todayStr + 'T23:59:59.999');
             title = '(Hoje)';
@@ -124,11 +130,11 @@ function applyFilter() {
                 showAlert('Selecione um mês', 'error');
                 return;
             }
-            const [year, month] = monthInput.split('-');
-            startDate = new Date(year, month - 1, 1);
-            endDate = new Date(year, month, 0, 23, 59, 59, 999);
+            const [filterYear, filterMonth] = monthInput.split('-');
+            startDate = new Date(filterYear, filterMonth - 1, 1);
+            endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59, 999);
             const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            title = '(' + monthNames[parseInt(month) - 1] + ' de ' + year + ')';
+            title = '(' + monthNames[parseInt(filterMonth) - 1] + ' de ' + filterYear + ')';
             break;
             
         case 'year':
@@ -164,10 +170,15 @@ function applyFilter() {
             break;
     }
     
-    // Filtrar vendas
+    // Filtrar vendas - comparar apenas a data (ignorando fuso horário)
     filteredSales = sales.filter(sale => {
+        // Converter a data da venda para data local sem horário
         const saleDate = new Date(sale.date);
-        return saleDate >= startDate && saleDate <= endDate;
+        const saleDateStr = saleDate.toISOString().split('T')[0];
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        return saleDateStr >= startDateStr && saleDateStr <= endDateStr;
     });
     
     // Ordenar por data (mais recente primeiro)
