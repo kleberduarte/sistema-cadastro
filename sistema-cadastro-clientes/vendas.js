@@ -637,33 +637,47 @@ function toggleDiscountInput() {
 // Aplicar desconto
 function applyDiscount() {
     const discountType = document.getElementById('discountType').value;
-    const discountValue = parseFloat(document.getElementById('discountValue').value);
+    const discountValueInput = document.getElementById('discountValue').value;
+    const discountValue = parseFloat(discountValueInput);
     
+    // Verificar se o carrinho está vazio
+    if (cart.length === 0) {
+        showAlert('Adicione produtos ao carrinho primeiro', 'error');
+        return;
+    }
+    
+    // Verificar se o tipo de desconto é 'none'
     if (discountType === 'none') {
         currentDiscount = 0;
-    } else if (isNaN(discountValue) || discountValue < 0) {
-        showAlert('Valor de desconto inválido', 'error');
+        document.getElementById('discountInfo').style.display = 'none';
+        showAlert('Nenhum desconto selecionado', 'error');
         return;
-    } else {
-        // Calcular total atual do carrinho
-        let subtotal = 0;
-        cart.forEach(item => {
-            subtotal += item.price * item.quantity;
-        });
-        
-        if (discountType === 'percent') {
-            if (discountValue > 100) {
-                showAlert('Porcentagem não pode exceder 100%', 'error');
-                return;
-            }
-            currentDiscount = (subtotal * discountValue) / 100;
-        } else {
-            if (discountValue > subtotal) {
-                showAlert('Desconto não pode exceder o total', 'error');
-                return;
-            }
-            currentDiscount = discountValue;
+    }
+    
+    // Verificar se o valor de desconto está vazio ou é inválido
+    if (!discountValueInput || isNaN(discountValue) || discountValue < 0) {
+        showAlert('Digite um valor de desconto válido', 'error');
+        return;
+    }
+    
+    // Calcular total atual do carrinho
+    let subtotal = 0;
+    cart.forEach(item => {
+        subtotal += item.price * item.quantity;
+    });
+    
+    if (discountType === 'percent') {
+        if (discountValue > 100) {
+            showAlert('Porcentagem não pode exceder 100%', 'error');
+            return;
         }
+        currentDiscount = (subtotal * discountValue) / 100;
+    } else {
+        if (discountValue > subtotal) {
+            showAlert('Desconto não pode exceder o total', 'error');
+            return;
+        }
+        currentDiscount = discountValue;
     }
     
     // Mostrar informações do desconto

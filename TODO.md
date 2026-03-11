@@ -1,25 +1,19 @@
-# TODO - Integração API para Relatórios
+# TODO - Correção de Baixa de Estoque
 
-## Backend - Spring Boot
+## Problema
+Quando é feita uma venda, o produto não está sendo baixado no estoque.
 
-### Entidade Venda
-- [x] Model: Venda.java (entity) - Criar
-- [x] Model: VendaItem.java (embedded) - Criar  
-- [x] Repository: VendaRepository.java - Criar
-- [x] DTOs: VendaRequest, VendaResponse - Criar
-- [x] Service: VendaService.java - Criar
-- [x] Controller: VendaController.java - Criar
+## Solução Aplicada
 
-## Frontend - Integração API
+### 1. Correção em VendaService.java
+- **Arquivo**: `sistema-cadastro-backend/src/main/java/com/sistema/cadastro/service/VendaService.java`
+- **Problema identificado**: A lógica anterior tinha uma condição que verificava `produto.getTipo() != null` e deletava o produto quando o estoque chegava a zero, o que podia causar comportamentos inesperados.
+- **Correção**: Simplificada a lógica para sempre decrementar o estoque e salvar o produto, sem exclusão automática.
 
-### PDV (Vendas)
-- [x] vendas.js - Atualizar para salvar na API
+### 2. Compilação
+- **Status**: ✅ Compilação bem-sucedida
 
-### Relatórios
-- [x] relatorios.js - Atualizar para carregar da API
-
-## Testes
-- [ ] Testar integração API
-- [ ] Testar filtros de data
-- [ ] Testar exportação CSV
+## Próximos Passos
+1. ~~Reiniciar o backend para aplicar as alterações~~ - ✅ Concluído - Sistema iniciado
+2. Testar a realização de uma venda para verificar se o estoque é decrementado corretamente
 
