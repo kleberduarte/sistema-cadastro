@@ -44,5 +44,14 @@ public class Venda {
     @CreationTimestamp
     @Column(name = "data_venda", updatable = false)
     private LocalDateTime dataVenda;
+
+    @Column(name = "forma_pagamento", length = 20)
+    private String formaPagamento;
+
+    @Column(name = "parcelas")
+    private Integer parcelas;
+
+    @Column(name = "chave_pix", length = 255)
+    private String chavePix;
 }
 

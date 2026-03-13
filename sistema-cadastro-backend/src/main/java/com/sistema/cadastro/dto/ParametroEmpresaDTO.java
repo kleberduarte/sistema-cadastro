@@ -20,5 +20,7 @@ public class ParametroEmpresaDTO {
     private String corBotao;
     private String corBotaoTexto;
     private String mensagemBoasVindas;
+    // Chave PIX padrão da empresa (para pagamentos no PDV)
+    private String chavePix;
     private Boolean ativo;
 }

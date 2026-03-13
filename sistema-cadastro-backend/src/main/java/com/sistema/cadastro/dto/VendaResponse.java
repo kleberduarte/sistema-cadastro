@@ -20,6 +20,9 @@ public class VendaResponse {
     private BigDecimal desconto;
     private BigDecimal total;
     private LocalDateTime dataVenda;
+    private String formaPagamento;
+    private Integer parcelas;
+    private String chavePix;
     
     @Data
     @NoArgsConstructor

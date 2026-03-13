@@ -1,30 +1,31 @@
-# TODO - Correção de Baixa de Estoque
+# TODO - Implementação de Formas de Pagamento no PDV
 
-## Problema
-Quando é feita uma venda, o produto não está sendo baixado no estoque.
+## Tarefas
 
-## Solução Aplicada
+### Backend
+- [ ] Testar backend
+- [x] Start project: Run backend successfully
 
-### 1. Correção em VendaService.java
-- **Arquivo**: `sistema-cadastro-backend/src/main/java/com/sistema/cadastro/service/VendaService.java`
-- **Problema identificado**: A lógica anterior tinha uma condição que verificava `produto.getTipo() != null` e deletava o produto quando o estoque chegava a zero, o que podia causar comportamentos inesperados.
-- **Correção**: Simplificada a lógica para sempre decrementar o estoque e salvar o produto, sem exclusão automática.
+### Frontend
+- [ ] Testar fluxo completo
+- [x] ✅ Gerar QRCode PIX ao selecionar PIX na tela de pagamento
+- [x] ✅ Corrigido bug: Confirmar pagamento PIX sem pedir chave novamente
+- [x] Ajustar tela de parâmetros para usar chave PIX default quando campo estiver vazio
+- [x] Corrigir valor do QRCode PIX em pagamento parcial (usar apenas valor restante)
+- [ ] Incluir no comprovante: forma de pagamento, valor recebido em dinheiro e troco
+- [ ] Exibir troco em tempo real na tela de pagamento (dinheiro)
 
-### 2. Compilação
-- **Status**: ✅ Compilação bem-sucedida
+## Progresso
+- [x] Plano aprovado
+- [x] Novo ajuste solicitado: permitir cadastro de chave PIX com opção default do sistema em Parâmetros
+- [x] Backend: Atualizar entidade Venda
+- [x] Backend: Atualizar VendaRequest DTO
+- [x] Backend: Atualizar VendaResponse DTO
+- [x] Backend: Atualizar VendaService
+- [x] Frontend: Adicionar modal de pagamento em vendas.html
+- [x] Frontend: Adicionar QRCode.js via CDN
+- [x] Frontend: Atualizar vendas.js (lógica + QRCode PIX + bug fix fluxo PIX)
+- [x] Frontend: Atualizar styles.css (estilos do modal)
+- [x] Frontend: Corrigir vendas.js para gerar QR PIX com valor restante em pagamentos parciais
 
-## Próximos Passos
-1. ~~Reiniciar o backend para aplicar as alterações~~ - ✅ Concluído
-2. ~~Testar a realização de uma venda para verificar se o estoque é decrementado corretamente~~ - ✅ Testado e funcionando
-3. ~~Correção filtro relatórios~~ - ✅ Correção aplicada
-4. ~~Correção botão Aplicar desconto~~ - ✅ Correção aplicada (carrinho vazio e valor obrigatório)
-5. Sistema de Parametrização por Cliente - ✅ Concluído
-   - Backend: Entity, Repository, Service, Controller ✅
-   - Frontend: config.js e parametros.html ✅
-   - Menu "Parâmetros" adicionado (visível apenas para admin) ✅
-   - Como usar:
-     1. Alterar `CLIENTE_ID` em `config.js` (1 = Adidas, 2 = Nike, etc)
-     2. Acessar `parametros.html` para configurar cores, logo e nome da empresa
-     3. Clicar em "Testar Estilos" para aplicar temporariamente via localStorage
-     4. As páginas principais já carregam `config.js` automaticamente
-
+**Fluxo PIX OK:** Selecione PIX → digite chave → QR gerado → botão Confirmar habilitado diretamente → venda salva!

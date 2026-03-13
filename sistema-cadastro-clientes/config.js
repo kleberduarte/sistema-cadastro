@@ -110,6 +110,11 @@ function applyClientStyles(params) {
         }
     }
 
+    // Definir chave PIX global da empresa (usada no PDV)
+    if (params.chavePix) {
+        window.PIX_STORE_KEY = params.chavePix;
+    }
+
     // Aplicar logo - múltiplas posições
     if (params.logoUrl) {
         console.log('Aplicando logo (original):', params.logoUrl);

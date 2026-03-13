@@ -50,6 +50,10 @@ public class ParametroEmpresa {
     @Column(name = "mensagem_boas_vindas", length = 500)
     private String mensagemBoasVindas;
 
+    // Chave PIX padrão da empresa (para uso no PDV)
+    @Column(name = "chave_pix", length = 255)
+    private String chavePix;
+
     @Column(name = "ativo")
     private Boolean ativo = true;
 }

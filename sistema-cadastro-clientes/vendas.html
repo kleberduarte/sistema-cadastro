@@ -127,6 +127,11 @@
                 <div class="receipt-total">
                     <p><strong>TOTAL:</strong> <span id="receiptTotal"></span></p>
                 </div>
+                <div class="receipt-payment">
+                    <p><strong>Forma de Pagamento:</strong> <span id="receiptPaymentMethod"></span></p>
+                    <p id="receiptCashReceivedRow" style="display: none;"><strong>Valor Recebido:</strong> <span id="receiptCashReceived"></span></p>
+                    <p id="receiptChangeRow" style="display: none;"><strong>Troco:</strong> <span id="receiptChange"></span></p>
+                </div>
                 <div class="receipt-footer">
                     <p>Obrigado pela preferência!</p>
                     <p>Volte sempre!</p>
@@ -135,6 +140,122 @@
             <div class="modal-buttons">
                 <button class="btn btn-primary" onclick="printReceipt()">🖨️ Imprimir</button>
                 <button class="btn btn-secondary" onclick="closeReceiptModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- Modal de Pagamento -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content payment-modal-content">
+            <div class="payment-modal-header">
+                <h3>💳 Pagamento</h3>
+                <button class="modal-close" onclick="closePaymentModal()">&times;</button>
+            </div>
+            <div class="payment-modal-body">
+                <div class="payment-total">
+                    <span>Total a Pagar:</span>
+                    <span id="paymentTotal">R$ 0,00</span>
+                </div>
+                
+                <!-- Lista de pagamentos adicionados -->
+                <div class="partial-payments-section">
+                    <label>Pagamentos Adicionados:</label>
+                    <div id="partialPaymentList" class="partial-payment-list">
+                        <p class="no-payments">Nenhum pagamento adicionado</p>
+                    </div>
+                    <div class="remaining-amount">
+                        <span>Falta:</span>
+                        <span id="remainingAmount">R$ 0,00</span>
+                    </div>
+                </div>
+                
+                <div class="payment-methods">
+                    <label>Forma de Pagamento:</label>
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="DINHEIRO" checked onchange="updatePaymentFields()">
+                            <span class="option-icon">💵</span>
+                            <span class="option-label">Dinheiro</span>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="DEBITO" onchange="updatePaymentFields()">
+                            <span class="option-icon">💳</span>
+                            <span class="option-label">Débito</span>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="CREDITO" onchange="updatePaymentFields()">
+                            <span class="option-icon">💳</span>
+                            <span class="option-label">Crédito</span>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="PIX" onchange="updatePaymentFields()">
+                            <span class="option-icon">📱</span>
+                            <span class="option-label">PIX</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Campos específicos por método de pagamento -->
+                <div id="paymentFields">
+                    <!-- Dinheiro -->
+                    <div id="cashFields" class="payment-field-group">
+                        <div class="form-group">
+                            <label for="cashReceived">Valor em Dinheiro:</label>
+                            <input type="text" id="cashReceived" placeholder="R$ 0,00" oninput="calculateChange()">
+                        </div>
+                        <div class="form-group">
+                            <label>Troco / Falta:</label>
+                            <div id="changeAmount">Troco: R$ 0,00</div>
+                        </div>
+                        <div class="quick-cash-buttons">
+                            <button type="button" class="btn-quick-cash" onclick="addCash(10)">+10</button>
+                            <button type="button" class="btn-quick-cash" onclick="addCash(20)">+20</button>
+                            <button type="button" class="btn-quick-cash" onclick="addCash(50)">+50</button>
+                            <button type="button" class="btn-quick-cash" onclick="addCash(100)">+100</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Cartão Crédito -->
+                    <div id="creditFields" class="payment-field-group" style="display: none;">
+                        <div class="form-group">
+                            <label for="parcelas">Parcelas:</label>
+                            <select id="parcelas" onchange="updateParcelasInfo()">
+                                <option value="1">1x (Sem juros)</option>
+                                <option value="2">2x (Sem juros)</option>
+                                <option value="3">3x (Sem juros)</option>
+                                <option value="4">4x (Sem juros)</option>
+                                <option value="5">5x (Sem juros)</option>
+                                <option value="6">6x (Sem juros)</option>
+                                <option value="7">7x</option>
+                                <option value="8">8x</option>
+                                <option value="9">9x</option>
+                                <option value="10">10x</option>
+                                <option value="11">11x</option>
+                                <option value="12">12x</option>
+                            </select>
+                        </div>
+                        <div id="parcelasInfo" class="parcelas-info"></div>
+                    </div>
+                    
+                    <!-- PIX -->
+                    <div id="pixFields" class="payment-field-group" style="display: none;">
+                        <div class="form-group">
+                            <label for="pixKey">Chave PIX:</label>
+                            <input type="text" id="pixKey" placeholder="CPF, CNPJ, Email ou Telefone">
+                        </div>
+                        <div id="pixQRCode" class="pix-qrcode"></div>
+                        <button type="button" class="btn btn-secondary" onclick="copyPixKey()" id="copyPixBtn" style="display: none;">📋 Copiar Chave PIX</button>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-warning" id="addPaymentBtn" onclick="addPartialPayment()" style="width: 100%; margin-top: 15px;">➕ Adicionar Pagamento</button>
+            </div>
+            <div class="payment-modal-footer">
+                <button class="btn btn-secondary" onclick="closePaymentModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="processPayment()" disabled>✅ Confirmar Pagamento</button>
             </div>
         </div>
     </div>

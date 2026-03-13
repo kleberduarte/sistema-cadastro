@@ -22,6 +22,14 @@ public class VendaRequest {
     
     @PositiveOrZero(message = "Desconto não pode ser negativo")
     private BigDecimal desconto = BigDecimal.ZERO;
+
+    @NotNull(message = "Forma de pagamento é obrigatória")
+    private String formaPagamento;
+
+    @PositiveOrZero(message = "Número de parcelas não pode ser negativo")
+    private Integer parcelas;
+
+    private String chavePix;
     
     @Data
     @NoArgsConstructor

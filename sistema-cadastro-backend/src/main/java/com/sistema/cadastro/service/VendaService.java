@@ -86,6 +86,11 @@ public class VendaService {
         venda.setDesconto(request.getDesconto() != null ? request.getDesconto() : BigDecimal.ZERO);
         venda.setTotal(subtotal.subtract(venda.getDesconto()));
         
+        // Definir forma de pagamento e campos relacionados
+        venda.setFormaPagamento(request.getFormaPagamento());
+        venda.setParcelas(request.getParcelas());
+        venda.setChavePix(request.getChavePix());
+        
         // Salvar
         Venda savedVenda = vendaRepository.save(venda);
         
@@ -127,6 +132,9 @@ public class VendaService {
         response.setDesconto(venda.getDesconto());
         response.setTotal(venda.getTotal());
         response.setDataVenda(venda.getDataVenda());
+        response.setFormaPagamento(venda.getFormaPagamento());
+        response.setParcelas(venda.getParcelas());
+        response.setChavePix(venda.getChavePix());
         
         // Converter itens
         List<VendaResponse.VendaItemResponse> itensResponse = venda.getItens().stream()

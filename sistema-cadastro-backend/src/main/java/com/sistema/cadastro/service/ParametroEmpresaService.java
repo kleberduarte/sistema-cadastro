@@ -38,6 +38,7 @@ public class ParametroEmpresaService {
         parametro.setCorBotao(dto.getCorBotao());
         parametro.setCorBotaoTexto(dto.getCorBotaoTexto());
         parametro.setMensagemBoasVindas(dto.getMensagemBoasVindas());
+        parametro.setChavePix(dto.getChavePix());
         parametro.setAtivo(dto.getAtivo() == null ? true : dto.getAtivo());
 
         parametro = repository.save(parametro);
@@ -104,6 +105,7 @@ public class ParametroEmpresaService {
         dto.setCorBotao(entity.getCorBotao());
         dto.setCorBotaoTexto(entity.getCorBotaoTexto());
         dto.setMensagemBoasVindas(entity.getMensagemBoasVindas());
+        dto.setChavePix(entity.getChavePix());
         dto.setAtivo(entity.getAtivo());
         return dto;
     }

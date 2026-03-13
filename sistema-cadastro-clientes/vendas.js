@@ -8,6 +8,16 @@ let cart = [];
 let sales = [];
 let currentDiscount = 0;
 let discountType = 'none';
+let partialPayments = []; // Array para armazenar pagamentos parciais
+
+// Chave PIX da loja: pode vir dos parâmetros da empresa (config.js) ou cair em um padrão
+function getPixStoreKey() {
+    if (window.PIX_STORE_KEY && typeof window.PIX_STORE_KEY === 'string') {
+        return window.PIX_STORE_KEY;
+    }
+    // Valor padrão caso não esteja configurado nos parâmetros
+    return 'pix@lojapdv.com';
+}
 
 // Limpar dados antigos do localStorage (deve ser definida antes do uso)
 function clearOldLocalStorage() {
@@ -357,8 +367,8 @@ function clearCart() {
     }
 }
 
-// Finalizar venda
-async function finalizeSale() {
+// Finalizar venda - abre o modal de pagamento
+function finalizeSale() {
     if (cart.length === 0) {
         showAlert('Adicione produtos ao carrinho primeiro', 'error');
         return;
@@ -373,19 +383,605 @@ async function finalizeSale() {
         }
     }
     
-    // Calcular total (com desconto)
-    let subtotal = 0;
-    cart.forEach(item => {
-        subtotal += item.price * item.quantity;
+    // Mostrar modal de pagamento
+    showPaymentModal();
+}
+
+// Mostrar modal de pagamento
+function showPaymentModal() {
+    const total = getCartTotalWithDiscount();
+    
+    // Resetar pagamentos parciais e estado visual de troco/falta
+    partialPayments = [];
+    
+    // Atualizar total no modal
+    document.getElementById('paymentTotal').textContent = total.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
     });
     
-    const total = Math.max(0, subtotal - currentDiscount);
+    // Resetar campos
+    document.querySelector('input[name="paymentMethod"][value="DINHEIRO"]').checked = true;
+    document.getElementById('cashReceived').value = '';
+    document.getElementById('parcelas').value = '1';
+    const changeAmountEl = document.getElementById('changeAmount');
+    if (changeAmountEl) {
+        changeAmountEl.style.color = '#28a745';
+        changeAmountEl.textContent = 'Troco: R$ 0,00';
+    }
+    // Preencher chave PIX (vinda dos parâmetros da empresa) e impedir edição manual
+    const pixKeyInput = document.getElementById('pixKey');
+    pixKeyInput.value = getPixStoreKey();
+    pixKeyInput.readOnly = true;
+    document.getElementById('parcelasInfo').innerHTML = '';
+    document.getElementById('pixQRCode').innerHTML = '';
+    document.getElementById('copyPixBtn').style.display = 'none';
+    
+    // Renderizar lista de pagamentos
+    renderPartialPayments();
+    
+    // Atualizar status do pagamento
+    updatePaymentStatus();
+    
+    // Mostrar campos de dinheiro por padrão
+    updatePaymentFields();
+    
+    // Mostrar modal
+    document.getElementById('paymentModal').classList.add('show');
+}
+
+// Renderizar lista de pagamentos parciais
+function renderPartialPayments() {
+    const paymentList = document.getElementById('partialPaymentList');
+    const total = getCartTotalWithDiscount();
+    
+    // Calcular total pago
+    const totalPaid = partialPayments.reduce((sum, p) => sum + p.valor, 0);
+    const remaining = Math.max(0, total - totalPaid);
+    
+    paymentList.innerHTML = '';
+    
+    if (partialPayments.length === 0) {
+        paymentList.innerHTML = '<p class="no-payments">Nenhum pagamento adicionado</p>';
+    } else {
+        partialPayments.forEach((payment, index) => {
+            const paymentItem = document.createElement('div');
+            paymentItem.className = 'partial-payment-item';
+            
+            let methodLabel = '';
+            let icon = '';
+            switch(payment.metodo) {
+                case 'DINHEIRO':
+                    methodLabel = 'Dinheiro';
+                    icon = '💵';
+                    break;
+                case 'DEBITO':
+                    methodLabel = 'Débito';
+                    icon = '💳';
+                    break;
+                case 'CREDITO':
+                    methodLabel = 'Crédito ' + payment.parcelas + 'x';
+                    icon = '💳';
+                    break;
+                case 'PIX':
+                    methodLabel = 'PIX';
+                    icon = '📱';
+                    break;
+            }
+            
+            paymentItem.innerHTML = `
+                <div class="payment-item-info">
+                    <span class="payment-icon">${icon}</span>
+                    <span class="payment-method">${methodLabel}</span>
+                </div>
+                <div class="payment-item-value">
+                    <span>${payment.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <button class="btn-remove" onclick="removePartialPayment(${index})">🗑️</button>
+                </div>
+            `;
+            paymentList.appendChild(paymentItem);
+        });
+    }
+    
+    // Atualizar valor restante
+    document.getElementById('remainingAmount').textContent = remaining.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    });
+    
+    // Atualizar cor do valor restante
+    const remainingEl = document.getElementById('remainingAmount');
+    if (remaining > 0) {
+        remainingEl.style.color = '#dc3545';
+    } else {
+        remainingEl.style.color = '#28a745';
+    }
+}
+
+// Atualizar status do pagamento
+function updatePaymentStatus() {
+    const total = getCartTotalWithDiscount();
+    const totalPaid = partialPayments.reduce((sum, p) => sum + p.valor, 0);
+    const remaining = Math.max(0, total - totalPaid);
+
+    const method = document.querySelector('input[name="paymentMethod"]:checked')?.value || '';
+    const confirmBtn = document.querySelector('#paymentModal .btn-primary');
+    const addPaymentBtn = document.getElementById('addPaymentBtn');
+
+    // PIX: jornada direta (sem "Adicionar pagamento")
+    if (method === 'PIX') {
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+        confirmBtn.textContent = '✅ Confirmar Pagamento';
+
+        addPaymentBtn.disabled = true;
+        addPaymentBtn.style.opacity = '0.5';
+        addPaymentBtn.style.display = 'none';
+        return;
+    }
+
+    // Mostrar botão nos outros métodos
+    addPaymentBtn.style.display = 'inline-block';
+
+    // Para pagamento direto (sem partials) habilitar se método validado
+    const directPaymentValid = remaining === total && (
+        method === 'DEBITO' ||
+        method === 'CREDITO'
+    );
+
+    if (remaining > 0 && !directPaymentValid) {
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.textContent = '✅ Confirmar Pagamento';
+        addPaymentBtn.disabled = false;
+        addPaymentBtn.style.opacity = '1';
+    } else {
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+        confirmBtn.textContent = '✅ Confirmar Pagamento';
+        addPaymentBtn.disabled = true;
+        addPaymentBtn.style.opacity = '0.5';
+    }
+}
+
+// Adicionar pagamento parcial
+function addPartialPayment() {
+    const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+    const total = getCartTotalWithDiscount();
+    const totalPaid = partialPayments.reduce((sum, p) => sum + p.valor, 0);
+    const remaining = Math.max(0, total - totalPaid);
+
+    if (remaining <= 0) {
+        showAlert('Pagamento já está completo', 'warning');
+        return;
+    }
+
+    let valor = 0;
+    let parcelas = 1;
+    let chavePix = null;
+
+    // Obter valor baseado no método
+    if (method === 'DINHEIRO') {
+        valor = parseCurrency(document.getElementById('cashReceived').value);
+        if (valor <= 0) {
+            showAlert('Digite um valor em dinheiro maior que zero', 'error');
+            return;
+        }
+    } else if (method === 'DEBITO') {
+        valor = remaining;
+    } else if (method === 'CREDITO') {
+        valor = remaining;
+        parcelas = parseInt(document.getElementById('parcelas').value);
+    } else if (method === 'PIX') {
+        showAlert('Para PIX use apenas "Confirmar Pagamento"', 'warning');
+        return;
+    }
+
+    valor = Math.max(0, Math.min(valor, remaining));
+    if (valor <= 0) {
+        showAlert('Valor inválido para adicionar pagamento', 'error');
+        return;
+    }
+
+    // Consolidar pagamentos em dinheiro em uma única linha (sem acumular entradas repetidas)
+    if (method === 'DINHEIRO') {
+        const cashIndex = partialPayments.findIndex(p => p.metodo === 'DINHEIRO');
+        if (cashIndex >= 0) {
+            const novoValor = Math.max(0, Math.min(partialPayments[cashIndex].valor + valor, remaining + partialPayments[cashIndex].valor));
+            partialPayments[cashIndex].valor = novoValor;
+        } else {
+            partialPayments.push({
+                metodo: method,
+                valor: valor,
+                parcelas: parcelas,
+                chavePix: chavePix
+            });
+        }
+    } else {
+        partialPayments.push({
+            metodo: method,
+            valor: valor,
+            parcelas: parcelas,
+            chavePix: chavePix
+        });
+    }
+
+    document.getElementById('cashReceived').value = '';
+    if (method !== 'PIX') {
+        document.getElementById('pixKey').value = '';
+        document.getElementById('pixQRCode').innerHTML = '';
+        document.getElementById('copyPixBtn').style.display = 'none';
+    }
+
+    renderPartialPayments();
+    updatePaymentStatus();
+
+    showAlert('Pagamento adicionado!', 'success');
+}
+
+// Remover pagamento parcial
+function removePartialPayment(index) {
+    partialPayments.splice(index, 1);
+    renderPartialPayments();
+    updatePaymentStatus();
+}
+
+// Fechar modal de pagamento
+function closePaymentModal() {
+    document.getElementById('paymentModal').classList.remove('show');
+}
+
+// Atualizar campos de acordo com método de pagamento
+function updatePaymentFields() {
+    const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+    const addPaymentBtn = document.getElementById('addPaymentBtn');
+    const confirmBtn = document.querySelector('#paymentModal .btn-primary');
+
+    // Esconder todos os campos
+    document.getElementById('cashFields').style.display = 'none';
+    document.getElementById('creditFields').style.display = 'none';
+    document.getElementById('pixFields').style.display = 'none';
+
+    // Defaults visuais dos botões
+    addPaymentBtn.style.display = 'inline-block';
+    addPaymentBtn.disabled = false;
+    addPaymentBtn.style.opacity = '1';
+
+    // Mostrar campos do método selecionado
+    switch(method) {
+        case 'DINHEIRO':
+            document.getElementById('cashFields').style.display = 'block';
+            break;
+        case 'DEBITO':
+            // Débito não precisa de campos extras
+            break;
+        case 'CREDITO':
+            document.getElementById('creditFields').style.display = 'block';
+            updateParcelasInfo();
+            break;
+        case 'PIX':
+            document.getElementById('pixFields').style.display = 'block';
+            // PIX: esconder adicionar e liberar confirmar imediatamente
+            addPaymentBtn.style.display = 'none';
+            addPaymentBtn.disabled = true;
+            addPaymentBtn.style.opacity = '0.5';
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = '1';
+            confirmBtn.textContent = '✅ Confirmar Pagamento';
+
+            // Garantir chave PIX preenchida (parâmetros da empresa) e gerar QR automaticamente
+            // sempre para o valor restante quando houver pagamento parcial
+            const pixKeyInput = document.getElementById('pixKey');
+            pixKeyInput.value = getPixStoreKey();
+            pixKeyInput.readOnly = true;
+            const totalPix = getCartTotalWithDiscount();
+            const totalPaidPix = partialPayments.reduce((sum, p) => sum + p.valor, 0);
+            const remainingPix = Math.max(0, totalPix - totalPaidPix);
+            generatePixQRCode(remainingPix > 0 ? remainingPix : totalPix);
+            return;
+    }
+
+    updatePaymentStatus();
+}
+
+// Calcular troco
+function calculateChange() {
+    const method = document.querySelector('input[name="paymentMethod"]:checked')?.value || '';
+    if (method !== 'DINHEIRO') {
+        updatePaymentStatus();
+        return;
+    }
+
+    const total = getCartTotalWithDiscount();
+    const cashReceived = parseCurrency(document.getElementById('cashReceived').value);
+
+    const change = Math.max(0, cashReceived - total);
+    const falta = Math.max(0, total - cashReceived);
+
+    const changeAmount = document.getElementById('changeAmount');
+    if (!changeAmount) return;
+    const confirmBtn = document.querySelector('#paymentModal .btn-primary');
+
+    if (cashReceived < total) {
+        changeAmount.style.color = '#dc3545';
+        changeAmount.textContent = `Falta: ${falta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.textContent = 'Aguardando pagamento completo';
+    } else {
+        changeAmount.style.color = '#28a745';
+        changeAmount.textContent = `Troco: ${change.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+        confirmBtn.textContent = '✅ Confirmar Pagamento';
+    }
+}
+
+// Adicionar mais dinheiro ao valor recebido
+function addCash(amount) {
+    const cashInput = document.getElementById('cashReceived');
+    const currentValue = parseCurrency(cashInput.value) || 0;
+    const newValue = (currentValue + amount);
+    cashInput.value = newValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    calculateChange();
+    
+    // Auto-adicionar se >= total
+    if (newValue >= getCartTotalWithDiscount()) {
+        addPartialPayment();
+    }
+}
+
+// Adicionar pagamento complementar (outra forma de pagamento)
+function addComplementaryPayment() {
+    const total = getCartTotalWithDiscount();
+    const cashReceived = parseCurrency(document.getElementById('cashReceived').value);
+    const falta = Math.max(0, total - cashReceived);
+    
+    // Perguntar quanto será adicionado
+    const adicional = prompt(`Quanto será adicionado em dinheiro? Faltam: R$ ${falta.toFixed(2).replace('.', ',')}`);
+    
+    if (adicional) {
+        const valorAdicional = parseCurrency(adicional);
+        if (valorAdicional > 0) {
+            addCash(valorAdicional);
+            showAlert(`Adicionado R$ ${valorAdicional.toFixed(2).replace('.', ',')}`, 'success');
+        }
+    }
+}
+
+// Atualizar informações de parcelas
+function updateParcelasInfo() {
+    const parcelas = parseInt(document.getElementById('parcelas').value);
+    const total = getCartTotalWithDiscount();
+    const totalPaid = partialPayments.reduce((sum, p) => sum + p.valor, 0);
+    const remaining = Math.max(0, total - totalPaid);
+    const base = remaining > 0 ? remaining : total;
+
+    const infoDiv = document.getElementById('parcelasInfo');
+
+    if (base <= 0) {
+        infoDiv.innerHTML = '<p><strong>Pagamento já está completo.</strong></p>';
+        return;
+    }
+
+    const valorParcela = base / parcelas;
+
+    if (parcelas === 1) {
+        infoDiv.innerHTML = `<p>${parcelas}x de <strong>${valorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong> (sem juros)</p>`;
+    } else if (parcelas <= 6) {
+        infoDiv.innerHTML = `<p>${parcelas}x de <strong>${valorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong> (sem juros)</p>`;
+    } else {
+        // Com juros (exemplo: 2% ao mês)
+        const taxaJuros = 0.02;
+        const valorComJuros = base * Math.pow(1 + taxaJuros, parcelas);
+        const novaParcela = valorComJuros / parcelas;
+        const totalComJuros = novaParcela * parcelas;
+
+        infoDiv.innerHTML = `<p>${parcelas}x de <strong>${novaParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong> (com juros)</p>
+                             <p class="juros-info">Total com juros: <strong>${totalComJuros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong></p>`;
+    }
+}
+
+// Gerar QR Code PIX para a chave fixa da loja
+function generatePixQRCode(amountOverride = null) {
+    const pixKey = getPixStoreKey();
+    const total = amountOverride !== null ? amountOverride : getCartTotalWithDiscount();
+    
+    if (!pixKey) {
+        showAlert('Chave PIX da loja não configurada', 'error');
+        return false;
+    }
+
+    if (!total || total <= 0) {
+        showAlert('Valor PIX inválido para gerar QR Code', 'error');
+        return false;
+    }
+    
+    // Limpar QR anterior
+    const qrContainer = document.getElementById('pixQRCode');
+    qrContainer.innerHTML = '<p>Gerando QR Code PIX...</p>';
+    
+    // Dados do comerciante (ajuste com seus dados reais)
+    const merchant = {
+        pixKey: pixKey,      // Chave PIX da empresa
+        name: 'Loja PDV',           // Nome da loja
+        cnpj: '12345678000199',     // Seu CNPJ
+        city: 'SP'                  // Cidade
+    };
+    
+    // Txid único (32 chars hex, baseado em timestamp + random)
+    const txid = Date.now().toString(16).padStart(16, '0') + Math.random().toString(16).slice(2, 18);
+    
+    // Payload Pix v2.1 completo estático + dinâmico
+    const payload = 
+        '000201' +                          // Payload Format Indicator
+        '26360014BR.GOV.BCB.PIX01' +        // Pix Protocol + Version
+        pixKey.length.toString().padStart(2, '0') + pixKey +  // Pix Key (beneficiário)
+        '52040000' +                        // Merchant Category Code (geral)
+        '5303986' +                         // Transaction Amount? Wait MCC=00
+        '54' + total.toFixed(2).padStart(10, '0') +  // Transaction Amount (dynamic)
+        '5802BR' +                          // Country Code
+        '59' + merchant.name.length.toString().padStart(2, '0') + merchant.name +  // Merchant Name
+        '60' + merchant.city.length.toString().padStart(2, '0') + merchant.city +  // Merchant City
+        '61' + txid.length.toString().padStart(2, '0') + txid +  // TxId unique
+        '6304';                             // CRC16 (calculated client-side)
+    
+    // Calcular CRC16/MODBUS para Pix
+    let crc = 0xFFFF;
+    for (let i = 0; i < payload.length; i++) {
+        crc ^= payload.charCodeAt(i) << 8;
+        for (let j = 0; j < 8; j++) {
+            if (crc & 0x8000) {
+                crc = (crc << 1) ^ 0x1021;
+            } else {
+                crc <<= 1;
+            }
+            crc &= 0xFFFF;
+        }
+    }
+    
+    const fullPayload = payload + crc.toString(16).toUpperCase().padStart(4, '0');
+    
+    // Gerar QR usando biblioteca local (QRCode.js) para simplificar dependências
+    qrContainer.innerHTML = '';
+    const qrDiv = document.createElement('div');
+    qrContainer.appendChild(qrDiv);
+    
+    try {
+        new QRCode(qrDiv, {
+            text: fullPayload,
+            width: 200,
+            height: 200
+        });
+        
+        // Info abaixo do QR
+        const info = document.createElement('div');
+        info.innerHTML = `
+            <small>Total: ${total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</small><br>
+            <small>TxId: ${txid.slice(0,8)}...</small>
+        `;
+        info.style.fontSize = '0.8rem';
+        info.style.color = '#666';
+        info.style.textAlign = 'center';
+        qrContainer.appendChild(info);
+        document.getElementById('copyPixBtn').style.display = 'inline-block';
+        showAlert('QR Code PIX gerado! Escaneie para pagar.', 'success');
+    } catch (e) {
+        qrContainer.innerHTML = '<p style="color: red;">Erro ao gerar QR Code. Verifique a biblioteca QRCode.</p>';
+        showAlert('Erro ao gerar QR Code. Tente novamente.', 'error');
+    }
+}
+
+// Copiar payload PIX completo (para apps bancários)
+function copyPixKey() {
+    const pixKey = document.getElementById('pixKey').value;
+    const totalStr = getCartTotalWithDiscount().toFixed(2);
+    const payload = `PIX${pixKey}*Total:${totalStr}`;  // Formato app compatível
+    
+    navigator.clipboard.writeText(payload).then(() => {
+        showAlert('Payload PIX copiado! Cole no app bancário.', 'success');
+    }).catch(() => {
+        showAlert('Erro ao copiar. Copie manualmente a chave.', 'error');
+    });
+}
+
+// Copiar chave PIX fixa da empresa
+function copyPixKey() {
+    const pixKey = getPixStoreKey();
+    
+    if (pixKey) {
+        navigator.clipboard.writeText(pixKey).then(() => {
+            showAlert('Chave PIX da loja copiada!', 'success');
+        }).catch(() => {
+            showAlert('Erro ao copiar chave PIX', 'error');
+        });
+    }
+}
+
+// Processar pagamento e finalizar venda
+async function processPayment() {
+    const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+    const total = getCartTotalWithDiscount();
+    
+    // Validações específicas por método
+    const cashInputNow = parseCurrency(document.getElementById('cashReceived').value);
+    const totalDinheiroParcialAtual = partialPayments
+        .filter(p => p.metodo === 'DINHEIRO')
+        .reduce((sum, p) => sum + p.valor, 0);
+    const cashReceivedTotalAtual = partialPayments.length > 0
+        ? (totalDinheiroParcialAtual + cashInputNow)
+        : cashInputNow;
+
+    if (method === 'DINHEIRO') {
+        if (cashReceivedTotalAtual < total) {
+            showAlert('Valor insuficiente!', 'error');
+            return;
+        }
+    } else if (method === 'PIX') {
+        // PIX direto no valor restante quando houver parcial
+        const totalPaidPix = partialPayments.reduce((sum, p) => sum + p.valor, 0);
+        const remainingPix = Math.max(0, total - totalPaidPix);
+        generatePixQRCode(remainingPix > 0 ? remainingPix : total);
+    }
     
     // Obter dados do usuário
     const currentUser = localStorage.getItem(CURRENT_USER_KEY);
     const user = currentUser ? JSON.parse(currentUser) : { username: 'Operador', id: null };
     
-    // Criar registro de venda para API
+    // Calcular subtotal
+    let subtotal = 0;
+    cart.forEach(item => {
+        subtotal += item.price * item.quantity;
+    });
+    
+    // Obter parcelas se for cartão de crédito
+    let parcelas = 1;
+    if (method === 'CREDITO') {
+        parcelas = parseInt(document.getElementById('parcelas').value);
+    }
+    
+    // Obter chave PIX se for PIX
+    let chavePix = null;
+    if (method === 'PIX') {
+        // Usar sempre a chave PIX da empresa (parâmetros)
+        chavePix = getPixStoreKey();
+    }
+    
+    let valorRecebido = null;
+    let troco = 0;
+
+    if (method === 'DINHEIRO') {
+        const cashInputEl = document.getElementById('cashReceived');
+        const rawInputValue = cashInputEl ? String(cashInputEl.value || '').trim() : '';
+        const parsedInputValue = parseCurrency(rawInputValue);
+
+        let inferredFromChangeLabel = 0;
+        const changeAmountEl = document.getElementById('changeAmount');
+        if (changeAmountEl) {
+            const label = String(changeAmountEl.textContent || '').trim();
+            if (label.startsWith('Troco:')) {
+                inferredFromChangeLabel = parseCurrency(label.replace('Troco:', '').trim()) + total;
+            } else if (label.startsWith('Falta:')) {
+                const falta = parseCurrency(label.replace('Falta:', '').trim());
+                inferredFromChangeLabel = Math.max(0, total - falta);
+            }
+        }
+
+        const effectiveCashInput = parsedInputValue > 0 ? parsedInputValue : inferredFromChangeLabel;
+        valorRecebido = partialPayments.length > 0
+            ? (totalDinheiroParcialAtual + effectiveCashInput)
+            : effectiveCashInput;
+        troco = Math.max(0, valorRecebido - total);
+    } else if (method === 'PIX') {
+        // PIX direto: sem valor recebido/troco em dinheiro
+        valorRecebido = null;
+        troco = 0;
+    } else if (totalDinheiroParcialAtual > 0) {
+        valorRecebido = totalDinheiroParcialAtual;
+        troco = Math.max(0, valorRecebido - total);
+    }
+
+    // Criar registro de venda para API com dados de pagamento
     const vendaRequest = {
         usuarioId: user.id,
         itens: cart.map(item => ({
@@ -395,7 +991,12 @@ async function finalizeSale() {
             quantidade: item.quantity,
             subtotal: item.price * item.quantity
         })),
-        desconto: currentDiscount
+        desconto: currentDiscount,
+        formaPagamento: method,
+        parcelas: method === 'CREDITO' ? parcelas : null,
+        chavePix: chavePix,
+        valorRecebido: valorRecebido,
+        troco: valorRecebido !== null ? troco : null
     };
     
     // Criar registro de venda local (para fallback)
@@ -412,8 +1013,16 @@ async function finalizeSale() {
         })),
         subtotal: subtotal,
         discount: currentDiscount,
-        total: total
+        total: total,
+        formaPagamento: method,
+        parcelas: method === 'CREDITO' ? parcelas : null,
+        chavePix: chavePix,
+        valorRecebido: valorRecebido,
+        troco: valorRecebido !== null ? troco : null
     };
+    
+    // Fechar modal de pagamento
+    closePaymentModal();
     
     // Salvar venda na API
     try {
@@ -444,8 +1053,14 @@ async function finalizeSale() {
     sales.push(sale);
     saveSales();
     
-    // Mostrar comprovante
-    showReceipt(sale);
+    // Mostrar comprovante (forçar valores numéricos para exibição correta)
+    const saleForReceipt = {
+        ...sale,
+        valorRecebido: Number(valorRecebido ?? 0),
+        troco: Number(valorRecebido !== null ? troco : 0)
+    };
+    console.log('[PDV][RECEIPT]', { method, total, valorRecebido, troco, saleForReceipt });
+    showReceipt(saleForReceipt);
     
     // Limpar carrinho
     cart = [];
@@ -465,6 +1080,20 @@ async function finalizeSale() {
     
     showAlert('Venda finalizada com sucesso!', 'success');
 }
+
+// Função auxiliar para converter string de moeda para número
+function parseCurrency(value) {
+    if (!value) return 0;
+    // Remove R$, espaços e substitui vírgula por ponto
+    return parseFloat(value.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+}
+
+// Adicionar event listener para fechar modal de pagamento ao clicar fora
+document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePaymentModal();
+    }
+});
 
 // Mostrar comprovante
 function showReceipt(sale) {
@@ -501,6 +1130,37 @@ function showReceipt(sale) {
         receiptTotal.innerHTML = `<strong>TOTAL:</strong> ${sale.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
     }
     
+    const paymentMethodMap = {
+        DINHEIRO: 'DINHEIRO',
+        DEBITO: 'DÉBITO',
+        CREDITO: 'CRÉDITO',
+        PIX: 'PIX'
+    };
+    document.getElementById('receiptPaymentMethod').textContent = paymentMethodMap[sale.formaPagamento] || '-';
+
+    const receiptCashReceivedRow = document.getElementById('receiptCashReceivedRow');
+    const receiptChangeRow = document.getElementById('receiptChangeRow');
+    const valorRecebidoNum = Number(sale.valorRecebido ?? 0);
+    const trocoNum = Number(sale.troco ?? 0);
+    const hasValorRecebido = Number.isFinite(valorRecebidoNum) && valorRecebidoNum > 0;
+    const hasTroco = Number.isFinite(trocoNum) && trocoNum >= 0 && hasValorRecebido;
+
+    if (hasValorRecebido) {
+        receiptCashReceivedRow.style.display = 'block';
+        document.getElementById('receiptCashReceived').textContent = valorRecebidoNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    } else {
+        receiptCashReceivedRow.style.display = 'none';
+        document.getElementById('receiptCashReceived').textContent = '';
+    }
+
+    if (hasTroco) {
+        receiptChangeRow.style.display = 'block';
+        document.getElementById('receiptChange').textContent = trocoNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    } else {
+        receiptChangeRow.style.display = 'none';
+        document.getElementById('receiptChange').textContent = '';
+    }
+
     // Mostrar modal
     document.getElementById('receiptModal').classList.add('show');
 }

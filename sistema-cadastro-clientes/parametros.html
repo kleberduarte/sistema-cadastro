@@ -90,6 +90,12 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="chavePix">Chave PIX da Empresa</label>
+                    <input type="text" id="chavePix" placeholder="CPF, CNPJ, e-mail ou chave aleatória">
+                    <small>Essa chave será usada no PDV para gerar o QR Code PIX.</small>
+                </div>
+
+                <div class="form-group">
                     <label>
                         <input type="checkbox" id="ativo" checked> Ativo
                     </label>
@@ -119,6 +125,7 @@
     <script>
         // Variável global para armazenar o ID do parâmetro
         let parametroId = null;
+        const DEFAULT_PIX_KEY = 'pix@lojapdv.com';
 
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
@@ -243,6 +250,7 @@
             document.getElementById('corBotao').value = params.corBotao || '#667eea';
             document.getElementById('corBotaoTexto').value = params.corBotaoTexto || '#ffffff';
             document.getElementById('mensagemBoasVindas').value = params.mensagemBoasVindas || '';
+            document.getElementById('chavePix').value = params.chavePix || '';
             document.getElementById('ativo').checked = params.ativo !== false;
             
             atualizarPreVisualizacao();
@@ -262,6 +270,7 @@
                 corBotao: document.getElementById('corBotao').value,
                 corBotaoTexto: document.getElementById('corBotaoTexto').value,
                 mensagemBoasVindas: document.getElementById('mensagemBoasVindas').value,
+                chavePix: document.getElementById('chavePix').value.trim() || DEFAULT_PIX_KEY,
                 ativo: document.getElementById('ativo').checked
             };
         }
@@ -328,6 +337,7 @@
             document.getElementById('corBotao').value = '#667eea';
             document.getElementById('corBotaoTexto').value = '#ffffff';
             document.getElementById('mensagemBoasVindas').value = '';
+            document.getElementById('chavePix').value = DEFAULT_PIX_KEY;
             document.getElementById('ativo').checked = true;
 
             const styleTag = document.getElementById('custom-client-styles');
