@@ -19,13 +19,16 @@ public class ProdutoService {
 
     @Transactional
     public ProdutoResponse create(ProdutoRequest request) {
+        String codigoNormalizado = normalizeCodigoProduto(request.getCodigoProduto());
+        validateCodigoProdutoDuplicado(codigoNormalizado, null);
+
         Produto produto = new Produto();
         produto.setNome(request.getNome());
         produto.setDescricao(request.getDescricao());
         produto.setPreco(request.getPreco());
         produto.setQuantidadeEstoque(request.getQuantidadeEstoque());
         produto.setCategoria(request.getCategoria());
-        produto.setCodigoProduto(request.getCodigoProduto());
+        produto.setCodigoProduto(codigoNormalizado);
         produto.setTipo(request.getTipo());
 
         Produto saved = produtoRepository.save(produto);
@@ -50,13 +53,16 @@ public class ProdutoService {
     public ProdutoResponse update(Long id, ProdutoRequest request) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+
+        String codigoNormalizado = normalizeCodigoProduto(request.getCodigoProduto());
+        validateCodigoProdutoDuplicado(codigoNormalizado, id);
         
         produto.setNome(request.getNome());
         produto.setDescricao(request.getDescricao());
         produto.setPreco(request.getPreco());
         produto.setQuantidadeEstoque(request.getQuantidadeEstoque());
         produto.setCategoria(request.getCategoria());
-        produto.setCodigoProduto(request.getCodigoProduto());
+        produto.setCodigoProduto(codigoNormalizado);
         produto.setTipo(request.getTipo());
         
         Produto updated = produtoRepository.save(produto);
@@ -80,6 +86,31 @@ public class ProdutoService {
         return produtoRepository.findByCategoria(categoria).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ProdutoResponse findByCodigoProduto(String codigoProduto) {
+        return produtoRepository.findByCodigoProduto(codigoProduto)
+                .map(this::toResponse)
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado para o código informado"));
+    }
+
+    private String normalizeCodigoProduto(String codigoProduto) {
+        if (codigoProduto == null) return null;
+        String normalized = codigoProduto.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private void validateCodigoProdutoDuplicado(String codigoProduto, Long currentProductId) {
+        if (codigoProduto == null) return;
+
+        boolean exists = (currentProductId == null)
+                ? produtoRepository.existsByCodigoProduto(codigoProduto)
+                : produtoRepository.existsByCodigoProdutoAndIdNot(codigoProduto, currentProductId);
+
+        if (exists) {
+            throw new RuntimeException("Código de produto já cadastrado");
+        }
     }
 
     private ProdutoResponse toResponse(Produto produto) {

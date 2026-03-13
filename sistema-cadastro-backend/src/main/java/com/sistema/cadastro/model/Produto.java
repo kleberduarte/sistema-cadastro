@@ -37,7 +37,7 @@ public class Produto {
     @Column(length = 50)
     private String categoria;
 
-    @Column(name = "codigo_produto", length = 50)
+    @Column(name = "codigo_produto", length = 50, unique = true)
     private String codigoProduto;
 
     @Column(length = 20)
