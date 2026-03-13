@@ -37,6 +37,12 @@ public class ProdutoController {
         return ResponseEntity.ok(produtoService.findById(id));
     }
 
+    @GetMapping("/codigo/{codigo}")
+    @PreAuthorize("hasAnyRole('ADM', 'VENDEDOR')")
+    public ResponseEntity<ProdutoResponse> findByCodigoProduto(@PathVariable String codigo) {
+        return ResponseEntity.ok(produtoService.findByCodigoProduto(codigo));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADM', 'VENDEDOR')")
     public ResponseEntity<ProdutoResponse> update(@PathVariable Long id, @Valid @RequestBody ProdutoRequest request) {

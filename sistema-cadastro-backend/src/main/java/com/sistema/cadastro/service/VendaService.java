@@ -2,6 +2,7 @@ package com.sistema.cadastro.service;
 
 import com.sistema.cadastro.dto.VendaRequest;
 import com.sistema.cadastro.dto.VendaResponse;
+import com.sistema.cadastro.dto.ParametroEmpresaDTO;
 import com.sistema.cadastro.model.Produto;
 import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.model.Venda;
@@ -27,6 +28,7 @@ public class VendaService {
     private final VendaRepository vendaRepository;
     private final UsuarioRepository usuarioRepository;
     private final ProdutoRepository produtoRepository;
+    private final ParametroEmpresaService parametroEmpresaService;
 
     @Transactional
     public VendaResponse criarVenda(VendaRequest request) {
@@ -89,7 +91,21 @@ public class VendaService {
         // Definir forma de pagamento e campos relacionados
         venda.setFormaPagamento(request.getFormaPagamento());
         venda.setParcelas(request.getParcelas());
-        venda.setChavePix(request.getChavePix());
+
+        String chavePixRequest = request.getChavePix() != null ? request.getChavePix().trim() : null;
+        String chavePixFinal = chavePixRequest;
+
+        if (chavePixFinal == null || chavePixFinal.isEmpty()) {
+            ParametroEmpresaDTO parametrosAtivos = parametroEmpresaService.getParametrosAtivos();
+            if (parametrosAtivos != null && parametrosAtivos.getChavePix() != null) {
+                String chavePixParametrizada = parametrosAtivos.getChavePix().trim();
+                if (!chavePixParametrizada.isEmpty()) {
+                    chavePixFinal = chavePixParametrizada;
+                }
+            }
+        }
+
+        venda.setChavePix(chavePixFinal);
         
         // Salvar
         Venda savedVenda = vendaRepository.save(venda);
