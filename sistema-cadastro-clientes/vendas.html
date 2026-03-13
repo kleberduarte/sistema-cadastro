@@ -27,7 +27,13 @@
                 <section class="search-section">
                     <h2>🔍 Buscar Produtos</h2>
                     <div class="search-box">
-<input type="text" id="searchInput" placeholder="Buscar por nome, categoria ou código produto...">
+                        <input type="text" id="searchInput" placeholder="Buscar por nome, categoria ou código produto...">
+                    </div>
+
+                    <h2 style="margin-top: 16px;">📷 Leitor de Código de Barras</h2>
+                    <div class="search-box" style="display: flex; gap: 8px;">
+                        <input type="text" id="barcodeInput" placeholder="Bipe ou digite o código e pressione Enter">
+                        <button class="btn btn-primary btn-small" type="button" onclick="handleBarcodeAdd()">Adicionar por Código</button>
                     </div>
                 </section>
 

@@ -6,6 +6,7 @@
 let products = [];
 let productIdToDelete = null;
 let editingProductId = null;
+let isProductCodeDuplicate = false;
 
 // Carregar produtos ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
@@ -21,6 +22,25 @@ function setupEventListeners() {
     const form = document.getElementById('productForm');
     form.addEventListener('submit', handleSubmit);
     
+    // Campo leitor de código de barras (scanner / teclado)
+    const barcodeInputProduct = document.getElementById('barcodeInputProduct');
+    if (barcodeInputProduct) {
+        barcodeInputProduct.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleProductBarcodeFill();
+            }
+        });
+    }
+    
+    // Validação imediata do código digitado manualmente
+    const productCodeInput = document.getElementById('productCode');
+    if (productCodeInput) {
+        productCodeInput.addEventListener('blur', async function() {
+            await validateProductCodeUniqueness(this.value);
+        });
+    }
+
     // Campo de busca
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', searchProducts);
@@ -56,6 +76,42 @@ function setupEventListeners() {
     });
 }
 
+// Normalizar código de barras (remove espaços/hífens)
+function normalizeBarcode(value) {
+    return String(value || '').replace(/\s+/g, '').replace(/-/g, '').trim();
+}
+
+// Preencher campo de código do produto a partir da leitura
+async function fillProductCodeFromBarcode(codigoLido) {
+    const codigo = normalizeBarcode(codigoLido);
+    if (!codigo) {
+        showAlert('Informe um código de barras válido', 'error');
+        return;
+    }
+
+    const productCodeInput = document.getElementById('productCode');
+    productCodeInput.value = codigo;
+    productCodeInput.focus();
+
+    const isValid = await validateProductCodeUniqueness(codigo);
+    if (!isValid) {
+        productCodeInput.value = '';
+        productCodeInput.focus();
+        return;
+    }
+
+    showAlert('Código de barras preenchido no campo de código do produto', 'success');
+}
+
+// Handler acionado por Enter ou botão
+async function handleProductBarcodeFill() {
+    const barcodeInputProduct = document.getElementById('barcodeInputProduct');
+    if (!barcodeInputProduct) return;
+
+    await fillProductCodeFromBarcode(barcodeInputProduct.value);
+    barcodeInputProduct.value = '';
+}
+
 // Carregar produtos da API
 async function loadProducts() {
     try {
@@ -77,6 +133,58 @@ async function loadProducts() {
         showAlert('Erro de conexão', 'error');
     }
     renderProducts();
+}
+
+// Validar código duplicado localmente e no backend
+async function validateProductCodeUniqueness(codigoInformado) {
+    const codigo = normalizeBarcode(codigoInformado);
+    const productCodeInput = document.getElementById('productCode');
+    const productCodeError = document.getElementById('productCodeError');
+
+    // limpar estado anterior
+    isProductCodeDuplicate = false;
+    if (productCodeInput) productCodeInput.classList.remove('error');
+    if (productCodeError) productCodeError.textContent = '';
+
+    if (!codigo) return true;
+
+    // 1) validação local (rápida)
+    const duplicateLocal = products.find(p =>
+        normalizeBarcode(p.codigoProduto) === codigo &&
+        (!editingProductId || p.id !== editingProductId)
+    );
+
+    if (duplicateLocal) {
+        isProductCodeDuplicate = true;
+        if (productCodeInput) productCodeInput.classList.add('error');
+        if (productCodeError) productCodeError.textContent = `Código já cadastrado para: ${duplicateLocal.nome}`;
+        showAlert(`Código já cadastrado para o produto "${duplicateLocal.nome}"`, 'error');
+        return false;
+    }
+
+    // 2) validação backend (fonte da verdade)
+    try {
+        const response = await fetch(`http://localhost:8080/api/produtos/codigo/${encodeURIComponent(codigo)}`, {
+            headers: {
+                'Authorization': 'Bearer ' + getToken()
+            }
+        });
+
+        if (response.ok) {
+            const produtoEncontrado = await response.json();
+            if (!editingProductId || produtoEncontrado.id !== editingProductId) {
+                isProductCodeDuplicate = true;
+                if (productCodeInput) productCodeInput.classList.add('error');
+                if (productCodeError) productCodeError.textContent = `Código já cadastrado para: ${produtoEncontrado.nome}`;
+                showAlert(`Código já cadastrado para o produto "${produtoEncontrado.nome}"`, 'error');
+                return false;
+            }
+        }
+    } catch (error) {
+        console.warn('Não foi possível validar código no backend neste momento:', error);
+    }
+
+    return true;
 }
 
 // Validar formulário
@@ -163,6 +271,12 @@ async function handleSubmit(e) {
         tipo: document.getElementById('tipo').value
     };
     
+    // Revalidar unicidade do código (digitado manualmente ou por leitor)
+    const codeIsUnique = await validateProductCodeUniqueness(formData.codigoProduto);
+    if (!codeIsUnique || isProductCodeDuplicate) {
+        return;
+    }
+
     // Validar formulário
     const errors = validateForm(formData);
     

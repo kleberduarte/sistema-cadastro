@@ -9,6 +9,7 @@ let sales = [];
 let currentDiscount = 0;
 let discountType = 'none';
 let partialPayments = []; // Array para armazenar pagamentos parciais
+let currentPixPayload = ''; // Armazena o payload do PIX "Copia e Cola"
 
 // Chave PIX da loja: pode vir dos parâmetros da empresa (config.js) ou cair em um padrão
 function getPixStoreKey() {
@@ -40,6 +41,17 @@ function setupEventListeners() {
     // Campo de busca
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', searchProducts);
+
+    // Campo de código de barras (scanner/teclado)
+    const barcodeInput = document.getElementById('barcodeInput');
+    if (barcodeInput) {
+        barcodeInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleBarcodeAdd();
+            }
+        });
+    }
 }
 
 // Carregar produtos da API
@@ -188,6 +200,59 @@ function renderProducts(productList = products) {
 }
 
 // Buscar produtos (por nome, categoria ou código EAN)
+function normalizeBarcode(value) {
+    return String(value || '').replace(/\s+/g, '').replace(/-/g, '').trim();
+}
+
+async function addProductByBarcode(codigoLido) {
+    const codigo = normalizeBarcode(codigoLido);
+
+    if (!codigo) {
+        showAlert('Informe um código de barras válido', 'error');
+        return;
+    }
+
+    let foundProduct = null;
+
+    // 1) Tenta backend por código
+    try {
+        const response = await fetch(`http://localhost:8080/api/produtos/codigo/${encodeURIComponent(codigo)}`, {
+            headers: {
+                'Authorization': 'Bearer ' + getToken()
+            }
+        });
+
+        if (response.ok) {
+            foundProduct = await response.json();
+        }
+    } catch (error) {
+        console.warn('Falha ao buscar produto por código na API, tentando fallback local.', error);
+    }
+
+    // 2) Fallback local
+    if (!foundProduct) {
+        foundProduct = products.find(p => normalizeBarcode(p.codigoProduto) === codigo);
+    }
+
+    if (!foundProduct) {
+        showAlert('Produto não encontrado para o código informado', 'error');
+        return;
+    }
+
+    addToCart(foundProduct.id);
+    showAlert(`Produto "${foundProduct.nome}" adicionado por código`, 'success');
+}
+
+function handleBarcodeAdd() {
+    const barcodeInput = document.getElementById('barcodeInput');
+    if (!barcodeInput) return;
+
+    const codigo = barcodeInput.value;
+    addProductByBarcode(codigo);
+    barcodeInput.value = '';
+    barcodeInput.focus();
+}
+
 function searchProducts() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
     
@@ -782,67 +847,90 @@ function updateParcelasInfo() {
     }
 }
 
-// Gerar QR Code PIX para a chave fixa da loja
+// Helper para formatar campos do BR Code (ID, Tamanho, Valor)
+function formatCopiaECola(id, value) {
+    const valueStr = String(value);
+    const len = valueStr.length.toString().padStart(2, '0');
+    return `${id}${len}${valueStr}`;
+}
+
+// Gerar QR Code PIX
 function generatePixQRCode(amountOverride = null) {
     const pixKey = getPixStoreKey();
     const total = amountOverride !== null ? amountOverride : getCartTotalWithDiscount();
     
     if (!pixKey) {
         showAlert('Chave PIX da loja não configurada', 'error');
-        return false;
+        return;
     }
 
-    if (!total || total <= 0) {
+    if (total === null || total <= 0) {
         showAlert('Valor PIX inválido para gerar QR Code', 'error');
-        return false;
+        return;
     }
     
-    // Limpar QR anterior
     const qrContainer = document.getElementById('pixQRCode');
     qrContainer.innerHTML = '<p>Gerando QR Code PIX...</p>';
     
-    // Dados do comerciante (ajuste com seus dados reais)
-    const merchant = {
-        pixKey: pixKey,      // Chave PIX da empresa
-        name: 'Loja PDV',           // Nome da loja
-        cnpj: '12345678000199',     // Seu CNPJ
-        city: 'SP'                  // Cidade
-    };
+    // Dados do comerciante. O nome pode vir dos parâmetros da empresa.
+    const merchantNameParam = (window.clientParams && window.clientParams.nomeEmpresa) ? window.clientParams.nomeEmpresa : 'Loja PDV';
+    // Normaliza o nome: remove acentos e caracteres especiais, limita a 25 chars.
+    const merchantName = merchantNameParam.normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
+    const merchantCity = 'SAO PAULO'; // Cidade com até 15 caracteres
+
+    // Monta o payload BR Code
+    let payload = '';
     
-    // Txid único (32 chars hex, baseado em timestamp + random)
-    const txid = Date.now().toString(16).padStart(16, '0') + Math.random().toString(16).slice(2, 18);
+    // ID 00: Payload Format Indicator
+    payload += formatCopiaECola('00', '01');
     
-    // Payload Pix v2.1 completo estático + dinâmico
-    const payload = 
-        '000201' +                          // Payload Format Indicator
-        '26360014BR.GOV.BCB.PIX01' +        // Pix Protocol + Version
-        pixKey.length.toString().padStart(2, '0') + pixKey +  // Pix Key (beneficiário)
-        '52040000' +                        // Merchant Category Code (geral)
-        '5303986' +                         // Transaction Amount? Wait MCC=00
-        '54' + total.toFixed(2).padStart(10, '0') +  // Transaction Amount (dynamic)
-        '5802BR' +                          // Country Code
-        '59' + merchant.name.length.toString().padStart(2, '0') + merchant.name +  // Merchant Name
-        '60' + merchant.city.length.toString().padStart(2, '0') + merchant.city +  // Merchant City
-        '61' + txid.length.toString().padStart(2, '0') + txid +  // TxId unique
-        '6304';                             // CRC16 (calculated client-side)
+    // ID 26: Merchant Account Information
+    const gui = formatCopiaECola('00', 'br.gov.bcb.pix');
+    const key = formatCopiaECola('01', pixKey);
+    payload += formatCopiaECola('26', gui + key);
     
-    // Calcular CRC16/MODBUS para Pix
+    // ID 52: Merchant Category Code (0000 para não especificado)
+    payload += formatCopiaECola('52', '0000');
+    
+    // ID 53: Transaction Currency (986 para BRL)
+    payload += formatCopiaECola('53', '986');
+    
+    // ID 54: Transaction Amount
+    payload += formatCopiaECola('54', total.toFixed(2));
+    
+    // ID 58: Country Code (BR)
+    payload += formatCopiaECola('58', 'BR');
+    
+    // ID 59: Merchant Name
+    payload += formatCopiaECola('59', merchantName);
+    
+    // ID 60: Merchant City
+    payload += formatCopiaECola('60', merchantCity);
+    
+    // ID 62: Additional Data Field (txid)
+    // Para um QR Code estático com valor, o txid '***' é suficiente.
+    const txidField = formatCopiaECola('05', '***');
+    payload += formatCopiaECola('62', txidField);
+    
+    // ID 63: CRC16 - Adiciona o campo e o tamanho
+    payload += '6304';
+    
+    // Calcula o CRC16 sobre o payload atual
     let crc = 0xFFFF;
     for (let i = 0; i < payload.length; i++) {
         crc ^= payload.charCodeAt(i) << 8;
         for (let j = 0; j < 8; j++) {
-            if (crc & 0x8000) {
-                crc = (crc << 1) ^ 0x1021;
-            } else {
-                crc <<= 1;
-            }
+            crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
             crc &= 0xFFFF;
         }
     }
     
-    const fullPayload = payload + crc.toString(16).toUpperCase().padStart(4, '0');
+    // Converte o CRC para hexadecimal e anexa ao payload
+    const crcString = crc.toString(16).toUpperCase().padStart(4, '0');
+    const fullPayload = payload + crcString;
+    currentPixPayload = fullPayload; // Armazena para o "Copia e Cola"
     
-    // Gerar QR usando biblioteca local (QRCode.js) para simplificar dependências
+    // Gera o QR Code
     qrContainer.innerHTML = '';
     const qrDiv = document.createElement('div');
     qrContainer.appendChild(qrDiv);
@@ -851,14 +939,14 @@ function generatePixQRCode(amountOverride = null) {
         new QRCode(qrDiv, {
             text: fullPayload,
             width: 200,
-            height: 200
+            height: 200,
+            correctLevel: QRCode.CorrectLevel.H // Aumenta a correção de erros
         });
         
-        // Info abaixo do QR
         const info = document.createElement('div');
         info.innerHTML = `
             <small>Total: ${total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</small><br>
-            <small>TxId: ${txid.slice(0,8)}...</small>
+            <small>Escaneie para pagar</small>
         `;
         info.style.fontSize = '0.8rem';
         info.style.color = '#666';
@@ -867,34 +955,22 @@ function generatePixQRCode(amountOverride = null) {
         document.getElementById('copyPixBtn').style.display = 'inline-block';
         showAlert('QR Code PIX gerado! Escaneie para pagar.', 'success');
     } catch (e) {
+        console.error("Erro ao gerar QRCode:", e);
         qrContainer.innerHTML = '<p style="color: red;">Erro ao gerar QR Code. Verifique a biblioteca QRCode.</p>';
         showAlert('Erro ao gerar QR Code. Tente novamente.', 'error');
     }
 }
 
-// Copiar payload PIX completo (para apps bancários)
+// Copiar o payload "Copia e Cola" do PIX
 function copyPixKey() {
-    const pixKey = document.getElementById('pixKey').value;
-    const totalStr = getCartTotalWithDiscount().toFixed(2);
-    const payload = `PIX${pixKey}*Total:${totalStr}`;  // Formato app compatível
-    
-    navigator.clipboard.writeText(payload).then(() => {
-        showAlert('Payload PIX copiado! Cole no app bancário.', 'success');
-    }).catch(() => {
-        showAlert('Erro ao copiar. Copie manualmente a chave.', 'error');
-    });
-}
-
-// Copiar chave PIX fixa da empresa
-function copyPixKey() {
-    const pixKey = getPixStoreKey();
-    
-    if (pixKey) {
-        navigator.clipboard.writeText(pixKey).then(() => {
-            showAlert('Chave PIX da loja copiada!', 'success');
+    if (currentPixPayload) {
+        navigator.clipboard.writeText(currentPixPayload).then(() => {
+            showAlert('PIX Copia e Cola copiado!', 'success');
         }).catch(() => {
-            showAlert('Erro ao copiar chave PIX', 'error');
+            showAlert('Erro ao copiar. Tente novamente.', 'error');
         });
+    } else {
+        showAlert('Gere um QR Code PIX primeiro.', 'error');
     }
 }
 
@@ -1396,4 +1472,3 @@ function getCartTotalWithDiscount() {
     });
     return Math.max(0, subtotal - currentDiscount);
 }
-
