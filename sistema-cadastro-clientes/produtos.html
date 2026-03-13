@@ -25,6 +25,14 @@
             <section class="form-section">
                 <h2>📝 Novo Produto</h2>
                 <form id="productForm">
+                    <div class="form-group">
+                        <label for="barcodeInputProduct">📷 Leitor de Código de Barras:</label>
+                        <div class="search-box" style="display: flex; gap: 8px;">
+                            <input type="text" id="barcodeInputProduct" placeholder="Bipe ou digite o código e pressione Enter">
+                            <button type="button" class="btn btn-primary btn-small" onclick="handleProductBarcodeFill()">Preencher Código</button>
+                        </div>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="productCode">Código do Produto:</label>
