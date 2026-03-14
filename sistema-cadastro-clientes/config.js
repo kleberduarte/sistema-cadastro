@@ -29,6 +29,52 @@ function getClienteId() {
     return CLIENTE_ID;
 }
 
+/**
+ * Grava uma ação do usuário no log do sistema de forma assíncrona.
+ * Implementado como "fire and forget" para não impactar a performance.
+ */
+function logAction(acao, detalhes = {}) {
+    const now = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    // Formato ISO local sem o 'Z' para não forçar conversão para UTC
+    const localTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    
+    const logEntry = {
+        timestamp: localTime,
+        usuario: localStorage.getItem('username') || 'Desconhecido',
+        acao: acao,
+        detalhes: detalhes,
+        url: window.location.href,
+        userAgent: navigator.userAgent
+    };
+
+    // Log estilizado no console para facilitar a depuração
+    const color = acao.includes('ERROR') ? 'color: red; font-weight: bold' : 'color: #2196F3; font-weight: bold';
+    console.groupCollapsed(`%c[SYSTEM-LOG] ${acao}`, color);
+    console.log('Horário:', logEntry.timestamp);
+    console.log('Usuário:', logEntry.usuario);
+    console.log('Detalhes:', detalhes);
+    console.log('URL:', logEntry.url);
+    console.groupEnd();
+
+    // Envio assíncrono para o backend
+    fetch('http://localhost:8080/api/logs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('authToken') || localStorage.getItem('token') || '')
+        },
+        body: JSON.stringify(logEntry)
+    })
+    .then(response => {
+        if (!response.ok) console.warn(`%c[LOG-SERVER] Erro ao salvar no banco: ${response.status}`, 'color: orange');
+        else console.log('%c[LOG-SERVER] Gravado no servidor ✓', 'color: green; font-size: 8pt');
+    })
+    .catch(err => {
+        console.warn('%c[LOG-SERVER] Servidor de logs offline', 'color: orange; font-size: 8pt');
+    });
+}
+
 // Cache dos parâmetros do cliente
 let clientParams = null;
 

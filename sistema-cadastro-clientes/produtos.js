@@ -304,6 +304,7 @@ async function handleSubmit(e) {
                 await loadProducts();
                 cancelEdit();
                 showAlert('Produto atualizado com sucesso!', 'success');
+                logAction('PRODUCT_UPDATE_SUCCESS', { id: editingProductId, nome: formData.nome });
             } else {
                 const errorData = await response.json();
                 showAlert(errorData.message || 'Erro ao atualizar produto', 'error');
@@ -323,6 +324,7 @@ async function handleSubmit(e) {
                 await loadProducts();
                 form.reset();
                 showAlert('Produto cadastrado com sucesso!', 'success');
+                logAction('PRODUCT_CREATE_SUCCESS', { nome: formData.nome, codigo: formData.codigoProduto });
             } else {
                 const errorData = await response.json();
                 showAlert(errorData.message || 'Erro ao cadastrar produto', 'error');
@@ -444,6 +446,7 @@ async function confirmDelete() {
                 renderProducts();
                 closeModal();
                 showAlert('Produto excluído com sucesso!', 'success');
+                logAction('PRODUCT_DELETE_SUCCESS', { id: productIdToDelete });
             } else {
                 showAlert('Erro ao excluir produto', 'error');
             }
@@ -546,4 +549,3 @@ function resetForm() {
         cancelEdit();
     }
 }
-

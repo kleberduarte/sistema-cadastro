@@ -11,6 +11,10 @@ let discountType = 'none';
 let partialPayments = []; // Array para armazenar pagamentos parciais
 let currentPixPayload = ''; // Armazena o payload do PIX "Copia e Cola"
 
+// Chaves do LocalStorage
+const CURRENT_USER_KEY_LOCAL = 'currentUser';
+const AUTH_TOKEN_KEY_LOCAL = 'authToken';
+
 // Chave PIX da loja: pode vir dos parâmetros da empresa (config.js) ou cair em um padrão
 function getPixStoreKey() {
     if (window.PIX_STORE_KEY && typeof window.PIX_STORE_KEY === 'string') {
@@ -247,6 +251,7 @@ async function addProductByBarcode(codigoLido) {
     }
 
     addToCart(foundProduct.id);
+    logAction('PDV_ADD_BARCODE', { codigo: codigo, produto: foundProduct.nome });
     showAlert(`Produto "${foundProduct.nome}" adicionado por código`, 'success');
 }
 
@@ -427,6 +432,7 @@ function clearCart() {
     }
     
     if (confirm('Tem certeza que deseja limpar o carrinho?')) {
+        logAction('PDV_CART_CLEAR', { itemsCount: cart.length });
         cart = [];
         // Resetar desconto
         currentDiscount = 0;
@@ -986,6 +992,12 @@ async function processPayment() {
     const method = document.querySelector('input[name="paymentMethod"]:checked').value;
     const total = getCartTotalWithDiscount();
     
+    // Gerar data local exata no formato ISO (YYYY-MM-DDTHH:mm:ss) para o backend
+    const nowLocal = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    // Usar 'T' para que o Jackson no Java reconheça como LocalDateTime automaticamente
+    const localISOTime = `${nowLocal.getFullYear()}-${pad(nowLocal.getMonth() + 1)}-${pad(nowLocal.getDate())}T${pad(nowLocal.getHours())}:${pad(nowLocal.getMinutes())}:${pad(nowLocal.getSeconds())}`;
+
     // Validações específicas por método
     const cashInputNow = parseCurrency(document.getElementById('cashReceived').value);
     const totalDinheiroParcialAtual = partialPayments
@@ -1008,7 +1020,7 @@ async function processPayment() {
     }
     
     // Obter dados do usuário
-    const currentUser = localStorage.getItem(CURRENT_USER_KEY);
+    const currentUser = localStorage.getItem(CURRENT_USER_KEY_LOCAL);
     const user = currentUser ? JSON.parse(currentUser) : { username: 'Operador', id: null };
     
     // Calcular subtotal
@@ -1079,13 +1091,14 @@ async function processPayment() {
         parcelas: method === 'CREDITO' ? parcelas : null,
         chavePix: chavePix,
         valorRecebido: valorRecebido,
-        troco: valorRecebido !== null ? troco : null
+        troco: valorRecebido !== null ? troco : null,
+        dataVenda: localISOTime
     };
     
     // Criar registro de venda local (para fallback)
     const sale = {
         id: Date.now(),
-        date: new Date().toISOString(),
+        date: localISOTime,
         operator: user.username,
         items: cart.map(item => ({
             productId: item.productId,
@@ -1105,6 +1118,7 @@ async function processPayment() {
     };
     
     // Fechar modal de pagamento
+    logAction('PDV_SALE_START', { method, total });
     closePaymentModal();
     
     // Salvar venda na API
@@ -1123,9 +1137,11 @@ async function processPayment() {
             sale.id = vendaResponse.id;
             sale.date = vendaResponse.dataVenda;
             showAlert('Venda salva com sucesso!', 'success');
+            logAction('PDV_SALE_SUCCESS', { saleId: sale.id });
         } else {
             console.error('Erro ao salvar venda na API, salvando localmente');
             showAlert('Erro ao salvar na API. Venda salva localmente.', 'warning');
+            logAction('PDV_SALE_API_ERROR', { status: response.status });
         }
     } catch (error) {
         console.error('Erro ao salvar venda na API:', error);
@@ -1261,6 +1277,7 @@ function closeReceiptModal() {
 // Imprimir comprovante
 function printReceipt() {
     window.print();
+    logAction('PDV_RECEIPT_PRINTED');
     // Fecha o modal automaticamente após a impressão para agilizar a próxima venda
     closeReceiptModal();
 }
@@ -1531,6 +1548,7 @@ function applyDiscount() {
     
     updateCartTotal();
     showAlert('Desconto aplicado!', 'success');
+    logAction('PDV_DISCOUNT_APPLIED', { type: discountType, value: discountValue, amount: currentDiscount });
 }
 
 // Remover desconto
@@ -1541,6 +1559,7 @@ function removeDiscount() {
     document.getElementById('discountInfo').style.display = 'none';
     currentDiscount = 0;
     discountType = 'none';
+    logAction('PDV_DISCOUNT_REMOVED');
     updateCartTotal();
 }
 
