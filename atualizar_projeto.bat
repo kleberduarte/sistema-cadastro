@@ -20,7 +20,7 @@ if exist "sistema-cadastro-clientes" (
     git diff --staged --quiet
     if !errorlevel! neq 0 (
         echo [INFO] Alteracoes encontradas no Frontend. Criando commit...
-        git commit -m "Feat: Foco automatico no input de codigo de barras ao carregar vendas"
+        git commit -m "Feat: Implementação de recibo térmico 80mm e automação de foco no PDV"
     ) else (
         echo [INFO] Frontend: Nenhuma alteracao nova para commitar. A mudanca pode ja estar no historico ou o arquivo esta sendo ignorado.
     )
@@ -33,7 +33,7 @@ if exist "sistema-cadastro-clientes" (
     rem Atualiza Main
     git checkout main
     git pull origin main
-    git merge --no-ff develop -m "Release: Melhorias de UX no PDV (Auto-focus)"
+    git merge --no-ff develop -m "Release: Impressão térmica profissional e melhorias de fluxo no PDV"
     git push origin main
     
     rem Volta para Develop
