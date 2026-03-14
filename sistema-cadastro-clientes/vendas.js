@@ -34,6 +34,12 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProducts();
     loadTodaySales();  // Carrega vendas de hoje da API
     setupEventListeners();
+
+    // Focar automaticamente no campo de código de barras ao carregar a página
+    const barcodeInput = document.getElementById('barcodeInput');
+    if (barcodeInput) {
+        barcodeInput.focus();
+    }
 });
 
 // Configurar event listeners
