@@ -1,0 +1,19 @@
+# Arquivos de compilação do Java / Maven
+/sistema-cadastro-backend/target/
+
+# Arquivos de configuração de IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Arquivos de log
+*.log
+*.log.*
+
+# Logs de erro da VM (Máquina Virtual)
+hs_err_pid*
