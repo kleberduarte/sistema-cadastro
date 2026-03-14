@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     displayUserName();
     setupMenuByRole();
     clearOldLocalStorage(); // Limpar dados antigos do localStorage
+    injectPrintStyles(); // Prepara estilos para impressão em impressora térmica
     loadProducts();
     loadTodaySales();  // Carrega vendas de hoje da API
     setupEventListeners();
@@ -1206,10 +1207,10 @@ function showReceipt(sale) {
         receiptTotal.innerHTML = `
             <div class="receipt-subtotal">Subtotal: ${sale.subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
             <div class="receipt-discount">Desconto: -${sale.discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
-            <div class="receipt-total-final"><strong>TOTAL:</strong> ${sale.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+            <div class="receipt-total-final"><strong>${sale.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong></div>
         `;
     } else {
-        receiptTotal.innerHTML = `<strong>TOTAL:</strong> ${sale.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+        receiptTotal.innerHTML = `<strong>${sale.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>`;
     }
     
     const paymentMethodMap = {
@@ -1250,11 +1251,103 @@ function showReceipt(sale) {
 // Fechar modal do comprovante
 function closeReceiptModal() {
     document.getElementById('receiptModal').classList.remove('show');
+    // Retorna o foco para o campo de código de barras para a próxima venda
+    const barcodeInput = document.getElementById('barcodeInput');
+    if (barcodeInput) {
+        barcodeInput.focus();
+    }
 }
 
 // Imprimir comprovante
 function printReceipt() {
     window.print();
+    // Fecha o modal automaticamente após a impressão para agilizar a próxima venda
+    closeReceiptModal();
+}
+
+/**
+ * Injeta estilos CSS específicos para garantir que o comprovante 
+ * seja impresso corretamente em impressoras térmicas (80mm).
+ */
+function injectPrintStyles() {
+    const style = document.createElement('style');
+    style.id = 'thermal-print-styles';
+    style.textContent = `
+        @page {
+            margin: 0;
+            size: auto;
+        }
+        @media print {
+            /* Ocultar elementos da interface que não devem sair no papel */
+            body * { visibility: hidden; }
+            header, main, footer, .modal-header, .modal-footer, button, .no-print, .btn-close, .modal-buttons { 
+                display: none !important; 
+            }
+            
+            body {
+                background: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Posicionar o modal de recibo para impressão */
+            #receiptModal, #receiptModal * { 
+                visibility: visible; 
+            }
+            #receiptModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            
+            /* Formatação estilo cupom PDV */
+            .modal-content, .receipt, #receiptModal .modal-content {
+                border: none !important;
+                width: 72mm !important;
+                max-width: 72mm !important;
+                margin: 0 auto !important;
+                padding: 2mm !important;
+                font-family: 'Courier New', Courier, monospace !important;
+                font-size: 9pt !important;
+                line-height: 1.2 !important;
+                color: #000 !important;
+                box-shadow: none !important;
+                background: white !important;
+            }
+            
+            table { 
+                width: 100% !important; 
+                border-collapse: collapse !important; 
+            }
+            th, td { 
+                text-align: left; 
+                padding: 3px 0; 
+                border-bottom: 1px dashed #ccc; 
+            }
+            
+            /* Evita que os títulos e valores quebrem linha */
+            th { white-space: nowrap; }
+            
+            /* Alinha colunas numéricas à direita e impede quebra */
+            th:nth-child(2), td:nth-child(2),
+            th:nth-child(3), td:nth-child(3),
+            th:nth-child(4), td:nth-child(4) {
+                text-align: right;
+                white-space: nowrap;
+                padding-left: 5px;
+            }
+
+            /* Coluna do nome do produto pode ocupar o resto do espaço */
+            th:nth-child(1), td:nth-child(1) { 
+                width: auto; 
+                word-wrap: break-word;
+            }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // Renderizar vendas de hoje
