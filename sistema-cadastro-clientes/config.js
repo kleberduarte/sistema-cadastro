@@ -148,7 +148,7 @@ function applyClientStyles(params) {
             }
         }
         if (logoContainer) {
-            logoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-height: 50px; margin-right: 15px;">`;
+            logoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-height: 50px; margin-right: 15px;" onerror="this.style.display='none';">`;
             console.log('Logo adicionado ao header');
         }
 
@@ -163,7 +163,7 @@ function applyClientStyles(params) {
             }
         }
         if (loginLogoContainer) {
-            loginLogoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-width: 150px; margin-bottom: 20px;">`;
+            loginLogoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-width: 150px; margin-bottom: 20px;" onerror="this.src='https://via.placeholder.com/150x50?text=Logo+Missing';">`;
             console.log('Logo adicionado ao login');
         }
     } else {
@@ -388,4 +388,3 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 } else {
     window.addEventListener('DOMContentLoaded', loadClientParams);
 }
-
