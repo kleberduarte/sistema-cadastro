@@ -1,16 +1,15 @@
 @echo off
+chcp 65001 >nul
+set LESSCHARSET=utf-8
 echo ==========================================
 echo   VERIFICACAO DE STATUS DO PROJETO
 echo ==========================================
 echo.
 
 if exist "sistema-cadastro-clientes" (
-    echo [FRONTEND] Sistema de Clientes
-    cd sistema-cadastro-clientes
-    echo   Posicionamento das Branches (Local e Remoto):
-    git log --all --decorate --oneline --graph -n 5
-    echo.
-    cd ..
+    pushd "sistema-cadastro-clientes"
+    call :ShowGitLog "[FRONTEND] Sistema de Clientes"
+    popd
 )
 
 echo.
@@ -18,14 +17,19 @@ echo ------------------------------------------
 echo.
 
 if exist "sistema-cadastro-backend" (
-    echo [BACKEND] Sistema Backend
-    cd sistema-cadastro-backend
-    echo   Posicionamento das Branches (Local e Remoto):
-    git log --all --decorate --oneline --graph -n 5
-    echo.
-    cd ..
+    pushd "sistema-cadastro-backend"
+    call :ShowGitLog "[BACKEND] Sistema Backend"
+    popd
 )
 
 echo.
 echo ==========================================
 pause
+exit /b
+
+:ShowGitLog
+echo %~1
+echo   Posicionamento das Branches (Local e Remoto):
+git --no-pager log --all --decorate --oneline -n 5
+echo.
+exit /b
