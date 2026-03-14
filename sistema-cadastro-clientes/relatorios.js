@@ -176,8 +176,16 @@ function applyFilter() {
     
     // Filtrar vendas - comparar apenas a data (ignorando horário e fuso horário)
     filteredSales = sales.filter(sale => {
-        // Converter a data da venda para data local usando o construtor Date
-        const saleDateStr = sale.date.split('T')[0];
+        if (!sale.date) return false;
+        // Criar objeto Date para garantir a conversão correta do fuso horário
+        // Aceita formatos com espaço ou com 'T'
+        const dateString = sale.date.includes(' ') ? sale.date.replace(' ', 'T') : sale.date;
+        const sDate = new Date(dateString);
+        const sYear = sDate.getFullYear();
+        const sMonth = String(sDate.getMonth() + 1).padStart(2, '0');
+        const sDay = String(sDate.getDate()).padStart(2, '0');
+        const saleDateStr = `${sYear}-${sMonth}-${sDay}`;
+
         const startDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
         const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
         
@@ -459,4 +467,3 @@ function exportToCSV() {
     
     showAlert('Relatório exportado com sucesso!', 'success');
 }
-

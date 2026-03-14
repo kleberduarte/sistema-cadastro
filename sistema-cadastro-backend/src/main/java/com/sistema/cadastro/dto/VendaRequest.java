@@ -31,6 +31,12 @@ public class VendaRequest {
 
     private String chavePix;
     
+    private String dataVenda;
+
+    private BigDecimal valorRecebido;
+
+    private BigDecimal troco;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -47,4 +53,3 @@ public class VendaRequest {
         private BigDecimal subtotal;
     }
 }
-

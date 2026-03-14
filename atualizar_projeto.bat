@@ -20,7 +20,7 @@ if exist "sistema-cadastro-clientes" (
     git diff --staged --quiet
     if !errorlevel! neq 0 (
         echo [INFO] Alteracoes encontradas no Frontend. Criando commit...
-        git commit -m "Feat: Implementação de recibo térmico 80mm e automação de foco no PDV"
+        git commit -m "Fix: Corrige gravação de vendas e sincronização de fuso horário"
     ) else (
         echo [INFO] Frontend: Nenhuma alteracao nova para commitar. A mudanca pode ja estar no historico ou o arquivo esta sendo ignorado.
     )
@@ -33,7 +33,7 @@ if exist "sistema-cadastro-clientes" (
     rem Atualiza Main
     git checkout main
     git pull origin main
-    git merge --no-ff develop -m "Release: Impressão térmica profissional e melhorias de fluxo no PDV"
+    git merge --no-ff develop -m "Release: Correção de gravação de vendas e fuso horário"
     git push origin main
     
     rem Volta para Develop
@@ -50,7 +50,7 @@ if exist "sistema-cadastro-backend" (
     git diff --staged --quiet
     if !errorlevel! neq 0 (
         echo [INFO] Alteracoes encontradas no Backend. Criando commit...
-        git commit -m "Chore: Sincronizacao de projeto"
+        git commit -m "Feat: Adiciona endpoint de logs e ajusta fuso horário"
     ) else (
         echo [INFO] Backend: Nenhuma alteracao nova para commitar.
     )
@@ -61,7 +61,7 @@ if exist "sistema-cadastro-backend" (
     
     git checkout main
     git pull origin main
-    git merge --no-ff develop -m "Release: Backend Sincronizado"
+    git merge --no-ff develop -m "Release: Endpoint de logs e correções de fuso horário"
     git push origin main
     
     git checkout develop
