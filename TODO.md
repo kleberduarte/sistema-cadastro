@@ -1,31 +1,16 @@
-# TODO - Implementação de Formas de Pagamento no PDV
+# TODO - Recurso de Leitor de Código de Barras
 
-## Tarefas
+## PDV (vendas)
+- [x] Backend: adicionar busca por código do produto no repositório
+- [x] Backend: adicionar serviço para buscar produto por código
+- [x] Backend: adicionar endpoint GET /api/produtos/codigo/{codigo}
+- [x] Frontend: adicionar UI de leitura de código em vendas.html
+- [x] Frontend: adicionar lógica de leitura/manual + Enter em vendas.js
+- [x] Frontend: integrar adição ao carrinho por código
+- [x] Testar fluxo crítico sem leitor físico (confirmado pelo usuário)
 
-### Backend
-- [ ] Testar backend
-- [x] Start project: Run backend successfully
-
-### Frontend
-- [ ] Testar fluxo completo
-- [x] ✅ Gerar QRCode PIX ao selecionar PIX na tela de pagamento
-- [x] ✅ Corrigido bug: Confirmar pagamento PIX sem pedir chave novamente
-- [x] Ajustar tela de parâmetros para usar chave PIX default quando campo estiver vazio
-- [x] Corrigir valor do QRCode PIX em pagamento parcial (usar apenas valor restante)
-- [ ] Incluir no comprovante: forma de pagamento, valor recebido em dinheiro e troco
-- [ ] Exibir troco em tempo real na tela de pagamento (dinheiro)
-
-## Progresso
-- [x] Plano aprovado
-- [x] Novo ajuste solicitado: permitir cadastro de chave PIX com opção default do sistema em Parâmetros
-- [x] Backend: Atualizar entidade Venda
-- [x] Backend: Atualizar VendaRequest DTO
-- [x] Backend: Atualizar VendaResponse DTO
-- [x] Backend: Atualizar VendaService
-- [x] Frontend: Adicionar modal de pagamento em vendas.html
-- [x] Frontend: Adicionar QRCode.js via CDN
-- [x] Frontend: Atualizar vendas.js (lógica + QRCode PIX + bug fix fluxo PIX)
-- [x] Frontend: Atualizar styles.css (estilos do modal)
-- [x] Frontend: Corrigir vendas.js para gerar QR PIX com valor restante em pagamentos parciais
-
-**Fluxo PIX OK:** Selecione PIX → digite chave → QR gerado → botão Confirmar habilitado diretamente → venda salva!
+## Cadastro de Produto
+- [x] Frontend: adicionar UI de leitor em produtos.html
+- [x] Frontend: adicionar lógica de preenchimento por código em produtos.js
+- [x] Frontend: manter cadastro manual e validações existentes
+- [x] Testar fluxo crítico sem leitor físico (digitação + Enter/botão)
