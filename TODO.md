@@ -34,4 +34,8 @@
 - [x] Script `verificar_conteudo.bat` para validação de integridade do código
 - [x] Script `verificar_status.bat` com visão gráfica do histórico Git
 - [x] Monitoramento: Implementar sistema de logs de passos do usuário (Frontend e Backend)
-- [x] Monitoramento: Implementar sistema de logs de passos do usuário (Frontend pronto)
+
+## Backlog / Próximos Passos
+- [ ] UI: Adicionar logotipo da empresa no topo do comprovante térmico
+- [ ] UX: Implementar atalhos de teclado (ex: F10 para finalizar venda)
+- [ ] Fiscal: Pesquisa e arquitetura para NFC-e / SAT (Aplicação Ponte)

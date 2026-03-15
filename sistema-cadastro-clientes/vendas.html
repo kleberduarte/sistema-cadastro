@@ -3,272 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDV - Ponto de Venda</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>PDV - Frente de Caixa</title>
+    <link rel="stylesheet" href="pdv.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>💰 PDV - Ponto de Venda</h1>
-                <div class="user-menu">
-                    <button class="btn btn-secondary btn-small" onclick="window.location.href='index.html'">🏠 Início</button>
-                    <button class="btn btn-secondary btn-small menu-item-admin" onclick="window.location.href='produtos.html'">📦 Produtos</button>
-                    <button class="btn btn-secondary btn-small menu-item-admin" onclick="window.location.href='usuarios.html'">👥 Usuários</button>
-                    <button class="btn btn-secondary btn-small" onclick="logout()">🚪 Sair</button>
-                    <span id="userDisplay">Olá, Usuário</span>
-                </div>
+    <div class="pdv-container">
+        <header class="pdv-header">
+            <div class="status-caixa">CAIXA LIVRE</div>
+            <div class="operador-info">
+                <span>Operador: <b id="pdv-operator-name">Nome do Operador</b></span>
             </div>
         </header>
 
         <main class="pdv-main">
-            <!-- Área de Produtos -->
-            <div class="pdv-products-section">
-                <section class="search-section">
-                    <h2>🔍 Buscar Produtos</h2>
-                    <div class="search-box">
-                        <input type="text" id="searchInput" placeholder="Buscar por nome, categoria ou código produto...">
-                    </div>
-
-                    <h2 style="margin-top: 16px;">📷 Leitor de Código de Barras</h2>
-                    <div class="search-box" style="display: flex; gap: 8px;">
-                        <input type="text" id="barcodeInput" placeholder="Bipe ou digite o código e pressione Enter">
-                        <button class="btn btn-primary btn-small" type="button" onclick="handleBarcodeAdd()">Adicionar por Código</button>
-                    </div>
-                </section>
-
-                <section class="products-grid-section">
-                    <h2>📋 Produtos Disponíveis <span id="productCount">(0)</span></h2>
-                    <div id="productsGrid" class="products-grid">
-                        <!-- Produtos serão inseridos aqui via JavaScript -->
-                    </div>
-                    <div id="noProductsMessage" class="no-data">
-                        Nenhum produto disponível no momento.
-                    </div>
-                </section>
-            </div>
-
-            <!-- Área do Carrinho -->
-            <div class="pdv-cart-section">
-                <section class="cart-section">
-                    <h2>🛒 Carrinho de Compras</h2>
-                    <div id="cartItems" class="cart-items">
-                        <!-- Itens do carrinho serão inseridos aqui -->
-                        <div class="cart-empty">
-                            <p>Seu carrinho está vazio</p>
-                            <p>Clique em um produto para adicionar</p>
-                        </div>
-                    </div>
-                    
-                    <div class="cart-summary">
-                        <div class="discount-section">
-                            <label for="discountType">Desconto:</label>
-                            <select id="discountType" onchange="toggleDiscountInput()">
-                                <option value="none">Sem desconto</option>
-                                <option value="percent">Porcentagem (%)</option>
-                                <option value="value">Valor fixo (R$)</option>
-                            </select>
-                            <input type="number" id="discountValue" placeholder="0" min="0" step="0.01" style="display: none;">
-                            <button class="btn btn-small btn-secondary" onclick="applyDiscount()">Aplicar</button>
-                        </div>
-                        <div class="discount-info" id="discountInfo" style="display: none;">
-                            <span>Desconto: </span>
-                            <span id="discountAmount">- R$ 0,00</span>
-                            <button class="btn-remove" onclick="removeDiscount()">🗑️</button>
-                        </div>
-                        <div class="cart-total">
-                            <span>Total:</span>
-                            <span id="cartTotal">R$ 0,00</span>
-                        </div>
-                        <div class="cart-actions">
-                            <button class="btn btn-secondary" onclick="clearCart()">🗑️ Limpar Carrinho</button>
-                            <button class="btn btn-primary" onclick="finalizeSale()">💵 Finalizar Venda</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Histórico de Vendas do Dia -->
-                <section class="history-section">
-                    <h2>📊 Vendas de Hoje <span id="todaySalesCount">(0)</span></h2>
-                    <div id="todaySales" class="today-sales">
-                        <!-- Vendas do dia serão inseridas aqui -->
-                    </div>
-                    <div class="today-total">
-                        <span>Total do Dia:</span>
-                        <span id="todayTotal">R$ 0,00</span>
-                    </div>
-                </section>
-            </div>
-        </main>
-
-        <footer>
-            <p>© 2024 Sistema de Cadastro - PDV</p>
-        </footer>
-    </div>
-
-    <!-- Modal de Comprovante -->
-    <div id="receiptModal" class="modal">
-        <div class="modal-content receipt-content">
-            <div class="receipt">
-                <h3>🧾 COMPROVANTE DE VENDA</h3>
-                <div class="receipt-info">
-                    <p><strong>Data:</strong> <span id="receiptDate"></span></p>
-                    <p><strong>Hora:</strong> <span id="receiptTime"></span></p>
-                    <p><strong>Operador:</strong> <span id="receiptOperator"></span></p>
+            <!-- Seção Esquerda: Comandos e Inputs -->
+            <section class="pdv-left">
+                <div class="logo-empresa">
+                    <!-- O logo será inserido aqui pelo config.js -->
                 </div>
-                <div class="receipt-items">
-                    <table>
+
+                <div class="input-group">
+                    <label for="pdv-barcode">CÓDIGO DE BARRAS</label>
+                    <input type="text" id="pdv-barcode" placeholder="Leia o código ou pressione F8 para pesquisar">
+                </div>
+
+                <div class="info-display">
+                    <div class="info-box">
+                        <label>VALOR UNITÁRIO</label>
+                        <span id="pdv-unit-price">R$ 0,00</span>
+                    </div>
+                    <div class="info-box">
+                        <label>QUANTIDADE</label>
+                        <span id="pdv-quantity">0</span>
+                    </div>
+                    <div class="info-box total-item">
+                        <label>TOTAL DO ITEM</label>
+                        <span id="pdv-item-total">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <div class="discount-section">
+                    <label>DESCONTO</label>
+                    <div class="input-group-addon">
+                        <select id="discountType">
+                            <option value="none">Nenhum</option>
+                            <option value="percent">%</option>
+                            <option value="fixed">R$</option>
+                        </select>
+                        <input type="text" id="discountValue" placeholder="Valor" style="display: none;">
+                        <button id="applyDiscountBtn" title="Aplicar Desconto" style="display: none;">✓</button>
+                    </div>
+                </div>
+
+                <div class="left-footer">
+                    <label for="pdv-order-code">CÓDIGO / DIGITE O PEDIDO</label>
+                    <input type="text" id="pdv-order-code" placeholder="Use F3 para pesquisar o pedido">
+                </div>
+            </section>
+
+            <!-- Seção Direita: Cupom Fiscal e Totais -->
+            <section class="pdv-right">
+                <div class="cupom-header">
+                    <h3>CUPOM FISCAL</h3>
+                </div>
+                <div class="item-list-container">
+                    <table id="pdv-item-list">
                         <thead>
                             <tr>
-                                <th>Produto</th>
-                                <th>Qtd</th>
-                                <th>Valor</th>
-                                <th>Subtotal</th>
+                                <th>Item</th>
+                                <th>Código</th>
+                                <th>Descrição</th>
+                                <th>Qtd.</th>
+                                <th>Vl. Unit.</th>
+                                <th>Total</th>
+                                <th>Ação</th>
                             </tr>
                         </thead>
-                        <tbody id="receiptItems">
+                        <tbody id="pdv-item-list-body">
+                            <!-- Itens do carrinho serão inseridos aqui -->
+                            <tr class="placeholder-row">
+                                <td colspan="7">Aguardando itens...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
-                <div class="receipt-total">
-                    <p><strong>TOTAL:</strong> <span id="receiptTotal"></span></p>
-                </div>
-                <div class="receipt-payment">
-                    <p><strong>Forma de Pagamento:</strong> <span id="receiptPaymentMethod"></span></p>
-                    <p id="receiptCashReceivedRow" style="display: none;"><strong>Valor Recebido:</strong> <span id="receiptCashReceived"></span></p>
-                    <p id="receiptChangeRow" style="display: none;"><strong>Troco:</strong> <span id="receiptChange"></span></p>
-                </div>
-                <div class="receipt-footer">
-                    <p>Obrigado pela preferência!</p>
-                    <p>Volte sempre!</p>
-                </div>
+                <footer class="right-footer">
+                    <div class="total-box">
+                        <label>SUBTOTAL</label>
+                        <span id="pdv-subtotal">R$ 0,00</span>
+                    </div>
+                    <div id="discount-display" class="total-box discount" style="display: none;">
+                        <label>DESCONTO</label>
+                        <span id="pdv-discount">R$ 0,00</span>
+                    </div>
+                    <div class="total-box total-final">
+                        <label>TOTAL</label>
+                        <span id="pdv-total">R$ 0,00</span>
+                    </div>
+                </footer>
+            </section>
+        </main>
+
+        <!-- Rodapé com os atalhos -->
+        <footer class="pdv-shortcuts">
+            <div><span><b>F2</b>-Cód.Interno</span> <span><b>F3</b>-Pesq.Pedido</span> <span><b>F4</b>-Qtd</span> <span><b>F5</b>-Nova Venda</span> <span><b>F7</b>-Pesq.Venda</span> <span><b>F8</b>-Pesq.Produto</span></div>
+            <div><span><b>F9</b>-Alt.Venda</span> <span><b>F10</b>-Finalizar</span> <span><b>F11</b>-Excluir Venda</span> <span><b>F12</b>-Indicar Cliente</span> <span><b>Ctrl+D</b>-CPF</span> <span><b>P</b>-Imprimir</span> <span><b>Esc</b>-Sair</span></div>
+        </footer>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- ========================== MODAIS =============================== -->
+    <!-- ================================================================= -->
+
+    <!-- Modal de Pesquisa de Produto (F8) -->
+    <div id="productSearchModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Pesquisar Produto (F8)</h2>
+                <span class="close-button" onclick="closeModal('productSearchModal')">&times;</span>
             </div>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="printReceipt()">🖨️ Imprimir</button>
-                <button class="btn btn-secondary" onclick="closeReceiptModal()">Fechar</button>
+            <div class="modal-body">
+                <input type="text" id="productSearchInput" placeholder="Digite o nome ou código do produto...">
+                <div class="table-container modal-table">
+                    <table id="product-search-results">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Preço</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-search-results-body">
+                            <!-- Resultados da busca aqui -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- QRCode.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-    <!-- Modal de Pagamento -->
+    <!-- Modal de Pagamento (F10) -->
     <div id="paymentModal" class="modal">
-        <div class="modal-content payment-modal-content">
-            <div class="payment-modal-header">
-                <h3>💳 Pagamento</h3>
-                <button class="modal-close" onclick="closePaymentModal()">&times;</button>
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Finalizar Venda (F10)</h2>
+                <span class="close-button" onclick="closeModal('paymentModal')">&times;</span>
             </div>
-            <div class="payment-modal-body">
-                <div class="payment-total">
-                    <span>Total a Pagar:</span>
-                    <span id="paymentTotal">R$ 0,00</span>
-                </div>
-                
-                <!-- Lista de pagamentos adicionados -->
-                <div class="partial-payments-section">
-                    <label>Pagamentos Adicionados:</label>
-                    <div id="partialPaymentList" class="partial-payment-list">
-                        <p class="no-payments">Nenhum pagamento adicionado</p>
+            <div class="modal-body payment-body">
+                <div class="payment-left">
+                    <h4>Formas de Pagamento</h4>
+                    <div class="payment-methods">
+                        <button id="pay-dinheiro" class="payment-method-btn active" onclick="selectPaymentMethod('DINHEIRO')">💵 Dinheiro</button>
+                        <button id="pay-debito" class="payment-method-btn" onclick="selectPaymentMethod('DEBITO')">💳 Débito</button>
+                        <button id="pay-credito" class="payment-method-btn" onclick="selectPaymentMethod('CREDITO')">💳 Crédito</button>
+                        <button id="pay-pix" class="payment-method-btn" onclick="selectPaymentMethod('PIX')">📱 PIX</button>
                     </div>
-                    <div class="remaining-amount">
-                        <span>Falta:</span>
-                        <span id="remainingAmount">R$ 0,00</span>
+                    <div id="cash-fields" class="payment-details">
+                        <label for="cash-received">Valor Recebido (R$)</label>
+                        <input type="text" id="cash-received" placeholder="0,00" oninput="updatePaymentSummary()">
                     </div>
-                </div>
-                
-                <div class="payment-methods">
-                    <label>Forma de Pagamento:</label>
-                    <div class="payment-options">
-                        <label class="payment-option">
-                            <input type="radio" name="paymentMethod" value="DINHEIRO" checked onchange="updatePaymentFields()">
-                            <span class="option-icon">💵</span>
-                            <span class="option-label">Dinheiro</span>
-                        </label>
-                        <label class="payment-option">
-                            <input type="radio" name="paymentMethod" value="DEBITO" onchange="updatePaymentFields()">
-                            <span class="option-icon">💳</span>
-                            <span class="option-label">Débito</span>
-                        </label>
-                        <label class="payment-option">
-                            <input type="radio" name="paymentMethod" value="CREDITO" onchange="updatePaymentFields()">
-                            <span class="option-icon">💳</span>
-                            <span class="option-label">Crédito</span>
-                        </label>
-                        <label class="payment-option">
-                            <input type="radio" name="paymentMethod" value="PIX" onchange="updatePaymentFields()">
-                            <span class="option-icon">📱</span>
-                            <span class="option-label">PIX</span>
-                        </label>
+                    <div id="credit-fields" class="payment-details" style="display: none;">
+                        <label for="installments">Parcelas</label>
+                        <select id="installments">
+                            <option value="1">1x</option>
+                            <option value="2">2x</option>
+                            <option value="3">3x</option>
+                            <option value="4">4x</option>
+                            <option value="5">5x</option>
+                            <option value="6">6x</option>
+                            <option value="7">7x</option>
+                            <option value="8">8x</option>
+                            <option value="9">9x</option>
+                            <option value="10">10x</option>
+                            <option value="11">11x</option>
+                            <option value="12">12x</option>
+                        </select>
+                        <div id="installments-info" class="payment-sub-info" style="display: none;"></div>
+                    </div>
+                     <div id="pix-fields" class="payment-details" style="display: none;">
+                        <p>Aponte a câmera para o QR Code para pagar</p>
+                        <div id="pix-qrcode"></div>
+                        <input type="text" id="pix-payload-display" readonly style="font-size: 0.7em; margin-top: 10px; text-align: center;">
+                        <button id="copy-pix-btn" style="display:none; margin-top: 5px;" class="btn btn-secondary btn-small" onclick="copyPixPayload()">Copiar Código PIX</button>
                     </div>
                 </div>
-                
-                <!-- Campos específicos por método de pagamento -->
-                <div id="paymentFields">
-                    <!-- Dinheiro -->
-                    <div id="cashFields" class="payment-field-group">
-                        <div class="form-group">
-                            <label for="cashReceived">Valor em Dinheiro:</label>
-                            <input type="text" id="cashReceived" placeholder="R$ 0,00" oninput="calculateChange()">
-                        </div>
-                        <div class="form-group">
-                            <label>Troco / Falta:</label>
-                            <div id="changeAmount">Troco: R$ 0,00</div>
-                        </div>
-                        <div class="quick-cash-buttons">
-                            <button type="button" class="btn-quick-cash" onclick="addCash(10)">+10</button>
-                            <button type="button" class="btn-quick-cash" onclick="addCash(20)">+20</button>
-                            <button type="button" class="btn-quick-cash" onclick="addCash(50)">+50</button>
-                            <button type="button" class="btn-quick-cash" onclick="addCash(100)">+100</button>
-                        </div>
+                <div class="payment-right">
+                    <h4>Resumo da Venda</h4>
+                    <div class="payment-summary">
+                        <div class="summary-line total"><span>Total a Pagar</span><span id="summary-total">R$ 0,00</span></div>
+                        <hr>
+                        <div class="summary-line"><span>Valor Pago</span><span id="summary-paid">R$ 0,00</span></div>
+                        <div class="summary-line change"><span>Troco</span><span id="summary-change">R$ 0,00</span></div>
+                        <div class="summary-line remaining"><span>Faltam</span><span id="summary-remaining">R$ 0,00</span></div>
                     </div>
-                    
-                    <!-- Cartão Crédito -->
-                    <div id="creditFields" class="payment-field-group" style="display: none;">
-                        <div class="form-group">
-                            <label for="parcelas">Parcelas:</label>
-                            <select id="parcelas" onchange="updateParcelasInfo()">
-                                <option value="1">1x (Sem juros)</option>
-                                <option value="2">2x (Sem juros)</option>
-                                <option value="3">3x (Sem juros)</option>
-                                <option value="4">4x (Sem juros)</option>
-                                <option value="5">5x (Sem juros)</option>
-                                <option value="6">6x (Sem juros)</option>
-                                <option value="7">7x</option>
-                                <option value="8">8x</option>
-                                <option value="9">9x</option>
-                                <option value="10">10x</option>
-                                <option value="11">11x</option>
-                                <option value="12">12x</option>
-                            </select>
-                        </div>
-                        <div id="parcelasInfo" class="parcelas-info"></div>
-                    </div>
-                    
-                    <!-- PIX -->
-                    <div id="pixFields" class="payment-field-group" style="display: none;">
-                        <div class="form-group">
-                            <label for="pixKey">Chave PIX:</label>
-                            <input type="text" id="pixKey" placeholder="CPF, CNPJ, Email ou Telefone">
-                        </div>
-                        <div id="pixQRCode" class="pix-qrcode"></div>
-                        <button type="button" class="btn btn-secondary" onclick="copyPixKey()" id="copyPixBtn" style="display: none;">📋 Copiar Chave PIX</button>
-                    </div>
+                    <button class="btn btn-primary btn-finalize" onclick="processPayment()">✅ Confirmar Pagamento</button>
                 </div>
-                
-                <button type="button" class="btn btn-warning" id="addPaymentBtn" onclick="addPartialPayment()" style="width: 100%; margin-top: 15px;">➕ Adicionar Pagamento</button>
-            </div>
-            <div class="payment-modal-footer">
-                <button class="btn btn-secondary" onclick="closePaymentModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="processPayment()" disabled>✅ Confirmar Pagamento</button>
             </div>
         </div>
     </div>
 
+    <!-- Modal de Pesquisa de Venda (F7) -->
+    <div id="saleSearchModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Pesquisar Venda (F7)</h2>
+                <span class="close-button" onclick="closeModal('saleSearchModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="saleSearchInput" placeholder="Digite o ID da venda ou nome do operador...">
+                <div class="table-container modal-table">
+                    <table id="sale-search-results">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Data</th>
+                                <th>Operador</th>
+                                <th>Itens</th>
+                                <th>Total</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sale-search-results-body">
+                            <!-- Resultados da busca de vendas aqui -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes da Venda -->
+    <div id="saleDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detalhes da Venda</h2>
+                <span class="close-button" onclick="closeModal('saleDetailModal')">&times;</span>
+            </div>
+            <div class="modal-body receipt-style">
+                <p><strong>Data:</strong> <span id="detailDate"></span></p>
+                <p><strong>Operador:</strong> <span id="detailOperator"></span></p>
+                <hr>
+                <h4>Itens:</h4>
+                <table id="detailItemsTable">
+                    <thead><tr><th>Produto</th><th>Qtd</th><th>Vl. Unit.</th><th>Subtotal</th></tr></thead>
+                    <tbody id="detailItems"></tbody>
+                </table>
+                <hr>
+                <div id="detailDiscountInfo" style="display: none;">
+                    <p><strong>Subtotal:</strong> <span id="detailSubtotal"></span></p>
+                    <p><strong>Desconto:</strong> <span id="detailDiscount"></span></p>
+                </div>
+                <h4 class="text-right">Total: <span id="detailTotal"></span></h4>
+                <div id="detailCashInfo" style="display: none;">
+                    <p><strong>Valor Recebido:</strong> <span id="detailValorRecebido"></span></p>
+                    <p><strong>Troco:</strong> <span id="detailTroco"></span></p>
+                    <hr>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="auth.js"></script>
     <script src="config.js"></script>
     <script src="vendas.js"></script>
 </body>
 </html>
-

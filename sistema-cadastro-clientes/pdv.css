@@ -1,0 +1,587 @@
+/* pdv.css - Estilos para a nova interface de PDV */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background-color: #f0f2f5;
+    color: #333;
+    overflow: hidden; /* Evita barras de rolagem */
+}
+
+.pdv-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.pdv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #007bff;
+    color: white;
+    padding: 5px 20px;
+    font-size: 1.2em;
+}
+
+.status-caixa {
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.pdv-main {
+    display: flex;
+    flex-grow: 1;
+    padding: 15px;
+    gap: 15px;
+}
+
+/* Seção Esquerda */
+.pdv-left {
+    flex-basis: 35%;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.8em;
+    color: #555;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.5em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.info-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: auto;
+    margin-bottom: 20px;
+}
+
+.info-box {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+}
+
+.info-box label {
+    font-size: 0.8em;
+    color: #555;
+    display: block;
+}
+
+.info-box span {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #007bff;
+    display: block;
+}
+
+.info-box.total-item {
+    grid-column: 1 / -1; /* Ocupa a linha toda */
+}
+.info-box.total-item span {
+    color: #28a745;
+    font-size: 2.5em;
+}
+
+.discount-section {
+    margin-top: auto;
+    margin-bottom: 20px;
+}
+.discount-section label {
+    display: block;
+    font-size: 0.8em;
+    color: #555;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+/* Grupo de input para o desconto */
+.input-group-addon {
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-group-addon:focus-within {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.input-group-addon select {
+    border: none;
+    background-color: #f1f1f1;
+    padding: 8px 12px;
+    font-size: 1em;
+    cursor: pointer;
+    outline: none;
+}
+
+.input-group-addon input {
+    flex-grow: 1;
+    border: none;
+    border-left: 1px solid #ccc;
+    padding: 8px 12px;
+    font-size: 1em;
+    outline: none;
+}
+
+.input-group-addon button {
+    border: none;
+    border-left: 1px solid #ccc;
+    background-color: #28a745;
+    color: white;
+    padding: 0 15px;
+    font-size: 1.2em;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 0.2s;
+}
+
+.left-footer input {
+    font-size: 1em;
+    padding: 8px;
+}
+
+/* Seção Direita */
+.pdv-right {
+    flex-basis: 65%;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.cupom-header {
+    text-align: center;
+    padding: 10px;
+    background-color: #343a40;
+    color: white;
+    font-size: 1.1em;
+}
+
+.item-list-container {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+#pdv-item-list {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#pdv-item-list thead {
+    background-color: #f1f1f1;
+}
+
+#pdv-item-list th, #pdv-item-list td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+#pdv-item-list th {
+    font-size: 0.9em;
+}
+
+#pdv-item-list td {
+    font-size: 0.95em;
+}
+
+#pdv-item-list .placeholder-row td {
+    text-align: center;
+    padding: 50px;
+    color: #999;
+    font-style: italic;
+}
+
+.right-footer {
+    display: flex;
+    justify-content: space-around;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.total-box {
+    text-align: right;
+}
+
+.total-box label {
+    font-size: 1em;
+    color: #555;
+    display: block;
+}
+
+.total-box span {
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.right-footer .discount span {
+    color: #dc3545;
+}
+
+.right-footer .total-final span {
+    color: #28a745;
+    font-size: 2.5em;
+}
+
+/* Rodapé de Atalhos */
+.pdv-shortcuts {
+    background-color: #343a40;
+    color: #ccc;
+    padding: 8px;
+    text-align: center;
+    font-size: 0.8em;
+}
+
+.pdv-shortcuts span {
+    margin: 0 10px;
+}
+
+.pdv-shortcuts b {
+    color: white;
+}
+
+/* ================================================================= */
+/* ======================== ESTILOS MODAIS ========================= */
+/* ================================================================= */
+
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.6);
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 700px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    animation: slideIn 0.3s;
+}
+
+.modal-content.large {
+    max-width: 950px;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    color: #333;
+}
+
+.close-button {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+}
+
+.modal-body {
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.modal-table {
+    max-height: 50vh;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+}
+
+#productSearchInput {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    box-sizing: border-box;
+}
+
+#product-search-results-body tr {
+    cursor: pointer;
+}
+
+#product-search-results-body tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Estilos do Modal de Pagamento */
+.payment-body { display: flex; gap: 20px; }
+.payment-left { flex: 1; }
+.payment-right { flex: 1; background-color: #f8f9fa; padding: 20px; border-radius: 8px; }
+.payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.payment-method-btn { padding: 15px; font-size: 1em; border: 2px solid #ddd; background-color: #fff; cursor: pointer; border-radius: 5px; transition: all 0.2s; }
+.payment-method-btn:hover { border-color: #007bff; }
+.payment-method-btn.active { background-color: #007bff; color: white; border-color: #007bff; }
+.payment-details { margin-top: 15px; }
+.payment-details input, .payment-details select { width: 100%; padding: 10px; font-size: 1.2em; box-sizing: border-box; }
+#pix-qrcode { display: flex; justify-content: center; align-items: center; margin-top: 10px; padding: 10px; border: 1px solid #ddd; min-height: 220px; }
+.payment-summary .summary-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 1.1em; }
+.payment-summary .summary-line.total { font-size: 1.5em; font-weight: bold; border-top: 1px solid #ccc; padding-top: 10px; margin-top: 10px; }
+.payment-summary .summary-line.change span:last-child { color: #28a745; font-weight: bold; }
+.payment-summary .summary-line.remaining span:last-child { color: #dc3545; font-weight: bold; }
+.btn-finalize { width: 100%; padding: 15px; font-size: 1.2em; margin-top: 20px; }
+
+.payment-sub-info {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #333;
+    background-color: #e9ecef;
+    padding: 8px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* Estilos para a tabela de pesquisa de produtos no modal */
+#product-search-results {
+    width: 100%;
+    border-collapse: collapse;
+}
+#product-search-results th, #product-search-results td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+#product-search-results thead {
+    background-color: #f1f1f1;
+}
+
+/* Estilos para o modal de detalhes da venda (F7) */
+.receipt-style {
+    font-family: 'Courier New', Courier, monospace;
+}
+.receipt-style h4 {
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 5px;
+    margin-top: 15px;
+}
+.receipt-style table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+.receipt-style th, .receipt-style td {
+    text-align: left;
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+.receipt-style .text-right {
+    text-align: right;
+    font-size: 1.2em;
+}
+
+
+/* ================================================================= */
+/* ======================= ESTILOS DE ALERTA ======================= */
+/* ================================================================= */
+
+.pdv-alert {
+    position: fixed;
+    top: -100px; /* Começa fora da tela */
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.1em;
+    z-index: 2000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    opacity: 0;
+    transition: opacity 0.5s, top 0.5s;
+}
+
+.pdv-alert.show {
+    opacity: 1;
+    top: 20px; /* Move para a posição final */
+}
+
+.pdv-alert.alert-success {
+    background-color: #28a745;
+}
+.pdv-alert.alert-error {
+    background-color: #dc3545;
+}
+.pdv-alert.alert-warning {
+    background-color: #ffc107;
+    color: #333;
+}
+.pdv-alert.alert-info {
+    background-color: #17a2b8;
+}
+
+/* ================================================================= */
+/* ======================= IMPRESSÃO (RECIBO) ====================== */
+/* ================================================================= */
+
+@media print {
+    /* Define o tamanho da página e remove margens */
+    @page {
+        margin: 2mm;
+        size: 80mm; /* Tamanho padrão para impressoras térmicas */
+    }
+
+    /* Oculta tudo por padrão */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Torna o modal do recibo e seu conteúdo visíveis */
+    #saleDetailModal, #saleDetailModal * {
+        visibility: visible;
+    }
+
+    /* Posiciona o modal para ocupar toda a área de impressão */
+    #saleDetailModal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: auto;
+        background-color: white;
+        z-index: 9999;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Estiliza o conteúdo principal do modal para o formato de cupom */
+    #saleDetailModal .modal-content {
+        box-shadow: none;
+        border: none;
+        width: 72mm; /* Largura útil para papel de 80mm */
+        max-width: 72mm;
+        margin: 0;
+        padding: 0;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 9pt !important;
+        color: #000 !important;
+        line-height: 1.2;
+    }
+
+    /* Oculta o cabeçalho do modal e o botão de fechar */
+    #saleDetailModal .modal-header {
+        display: none;
+    }
+
+    /* Estilos para o corpo do recibo */
+    .receipt-style {
+        padding: 0;
+    }
+
+    .receipt-style p, .receipt-style h4 {
+        margin: 3px 0;
+    }
+
+    .receipt-style hr {
+        border: none;
+        border-top: 1px dashed #000;
+        margin: 5px 0;
+    }
+
+    /* Estilos para a tabela de itens */
+    .receipt-style table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .receipt-style th, .receipt-style td {
+        padding: 2px 0;
+        border-bottom: none;
+    }
+
+    /* Alinhamento das colunas da tabela */
+    .receipt-style th:nth-child(1), .receipt-style td:nth-child(1) { /* Produto */
+        text-align: left;
+        width: 50%;
+    }
+    .receipt-style th:nth-child(2), .receipt-style td:nth-child(2) { /* Qtd */
+        text-align: right;
+    }
+    .receipt-style th:nth-child(3), .receipt-style td:nth-child(3) { /* Vl. Unit. */
+        text-align: right;
+    }
+    .receipt-style th:nth-child(4), .receipt-style td:nth-child(4) { /* Subtotal */
+        text-align: right;
+    }
+
+    .receipt-style .text-right {
+        text-align: right;
+        font-size: 1.1em;
+        margin-top: 5px;
+    }
+}
+
+/* Estilo para o botão de remover item do carrinho */
+.btn-remove-item {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 1em;
+    line-height: 1;
+}
+
+.btn-remove-item:hover {
+    background-color: #c82333;
+}

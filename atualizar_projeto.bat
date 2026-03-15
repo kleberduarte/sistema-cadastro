@@ -20,7 +20,7 @@ if exist "sistema-cadastro-clientes" (
     git diff --staged --quiet
     if !errorlevel! neq 0 (
         echo [INFO] Alteracoes encontradas no Frontend. Criando commit...
-        git commit -m "Fix: Corrige gravação de vendas e sincronização de fuso horário"
+        git commit -m "Feat(PDV): Implementa novo layout, atalhos e fluxo de pagamento completo"
     ) else (
         echo [INFO] Frontend: Nenhuma alteracao nova para commitar. A mudanca pode ja estar no historico ou o arquivo esta sendo ignorado.
     )
