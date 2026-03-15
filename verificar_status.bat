@@ -30,6 +30,6 @@ exit /b
 :ShowGitLog
 echo %~1
 echo   Posicionamento das Branches (Local e Remoto):
-git --no-pager log --all --decorate --oneline -n 5
+for /f "delims=" %%i in ('git log --all --decorate --oneline -n 5') do echo %%i
 echo.
 exit /b
