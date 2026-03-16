@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDV - Frente de Caixa</title>
     <link rel="stylesheet" href="pdv.css">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body>
     <div class="pdv-container">
         <header class="pdv-header">
-            <div class="status-caixa">CAIXA LIVRE</div>
+            <div id="status-caixa" class="status-caixa livre" onclick="cycleCaixaStatus()" title="Clique para alterar o status">CAIXA LIVRE</div>
             <div class="operador-info">
                 <span>Operador: <b id="pdv-operator-name">Nome do Operador</b></span>
             </div>
@@ -106,8 +107,8 @@
 
         <!-- Rodapé com os atalhos -->
         <footer class="pdv-shortcuts">
-            <div><span><b>F2</b>-Cód.Interno</span> <span><b>F3</b>-Pesq.Pedido</span> <span><b>F4</b>-Qtd</span> <span><b>F5</b>-Nova Venda</span> <span><b>F7</b>-Pesq.Venda</span> <span><b>F8</b>-Pesq.Produto</span></div>
-            <div><span><b>F9</b>-Alt.Venda</span> <span><b>F10</b>-Finalizar</span> <span><b>F11</b>-Excluir Venda</span> <span><b>F12</b>-Indicar Cliente</span> <span><b>Ctrl+D</b>-CPF</span> <span><b>P</b>-Imprimir</span> <span><b>Esc</b>-Sair</span></div>
+            <div><span><b>F2</b>-Cód.Interno</span> <span><b>F3</b>-Pesq.Pedido</span> <span><b>F4</b>-Qtd</span> <span><b>F5</b>-Nova Venda</span> <span><b>F7</b>-Pesq.Venda</span> <span><b>F8</b>-Pesq.Produto</span> <span><b>P</b>-Imprimir</span></div>
+            <div><span><b>F9</b>-Alt.Venda</span> <span><b>F10</b>-Finalizar</span> <span><b>F11</b>-Excluir Venda</span> <span><b>Alt+F</b>-Fechar Caixa</span> <span><b>F12</b>-Indicar Cliente</span> <span><b>Ctrl+D</b>-CPF</span> <span><b>Esc</b>-Sair</span></div>
         </footer>
     </div>
 

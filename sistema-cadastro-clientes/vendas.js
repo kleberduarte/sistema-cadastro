@@ -11,6 +11,7 @@ let currentDiscount = 0;
 let lastSale = null; // Armazena a última venda finalizada
 let currentPixPayload = ''; // Armazena o payload do PIX "Copia e Cola"
 let activeModal = null; // Controla qual modal está ativo
+let currentCaixaStatus = 'LIVRE'; // LIVRE, PAUSADO, FECHADO
 
 // Chaves do LocalStorage
 const CURRENT_USER_KEY_LOCAL = 'currentUser';
@@ -27,7 +28,8 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAllSales(); // Carrega o histórico de vendas para a pesquisa (F7)
     setupEventListeners();
     setupKeyboardShortcuts();
-    novaVenda(); // Inicia com uma venda limpa
+    // Inicializa o status
+    setCaixaStatus('LIVRE');
 });
 
 function displayUserNameOnPdv() {
@@ -79,6 +81,12 @@ function setupKeyboardShortcuts() {
     document.addEventListener('keydown', function(e) {
         const isModalInput = e.target.closest('.modal') && e.target.tagName === 'INPUT';
 
+        // REGRA DE NEGÓCIO: Se o caixa não estiver LIVRE, bloqueia a maioria dos atalhos
+        // Permite apenas F5 (Recarregar/Nova Venda se necessário forçar) ou lógica especifica
+        if (currentCaixaStatus !== 'LIVRE' && !['F5', 'F11', 'Escape'].includes(e.key)) {
+            return; 
+        }
+
         // Permite atalhos se o foco estiver no input principal ou se for a tecla Esc
         if (isModalInput && e.key !== 'Escape') {
             return;
@@ -90,6 +98,16 @@ function setupKeyboardShortcuts() {
         // Prevenir ações padrão do navegador
         if (key.startsWith('F') || (ctrl && ['d', 'p', 'r'].includes(key.toLowerCase())) || key === 'p' || key === 'P') {
             e.preventDefault();
+        }
+
+        // Atalho para FECHAR CAIXA (Alt + F) - Fim de Expediente
+        if (e.altKey && key.toLowerCase() === 'f') {
+            e.preventDefault();
+            if (confirm('Deseja realmente FECHAR o caixa (Final de Expediente)?')) {
+                setCaixaStatus('FECHADO');
+                showAlert('Caixa FECHADO.', 'warning');
+            }
+            return;
         }
 
         switch (key) {
@@ -206,6 +224,13 @@ async function loadAllSales() {
 }
 
 async function addProductByBarcode(codigoLido) {
+    // REGRA DE NEGÓCIO: Bloquear entrada se caixa não estiver livre
+    if (currentCaixaStatus !== 'LIVRE') {
+        showAlert(`Caixa ${currentCaixaStatus}. Operação não permitida.`, 'warning');
+        document.getElementById('pdv-barcode').value = ''; // Limpa o input
+        return;
+    }
+
     const codigo = String(codigoLido || '').trim();
     if (!codigo) return;
 
@@ -213,6 +238,10 @@ async function addProductByBarcode(codigoLido) {
 
     if (!foundProduct) {
         showAlert(`Produto com código ${codigo} não encontrado.`, 'error');
+        // Limpa o campo de código de barras em caso de erro e mantém o foco
+        const barcodeInput = document.getElementById('pdv-barcode');
+        barcodeInput.value = '';
+        barcodeInput.focus();
         return;
     }
 
@@ -327,18 +356,26 @@ function novaVenda() {
     saleCustomer = null;
     saleCpf = null;
     currentDiscount = 0;
-    document.getElementById('discountType').value = 'none';
+    const discountType = document.getElementById('discountType');
+    if (discountType) discountType.value = 'none';
+
     toggleDiscountInput();
     renderCart();
-    document.getElementById('status-caixa').textContent = 'CAIXA LIVRE';
-    document.getElementById('pdv-barcode').value = '';
-    document.getElementById('pdv-barcode').focus();
+    
+    // Reseta o status para LIVRE ao iniciar nova venda (ou mantém a lógica de setCaixaStatus)
+    setCaixaStatus('LIVRE');
+
     console.log('Nova venda iniciada.');
     showAlert('Nova venda iniciada.', 'success');
 }
 
 // Finalizar venda (chama o modal de pagamento)
 function finalizeSale() {
+    if (currentCaixaStatus !== 'LIVRE') {
+        showAlert(`Caixa ${currentCaixaStatus}. Não é possível finalizar vendas.`, 'warning');
+        return;
+    }
+
     if (cart.length === 0) {
         showAlert('Carrinho vazio. Adicione produtos para finalizar a venda.', 'warning');
         return;
@@ -622,7 +659,78 @@ function printLastSale() {
         return;
     }
     openReceiptModal(lastSale);
-    setTimeout(() => window.print(), 500);
+    // Atraso para garantir que o modal renderize antes de imprimir
+    setTimeout(() => {
+        window.print();
+        closeModal('saleDetailModal'); // Fecha o modal após a impressão
+    }, 500);
+}
+
+// =================================================================
+// ==================== CONTROLE DE STATUS CAIXA ===================
+// =================================================================
+
+function setCaixaStatus(status) {
+    currentCaixaStatus = status;
+    const statusEl = document.getElementById('status-caixa');
+    const barcodeInput = document.getElementById('pdv-barcode');
+    const header = document.querySelector('.pdv-header');
+
+    if (!statusEl) return;
+
+    // Remove classes anteriores
+    statusEl.classList.remove('livre', 'pausado', 'fechado');
+    // Remove classes de cor do header se houver
+    header.style.backgroundColor = ''; 
+
+    if (status === 'LIVRE') {
+        statusEl.textContent = 'CAIXA LIVRE';
+        statusEl.classList.add('livre');
+        header.style.backgroundColor = '#28a745'; // Verde
+        if (barcodeInput) {
+            barcodeInput.disabled = false;
+            barcodeInput.focus();
+        }
+    } else if (status === 'PAUSADO') {
+        statusEl.textContent = 'CAIXA PAUSADO';
+        statusEl.classList.add('pausado');
+        header.style.backgroundColor = '#ffc107'; // Amarelo
+        header.style.color = '#333';
+        if (barcodeInput) barcodeInput.disabled = true;
+    } else if (status === 'FECHADO') {
+        statusEl.textContent = 'CAIXA FECHADO';
+        statusEl.classList.add('fechado');
+        header.style.backgroundColor = '#dc3545'; // Vermelho
+        header.style.color = '#fff';
+        if (barcodeInput) {
+            barcodeInput.value = '';
+            barcodeInput.disabled = true;
+        }
+    }
+}
+
+function cycleCaixaStatus() {
+    // Regra de negócio alterada: O clique simples alterna apenas entre LIVRE e PAUSADO (Almoço/Intervalo)
+    // Para FECHAR (Fim de expediente), deve-se usar Alt+F ou Ctrl+Clique
+    
+    const evt = window.event;
+    // Permite fechar clicando com Ctrl pressionado
+    if (evt && (evt.ctrlKey || evt.altKey)) {
+        if (confirm('Deseja realmente FECHAR o caixa (Final de Expediente)?')) {
+            setCaixaStatus('FECHADO');
+            showAlert('Caixa FECHADO.', 'warning');
+        }
+        return;
+    }
+
+    if (currentCaixaStatus === 'LIVRE') {
+        setCaixaStatus('PAUSADO');
+        showAlert('Caixa PAUSADO (Intervalo/Almoço).', 'warning');
+    } else {
+        // Se estiver PAUSADO ou FECHADO, volta para LIVRE
+        setCaixaStatus('LIVRE');
+        showAlert('Caixa LIVRE (Retorno).', 'success');
+    }
 }
 
 // --- Modal de Pagamento (F10) ---
