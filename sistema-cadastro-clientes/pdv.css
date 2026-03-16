@@ -26,6 +26,22 @@ body {
 .status-caixa {
     font-weight: bold;
     letter-spacing: 2px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.status-caixa.livre {
+    /* Padrão já é azul/transparente, mas podemos forçar verde se quiser, ou manter o padrão */
+}
+.status-caixa.pausado {
+    background-color: #ffc107; /* Amarelo */
+    color: #333;
+}
+.status-caixa.fechado {
+    background-color: #dc3545; /* Vermelho */
+    color: white;
 }
 
 .pdv-main {

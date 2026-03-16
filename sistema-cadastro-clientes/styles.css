@@ -1710,3 +1710,69 @@ footer {
     }
 }
 
+/* =======================
+   ESTILOS DE IMPRESSÃO (Térmica 80mm)
+   ======================= */
+@media print {
+    /* Ocultar todo o resto da tela */
+    body * {
+        visibility: hidden;
+    }
+    
+    /* Mostrar apenas o modal/recibo e garantir visibilidade dos filhos */
+    .modal.show, .modal-content, .receipt-content, .receipt, .receipt * {
+        visibility: visible;
+    }
+    
+    .modal.show {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: white;
+        display: block !important;
+    }
+    
+    .modal-content {
+        box-shadow: none;
+        border: none;
+        width: 100%;
+        max-width: 72mm; /* Largura útil segura para bobinas de 80mm */
+        margin: 0;
+        padding: 0;
+    }
+    
+    .receipt {
+        border: none;
+        padding: 0;
+        width: 100%;
+    }
+    
+    /* Ajustar tabela para evitar colunas grudadas */
+    .receipt-items table {
+        width: 100%;
+        font-size: 10pt; /* Fonte legível para térmica */
+        border-collapse: collapse;
+    }
+    
+    .receipt-items th, .receipt-items td {
+        padding: 4px 2px;
+        color: black !important;
+        vertical-align: top;
+    }
+    
+    /* Espaçamento específico para a coluna Qtd (coluna 2) */
+    .receipt-items th:nth-child(2), .receipt-items td:nth-child(2) {
+        text-align: center;
+        padding: 0 10px; /* Margem forçada para desgrudar do preço */
+        white-space: nowrap;
+    }
+    
+    /* Ocultar botões e rodapés de UI na impressão */
+    .modal-close, .btn, .receipt-footer {
+        display: none !important;
+    }
+}
