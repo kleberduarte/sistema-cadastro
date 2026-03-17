@@ -89,8 +89,16 @@ public class VendaService {
         venda.setTotal(subtotal.subtract(venda.getDesconto()));
         
         // Definir forma de pagamento e campos relacionados
-        venda.setFormaPagamento(request.getFormaPagamento());
-        venda.setParcelas(request.getParcelas());
+        String formaPagamento = request.getFormaPagamento();
+        venda.setFormaPagamento(formaPagamento);
+
+        // Regra: parcelas só fazem sentido para CRÉDITO. Para as demais formas, não persistir.
+        if (formaPagamento != null && formaPagamento.equalsIgnoreCase("CREDITO")) {
+            Integer parcelas = request.getParcelas();
+            venda.setParcelas(parcelas != null && parcelas > 0 ? parcelas : 1);
+        } else {
+            venda.setParcelas(null);
+        }
 
         String chavePixRequest = request.getChavePix() != null ? request.getChavePix().trim() : null;
         String chavePixFinal = chavePixRequest;
@@ -106,6 +114,7 @@ public class VendaService {
         }
 
         venda.setChavePix(chavePixFinal);
+        venda.setCpfCliente(request.getCpfCliente());
         
         // Salvar
         Venda savedVenda = vendaRepository.save(venda);
@@ -151,6 +160,7 @@ public class VendaService {
         response.setFormaPagamento(venda.getFormaPagamento());
         response.setParcelas(venda.getParcelas());
         response.setChavePix(venda.getChavePix());
+        response.setCpfCliente(venda.getCpfCliente());
         
         // Converter itens
         List<VendaResponse.VendaItemResponse> itensResponse = venda.getItens().stream()

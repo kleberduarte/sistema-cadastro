@@ -551,23 +551,6 @@ footer {
         text-align: center;
     }
 
-    .receipt-content {
-        padding: 10px;
-    }
-
-    .receipt {
-        padding: 15px;
-    }
-
-    .receipt h3 {
-        font-size: 1.2rem;
-    }
-
-    .receipt-info,
-    .receipt-items table,
-    .receipt-total {
-        font-size: 0.85rem;
-    }
 }
 
 /* Alertas */
@@ -881,74 +864,138 @@ footer {
 .discount-section {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 15px;
     align-items: center;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: #fff3cd;
-    border-radius: 8px;
-    border: 1px solid #ffc107;
+    margin-bottom: 20px;
+    padding: 15px 20px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.discount-section:hover {
+    border-color: #cbd5e0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
 }
 
 .discount-section label {
     font-weight: 600;
-    color: #555;
+    color: #4a5568;
     margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Pequeno indicador visual no label */
+.discount-section label::before {
+    content: '%';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #edf2f7;
+    color: #667eea;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: 800;
 }
 
 .discount-section select {
-    padding: 8px 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    background: white;
+    padding: 10px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #f8fafc;
+    color: #2d3748;
     cursor: pointer;
     min-width: 140px;
+    transition: all 0.2s;
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+}
+
+.discount-section select:hover {
+    background: #fff;
+    border-color: #cbd5e0;
 }
 
 .discount-section select:focus {
     outline: none;
     border-color: #667eea;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
 .discount-section input {
-    padding: 8px 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    width: 100px;
+    padding: 10px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    width: 110px;
+    transition: all 0.2s;
+    font-weight: 600;
+    color: #2d3748;
 }
 
 .discount-section input:focus {
     outline: none;
     border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
 .discount-section .btn {
-    padding: 8px 15px;
+    padding: 10px 20px;
     margin: 0;
+    border-radius: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
 }
 
 .discount-info {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background: #d4edda;
-    border-radius: 8px;
-    border: 1px solid #28a745;
-    margin-bottom: 15px;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: #f0fff4;
+    border-radius: 10px;
+    border: 1px solid #c6f6d5;
+    margin-bottom: 20px;
     width: 100%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .discount-info span {
     font-weight: 600;
-    color: #155724;
+    color: #2f855a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Ícone de sucesso */
+.discount-info span::before {
+    content: '✓';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: #c6f6d5;
+    color: #276749;
+    border-radius: 50%;
+    font-size: 0.7rem;
 }
 
 .discount-info #discountAmount {
-    color: #dc3545;
-    flex: 1;
+    color: #e53e3e;
+    font-size: 1.1rem;
+    flex: 0;
+    margin-right: 15px;
 }
 
 .discount-info .btn-remove {
@@ -1711,68 +1758,95 @@ footer {
 }
 
 /* =======================
-   ESTILOS DE IMPRESSÃO (Térmica 80mm)
+   WIDGET DE DESCONTO (MODERNO)
    ======================= */
-@media print {
-    /* Ocultar todo o resto da tela */
-    body * {
-        visibility: hidden;
-    }
-    
-    /* Mostrar apenas o modal/recibo e garantir visibilidade dos filhos */
-    .modal.show, .modal-content, .receipt-content, .receipt, .receipt * {
-        visibility: visible;
-    }
-    
-    .modal.show {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background: white;
-        display: block !important;
-    }
-    
-    .modal-content {
-        box-shadow: none;
-        border: none;
-        width: 100%;
-        max-width: 72mm; /* Largura útil segura para bobinas de 80mm */
-        margin: 0;
-        padding: 0;
-    }
-    
-    .receipt {
-        border: none;
-        padding: 0;
-        width: 100%;
-    }
-    
-    /* Ajustar tabela para evitar colunas grudadas */
-    .receipt-items table {
-        width: 100%;
-        font-size: 10pt; /* Fonte legível para térmica */
-        border-collapse: collapse;
-    }
-    
-    .receipt-items th, .receipt-items td {
-        padding: 4px 2px;
-        color: black !important;
-        vertical-align: top;
-    }
-    
-    /* Espaçamento específico para a coluna Qtd (coluna 2) */
-    .receipt-items th:nth-child(2), .receipt-items td:nth-child(2) {
-        text-align: center;
-        padding: 0 10px; /* Margem forçada para desgrudar do preço */
-        white-space: nowrap;
-    }
-    
-    /* Ocultar botões e rodapés de UI na impressão */
-    .modal-close, .btn, .receipt-footer {
-        display: none !important;
-    }
+.discount-card {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #f0f0f0;
+    margin-bottom: 20px;
+}
+
+.discount-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.discount-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4a5568;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.discount-toggle {
+    display: flex;
+    background: #edf2f7;
+    border-radius: 8px;
+    padding: 4px;
+    position: relative;
+}
+
+.discount-toggle input[type="radio"] {
+    display: none;
+}
+
+.discount-toggle label {
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #718096;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.discount-toggle input[type="radio"]:checked + label {
+    background: #fff;
+    color: #667eea;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.input-group-modern {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-group-modern i {
+    position: absolute;
+    left: 15px;
+    color: #a0aec0;
+    font-size: 1.1rem;
+    transition: color 0.3s;
+    z-index: 10;
+}
+
+.input-group-modern input {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    color: #2d3748;
+    transition: all 0.3s ease;
+    background: #f8fafc;
+}
+
+.input-group-modern input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-group-modern input:focus + i {
+    color: #667eea;
 }

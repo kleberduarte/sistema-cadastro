@@ -328,7 +328,49 @@ function applyClientStyles(params) {
             background-color: ${corFundo} !important;
             color: ${corTexto} !important;
         }
+
+        /* Cupom Fiscal - estilização por empresa */
+        .cupom-header {
+            background: linear-gradient(135deg, ${corPrimaria} 0%, ${corSecundaria} 100%) !important;
+            color: #fff !important;
+        }
+        .cupom-header__line { color: rgba(255,255,255,0.9) !important; }
+        .cupom-header__title { color: #fff !important; }
+        .cupom-header__empresa { color: #fff !important; }
+        .cupom-paper {
+            border-color: ${corPrimaria} !important;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06), 2px 4px 12px ${corPrimaria}40 !important;
+        }
+        .cupom-body__cabecalho { color: ${corTexto} !important; border-bottom-color: ${corPrimaria}40 !important; }
+        .cupom-body__separator { border-bottom-color: ${corPrimaria}30 !important; }
+        .cupom-table tbody tr { border-bottom-color: ${corPrimaria}20 !important; }
+        .cupom-table td { border-left-color: ${corPrimaria}20 !important; }
+        .cupom-footer { border-top-color: ${corPrimaria} !important; }
+        .cupom-footer__total span:last-child { color: ${corPrimaria} !important; }
+        .cupom-footer__separator { border-bottom-color: ${corPrimaria}50 !important; }
     `;
+
+    // Cupom Fiscal: preencher nome e logo da empresa (quando na tela do PDV)
+    const cupomEmpresaNome = document.getElementById('cupom-empresa-nome');
+    const cupomEmpresaLogo = document.getElementById('cupom-empresa-logo');
+    if (cupomEmpresaNome) {
+        cupomEmpresaNome.textContent = params.nomeEmpresa || '';
+        cupomEmpresaNome.style.display = params.nomeEmpresa ? 'block' : 'none';
+    }
+    if (cupomEmpresaLogo) {
+        if (params.logoUrl) {
+            let logoUrl = params.logoUrl.trim();
+            if (logoUrl.match(/^[A-Z]:/i) || logoUrl.includes(':\\') || logoUrl.includes(':/')) {
+                const fileName = logoUrl.split(/[/\\]/).pop();
+                logoUrl = fileName;
+            }
+            cupomEmpresaLogo.innerHTML = `<img src="${logoUrl}" alt="${params.nomeEmpresa || 'Logo'}" onerror="this.style.display='none'">`;
+            cupomEmpresaLogo.style.display = 'block';
+        } else {
+            cupomEmpresaLogo.innerHTML = '';
+            cupomEmpresaLogo.style.display = 'none';
+        }
+    }
 
     // Aplicar mensagem de boas-vindas
     if (params.mensagemBoasVindas) {

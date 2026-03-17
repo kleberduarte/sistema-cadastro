@@ -10,7 +10,9 @@ let saleCpf = null; // CPF na nota
 let currentDiscount = 0;
 let lastSale = null; // Armazena a última venda finalizada
 let currentPixPayload = ''; // Armazena o payload do PIX "Copia e Cola"
+let currentPayments = []; // Armazena os pagamentos mistos
 let activeModal = null; // Controla qual modal está ativo
+let activePaymentMethod = 'DINHEIRO'; // Método selecionado pelos botões
 let currentCaixaStatus = 'LIVRE'; // LIVRE, PAUSADO, FECHADO
 
 // Chaves do LocalStorage
@@ -19,16 +21,17 @@ const AUTH_TOKEN_KEY_LOCAL = 'authToken';
 
 // Carregar dados ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
-    // Integração com auth.js e config.js
+    // Atalhos de teclado sempre registrados (em window, fase capture), para funcionar em qualquer foco
+    setupKeyboardShortcuts();
+
     if (typeof checkAuth === 'function' && !checkAuth()) return;
     if (typeof displayUserNameOnPdv === 'function') displayUserNameOnPdv();
     if (typeof loadClientParams === 'function') loadClientParams();
-    
+
+    updateClienteIndicadoDisplay();
     loadProducts();
-    loadAllSales(); // Carrega o histórico de vendas para a pesquisa (F7)
+    loadAllSales();
     setupEventListeners();
-    setupKeyboardShortcuts();
-    // Inicializa o status
     setCaixaStatus('LIVRE');
 });
 
@@ -55,14 +58,24 @@ function setupEventListeners() {
         productSearchInput.addEventListener('input', renderSearchResults);
     }
 
+    // --- Listeners do Modal de Pagamento ---
+    const addPaymentBtn = document.getElementById('add-payment-btn');
+    if(addPaymentBtn) addPaymentBtn.addEventListener('click', addPayment);
+
+    const paymentValueInput = document.getElementById('payment-value-input');
+    if(paymentValueInput) paymentValueInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addPayment();
+    });
+
     const saleSearchInput = document.getElementById('saleSearchInput');
     if(saleSearchInput) {
         saleSearchInput.addEventListener('input', renderSaleSearchResults);
     }
-
     const installmentsSelect = document.getElementById('installments');
     if (installmentsSelect) {
-        installmentsSelect.addEventListener('change', updateInstallmentInfo);
+        installmentsSelect.addEventListener('change', function() {
+            if (typeof updateInstallmentsInfo === 'function') updateInstallmentsInfo();
+        });
     }
 
     const discountTypeSelect = document.getElementById('discountType');
@@ -74,35 +87,51 @@ function setupEventListeners() {
         applyDiscountBtn.addEventListener('click', applyDiscount);
     }
 
-
+    var clientSearchInput = document.getElementById('clientSearchInput');
+    if (clientSearchInput) {
+        clientSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); searchClients(); }
+        });
+    }
+    var clientModalForm = document.getElementById('clientModalForm');
+    if (clientModalForm) {
+        clientModalForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (typeof saveNewClientAndSelect === 'function') saveNewClientAndSelect();
+        });
+    }
 }
 
 function setupKeyboardShortcuts() {
-    document.addEventListener('keydown', function(e) {
-        const isModalInput = e.target.closest('.modal') && e.target.tagName === 'INPUT';
-
-        // REGRA DE NEGÓCIO: Se o caixa não estiver LIVRE, bloqueia a maioria dos atalhos
-        // Permite apenas F5 (Recarregar/Nova Venda se necessário forçar) ou lógica especifica
-        if (currentCaixaStatus !== 'LIVRE' && !['F5', 'F11', 'Escape'].includes(e.key)) {
-            return; 
+    function handleShortcut(e) {
+        var keyCode = e.keyCode || e.which;
+        var key = e.key;
+        if (!key && keyCode >= 112 && keyCode <= 123) {
+            key = 'F' + (keyCode - 111);
         }
 
-        // Permite atalhos se o foco estiver no input principal ou se for a tecla Esc
-        if (isModalInput && e.key !== 'Escape') {
+        var ctrl = e.ctrlKey;
+        var alt = e.altKey;
+        var tag = e.target && e.target.tagName ? e.target.tagName : '';
+        var inModal = e.target && e.target.closest && e.target.closest('.modal');
+        var isModalInput = inModal && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
+
+        if (isModalInput && key !== 'Escape') {
             return;
         }
 
-        const key = e.key;
-        const ctrl = e.ctrlKey;
-
-        // Prevenir ações padrão do navegador
-        if (key.startsWith('F') || (ctrl && ['d', 'p', 'r'].includes(key.toLowerCase())) || key === 'p' || key === 'P') {
+        var isFKey = key && String(key).match(/^F([1-9]|1[0-2])$/);
+        var isShortcut = isFKey || key === 'p' || key === 'P' || key === 'Escape' || (ctrl && /^[dpr]$/i.test(key)) || (alt && key === 'f');
+        if (isShortcut) {
             e.preventDefault();
+            e.stopPropagation();
         }
 
-        // Atalho para FECHAR CAIXA (Alt + F) - Fim de Expediente
-        if (e.altKey && key.toLowerCase() === 'f') {
-            e.preventDefault();
+        if (currentCaixaStatus !== 'LIVRE' && key !== 'F5' && key !== 'F11' && key !== 'Escape') {
+            return;
+        }
+
+        if (alt && (key === 'f' || key === 'F')) {
             if (confirm('Deseja realmente FECHAR o caixa (Final de Expediente)?')) {
                 setCaixaStatus('FECHADO');
                 showAlert('Caixa FECHADO.', 'warning');
@@ -112,57 +141,52 @@ function setupKeyboardShortcuts() {
 
         switch (key) {
             case 'F2':
-                document.getElementById('pdv-barcode').focus();
-                showAlert('Foco no campo de código.', 'info');
+                var b = document.getElementById('pdv-barcode');
+                if (b) { b.focus(); showAlert('Foco no campo de código.', 'info'); }
                 break;
             case 'F3':
-                document.getElementById('pdv-order-code').focus();
-                showAlert('Foco no campo de pedido.', 'info');
+                var o = document.getElementById('pdv-order-code');
+                if (o) { o.focus(); showAlert('Foco no campo de pedido.', 'info'); }
                 break;
             case 'F4':
-                changeQuantity();
+                if (typeof changeQuantity === 'function') changeQuantity();
                 break;
             case 'F5':
-                novaVenda();
+                if (typeof novaVenda === 'function') novaVenda();
                 break;
             case 'F7':
-                openSaleSearchModal();
+                if (typeof openSaleSearchModal === 'function') openSaleSearchModal();
                 break;
             case 'F8':
-                openProductSearchModal();
+                if (typeof openProductSearchModal === 'function') openProductSearchModal();
                 break;
             case 'F9':
                 alert('Função "Alterar Venda (F9)" não implementada.');
                 break;
             case 'F10':
-                finalizeSale();
+                if (typeof finalizeSale === 'function') finalizeSale();
                 break;
             case 'F11':
                 if (confirm('Tem certeza que deseja cancelar esta venda?')) {
-                    novaVenda();
+                    if (typeof novaVenda === 'function') novaVenda();
                 }
                 break;
             case 'F12':
-                alert('Função "Indicar Cliente (F12)" não implementada.');
+                if (typeof openClientModal === 'function') openClientModal();
                 break;
-            case 'p': // 'P' maiúsculo ou minúsculo
+            case 'p':
             case 'P':
-                if (!ctrl) { // Garante que não é Ctrl+P
-                     printLastSale();
-                }
+                if (!ctrl && typeof printLastSale === 'function') printLastSale();
                 break;
             case 'Escape':
                 if (activeModal) {
                     closeModal(activeModal);
                 } else {
-                    // Verificar o perfil do usuário para decidir a ação de saída
                     if (typeof isVendedor === 'function' && isVendedor()) {
-                        // Se for VENDEDOR, pergunta se quer fazer logout
                         if (confirm('Deseja sair do PDV e fazer logout?')) {
-                            logout(); // Função do auth.js que redireciona para login.html
+                            if (typeof logout === 'function') logout();
                         }
                     } else {
-                        // Se for ADM ou outro perfil, volta para a retaguarda
                         if (confirm('Deseja sair do PDV e voltar para a retaguarda do sistema?')) {
                             window.location.href = 'index.html';
                         }
@@ -171,21 +195,15 @@ function setupKeyboardShortcuts() {
                 break;
         }
 
-        // Atalhos com Ctrl
-        if (ctrl) {
-            switch (key.toLowerCase()) {
-                case 'd':
-                    addCpfToSale();
-                    break;
-                case 'p':
-                    alert('Função "Preço Produto (Ctrl+P)" não implementada.');
-                    break;
-                case 'r':
-                    alert('Função "Contas a Receber (Ctrl+R)" não implementada.');
-                    break;
-            }
+        if (ctrl && key) {
+            var k = key.toLowerCase();
+            if (k === 'd' && typeof addCpfToSale === 'function') addCpfToSale();
+            else if (k === 'p') alert('Função "Preço Produto (Ctrl+P)" não implementada.');
+            else if (k === 'r') alert('Função "Contas a Receber (Ctrl+R)" não implementada.');
         }
-    });
+    }
+
+    window.addEventListener('keydown', handleShortcut, true);
 }
 
 async function loadProducts() {
@@ -227,27 +245,34 @@ async function addProductByBarcode(codigoLido) {
     // REGRA DE NEGÓCIO: Bloquear entrada se caixa não estiver livre
     if (currentCaixaStatus !== 'LIVRE') {
         showAlert(`Caixa ${currentCaixaStatus}. Operação não permitida.`, 'warning');
-        document.getElementById('pdv-barcode').value = ''; // Limpa o input
+        document.getElementById('pdv-barcode').value = '';
         return;
     }
 
     const codigo = String(codigoLido || '').trim();
     if (!codigo) return;
 
-    let foundProduct = products.find(p => p.codigoProduto === codigo);
+    // 1) Busca por código de barras (codigoProduto) – uso com leitor
+    let foundProduct = products.find(function(p) {
+        return p.codigoProduto != null && String(p.codigoProduto).trim() === codigo;
+    });
+
+    // 2) Fallback: busca por ID (código interno) – digitação manual do número do produto
+    if (!foundProduct && /^\d+$/.test(codigo)) {
+        var id = parseInt(codigo, 10);
+        foundProduct = products.find(function(p) { return p.id === id; });
+    }
 
     if (!foundProduct) {
-        showAlert(`Produto com código ${codigo} não encontrado.`, 'error');
-        // Limpa o campo de código de barras em caso de erro e mantém o foco
-        const barcodeInput = document.getElementById('pdv-barcode');
-        barcodeInput.value = '';
-        barcodeInput.focus();
+        showAlert('Produto com código "' + codigo + '" não encontrado.', 'error');
+        var barcodeInput = document.getElementById('pdv-barcode');
+        if (barcodeInput) { barcodeInput.value = ''; barcodeInput.focus(); }
         return;
     }
 
     addToCart(foundProduct.id);
-    document.getElementById('pdv-barcode').value = '';
-    document.getElementById('pdv-barcode').focus();
+    var barcodeInput = document.getElementById('pdv-barcode');
+    if (barcodeInput) { barcodeInput.value = ''; barcodeInput.focus(); }
 }
 
 function addToCart(productId, quantity = 1) {
@@ -272,7 +297,8 @@ function addToCart(productId, quantity = 1) {
     }
     
     currentItem = existingItem || cart.find(item => item.productId === productId);
-    renderCart();
+    const wasNewItem = !existingItem;
+    renderCart(wasNewItem);
 }
 
 function removeFromCart(productId) {
@@ -293,9 +319,9 @@ function removeFromCart(productId) {
     showAlert(`Produto "${itemToRemove.name}" removido da venda.`, 'info');
 }
 
-function renderCart() {
+function renderCart(highlightNewLine) {
     const tbody = document.getElementById('pdv-item-list-body');
-    tbody.innerHTML = ''; // Limpa a tabela
+    tbody.innerHTML = '';
 
     if (cart.length === 0) {
         tbody.innerHTML = '<tr class="placeholder-row"><td colspan="7">Aguardando itens...</td></tr>';
@@ -314,6 +340,12 @@ function renderCart() {
             `;
             tbody.appendChild(row);
         });
+        if (highlightNewLine && tbody.lastElementChild) {
+            tbody.lastElementChild.classList.add('receipt-line-new');
+            setTimeout(function() {
+                if (tbody.lastElementChild) tbody.lastElementChild.classList.remove('receipt-line-new');
+            }, 500);
+        }
     }
     updateDisplayInfo();
     updateTotalsFooter();
@@ -481,11 +513,130 @@ function changeQuantity() {
 }
 
 function addCpfToSale() {
-    const cpf = prompt('Digite o CPF do cliente para a nota:', saleCpf || '');
+    const cpf = prompt('Digite o CPF do cliente para a nota:', saleCpf || (saleCustomer ? saleCustomer.cpf : ''));
     if (cpf !== null) {
-        saleCpf = cpf.trim();
-        showAlert(`CPF ${saleCpf ? saleCpf + ' associado' : 'removido'} à venda.`, 'success');
+        saleCpf = cpf.trim() || null;
+        if (!saleCpf) saleCustomer = null;
+        updateClienteIndicadoDisplay();
+        showAlert(saleCpf ? `CPF ${saleCpf} associado à venda.` : 'CPF removido da venda.', 'success');
     }
+}
+
+// --- Indicar Cliente (F12) ---
+const API_BASE = 'http://localhost:8080/api';
+
+function updateClienteIndicadoDisplay() {
+    const block = document.getElementById('pdv-cliente-indicado');
+    const nomeEl = document.getElementById('pdv-cliente-nome');
+    const cpfEl = document.getElementById('pdv-cliente-cpf');
+    if (!block || !nomeEl || !cpfEl) return;
+    if (saleCustomer && (saleCustomer.nome || saleCpf)) {
+        block.style.display = 'block';
+        nomeEl.textContent = saleCustomer.nome || '—';
+        cpfEl.textContent = saleCpf ? `CPF: ${saleCpf}` : '';
+    } else if (saleCpf) {
+        block.style.display = 'block';
+        nomeEl.textContent = 'CPF na nota';
+        cpfEl.textContent = saleCpf;
+    } else {
+        block.style.display = 'none';
+    }
+}
+
+function clearClienteIndicado() {
+    saleCustomer = null;
+    saleCpf = null;
+    updateClienteIndicadoDisplay();
+    showAlert('Cliente removido da venda.', 'success');
+}
+
+function openClientModal() {
+    var inp = document.getElementById('clientSearchInput');
+    if (inp) inp.value = '';
+    openModal('clientModal');
+    setTimeout(function() {
+        if (inp) inp.focus();
+        searchClients(); // Lista todos ao abrir (busca com string vazia)
+    }, 100);
+}
+
+function searchClients() {
+    const q = (document.getElementById('clientSearchInput') || {}).value.trim();
+    const tbody = document.getElementById('client-search-results-body');
+    if (!tbody) return;
+    const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+    const url = API_BASE + '/clientes/search?q=' + encodeURIComponent(q);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Buscando...</td></tr>';
+    fetch(url, { headers: token ? { 'Authorization': 'Bearer ' + token } : {} })
+        .then(function(res) {
+            if (!res.ok) throw new Error('Erro ao buscar clientes');
+            return res.json();
+        })
+        .then(function(list) {
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum cliente encontrado.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '';
+            list.forEach(function(c) {
+                var row = document.createElement('tr');
+                var nome = (c.nome || '').replace(/"/g, '&quot;');
+                var cpf = (c.cpf || '').replace(/"/g, '&quot;');
+                row.innerHTML = '<td>' + (c.nome || '—') + '</td><td>' + (c.cpf || '—') + '</td><td>' + (c.email || '—') + '</td><td><button type="button" class="btn btn-primary btn-small" data-id="' + c.id + '" data-nome="' + nome + '" data-cpf="' + cpf + '" onclick="selectClientFromRow(this)">Usar na nota</button></td>';
+                tbody.appendChild(row);
+            });
+        })
+        .catch(function() {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Erro ao buscar clientes. Tente novamente.</td></tr>';
+        });
+}
+
+function selectClientFromRow(btn) {
+    var id = btn.getAttribute('data-id');
+    var nome = btn.getAttribute('data-nome') || '';
+    var cpf = btn.getAttribute('data-cpf') || '';
+    selectClientForSale(id, nome, cpf);
+}
+
+function selectClientForSale(id, nome, cpf) {
+    saleCustomer = { id: id, nome: nome, cpf: cpf };
+    saleCpf = cpf || null;
+    updateClienteIndicadoDisplay();
+    closeModal('clientModal');
+    showAlert('Cliente indicado para a nota: ' + (nome || cpf || 'CPF ' + cpf), 'success');
+}
+
+function saveNewClientAndSelect() {
+    const nome = (document.getElementById('clientModalNome') || {}).value.trim();
+    const cpf = (document.getElementById('clientModalCpf') || {}).value.trim().replace(/\D/g, '');
+    const email = (document.getElementById('clientModalEmail') || {}).value.trim();
+    const telefone = (document.getElementById('clientModalTelefone') || {}).value.trim();
+    const endereco = (document.getElementById('clientModalEndereco') || {}).value.trim();
+    if (!nome || !cpf || !email || !telefone) {
+        showAlert('Preencha Nome, CPF, E-mail e Telefone.', 'error');
+        return;
+    }
+    const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+    if (!token) {
+        showAlert('Sessão expirada. Faça login novamente.', 'error');
+        return;
+    }
+    fetch(API_BASE + '/clientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ nome: nome, cpf: cpf, email: email, telefone: telefone, endereco: endereco || null })
+    })
+        .then(function(res) {
+            if (!res.ok) return res.json().then(function(d) { throw new Error(d.message || 'Erro ao cadastrar'); });
+            return res.json();
+        })
+        .then(function(created) {
+            selectClientForSale(created.id, created.nome, created.cpf);
+            document.getElementById('clientModalForm').reset();
+        })
+        .catch(function(e) {
+            showAlert(e.message || 'Erro ao cadastrar cliente.', 'error');
+        });
 }
 
 // =================================================================
@@ -599,13 +750,16 @@ function viewSaleDetails(saleId) {
         showAlert('Venda não encontrada.', 'error');
         return;
     }
-    openReceiptModal(sale);
+    openSaleDetailModal(sale);
 }
 
-function openReceiptModal(sale) {
+function openSaleDetailModal(sale) {
     const saleDate = new Date(sale.dataVenda || new Date());
+    
+    document.getElementById('detailId').textContent = sale.id || 'N/A';
     document.getElementById('detailDate').textContent = saleDate.toLocaleString('pt-BR');
     document.getElementById('detailOperator').textContent = sale.nomeOperador || 'N/A';
+    document.getElementById('detailCpf').textContent = sale.cpf || sale.clienteCpf || '';
     
     const itemsBody = document.getElementById('detailItems');
     itemsBody.innerHTML = '';
@@ -635,17 +789,48 @@ function openReceiptModal(sale) {
         detailDiscountInfo.style.display = 'none';
     }
 
-    const cashInfoDiv = document.getElementById('detailCashInfo');
-    const valorRecebidoSpan = document.getElementById('detailValorRecebido');
-    const trocoSpan = document.getElementById('detailTroco');
-
-    // Mostra informações de troco apenas para vendas em dinheiro
-    if (sale.formaPagamento === 'DINHEIRO' && sale.valorRecebido) {
-        valorRecebidoSpan.textContent = parseFloat(sale.valorRecebido).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        trocoSpan.textContent = parseFloat(sale.troco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        cashInfoDiv.style.display = 'block';
+    // Preenchimento das Formas de Pagamento
+    const paymentsContainer = document.getElementById('detailPayments');
+    paymentsContainer.innerHTML = '';
+    
+    const fmtMoney = (v) => parseFloat(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    if (sale.pagamentos && sale.pagamentos.length > 0) {
+        sale.pagamentos.forEach(p => {
+             const pDiv = document.createElement('div');
+             pDiv.style.display = 'flex';
+             pDiv.style.justifyContent = 'space-between';
+             pDiv.style.flexWrap = 'wrap';
+             const valor = parseFloat(p.valor || 0);
+             let left = p.forma;
+             let right = fmtMoney(valor);
+             if (p.forma === 'CREDITO' && p.parcelas > 1) {
+                 const valorParcela = valor / p.parcelas;
+                 right = `${fmtMoney(valor)} (${p.parcelas}x de ${fmtMoney(valorParcela)})`;
+             }
+             pDiv.innerHTML = `<span>${left}</span><span>${right}</span>`;
+             paymentsContainer.appendChild(pDiv);
+        });
+    } else if (sale.formaPagamento) {
+         // Suporte legado para venda com pagamento único
+         const pDiv = document.createElement('div');
+         pDiv.style.display = 'flex';
+         pDiv.style.justifyContent = 'space-between';
+         const valorLegado = parseFloat(sale.valorRecebido || sale.total || 0);
+         let rightLegado = fmtMoney(valorLegado);
+         if (sale.formaPagamento.toUpperCase() === 'CREDITO' && sale.parcelas > 1) {
+             const valorParcelaLegado = valorLegado / sale.parcelas;
+             rightLegado = `${fmtMoney(valorLegado)} (${sale.parcelas}x de ${fmtMoney(valorParcelaLegado)})`;
+         }
+         pDiv.innerHTML = `<span>${sale.formaPagamento}</span><span>${rightLegado}</span>`;
+         paymentsContainer.appendChild(pDiv);
+    }
+    
+    const changeDiv = document.getElementById('detailChange');
+    if (sale.troco && sale.troco > 0) {
+        document.getElementById('detailChangeValue').textContent = parseFloat(sale.troco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        changeDiv.style.display = 'block';
     } else {
-        cashInfoDiv.style.display = 'none';
+        changeDiv.style.display = 'none';
     }
 
     const total = sale.total !== undefined ? sale.total : itens.reduce((sum, i) => sum + (i.preco * i.quantidade), 0);
@@ -658,7 +843,7 @@ function printLastSale() {
         showAlert('Nenhuma venda finalizada para imprimir.', 'warning');
         return;
     }
-    openReceiptModal(lastSale);
+    openSaleDetailModal(lastSale);
     // Atraso para garantir que o modal renderize antes de imprimir
     setTimeout(() => {
         window.print();
@@ -735,113 +920,156 @@ function cycleCaixaStatus() {
 
 // --- Modal de Pagamento (F10) ---
 function openPaymentModal() {
-    selectPaymentMethod('DINHEIRO'); // Reseta para o padrão
-    document.getElementById('cash-received').value = '';
+    currentPayments = []; // Limpa pagamentos anteriores
+    renderAddedPayments();
+    selectPaymentMethod('DINHEIRO'); // Define padrão e foca
     updatePaymentSummary();
     openModal('paymentModal');
 }
 
 function selectPaymentMethod(method) {
-    // Remove a classe 'active' de todos os botões
+    activePaymentMethod = method;
+    
+    // Atualiza visual dos botões
     document.querySelectorAll('.payment-method-btn').forEach(btn => btn.classList.remove('active'));
-    // Adiciona a classe 'active' ao botão clicado
-    document.getElementById(`pay-${method.toLowerCase()}`).classList.add('active');
+    const activeBtn = document.getElementById(`pay-${method.toLowerCase()}`);
+    if(activeBtn) activeBtn.classList.add('active');
 
-    // Mostra/esconde os campos específicos
-    document.getElementById('cash-fields').style.display = (method === 'DINHEIRO') ? 'block' : 'none';
-    document.getElementById('credit-fields').style.display = (method === 'CREDITO') ? 'block' : 'none';
-    document.getElementById('pix-fields').style.display = (method === 'PIX') ? 'block' : 'none';
+    // Mostra/esconde opções extras
+    const creditOptions = document.getElementById('credit-options');
+    const pixFields = document.getElementById('pix-fields');
+    
+    if(creditOptions) creditOptions.style.display = (method === 'CREDITO') ? 'block' : 'none';
+    if(pixFields) pixFields.style.display = (method === 'PIX') ? 'block' : 'none';
 
     if (method === 'CREDITO') {
-        updateInstallmentInfo();
-    } else if (method === 'PIX') {
+        updateInstallmentsInfo();
+    } else {
+        const installmentsInfo = document.getElementById('installments-info');
+        if (installmentsInfo) { installmentsInfo.style.display = 'none'; installmentsInfo.innerHTML = ''; }
+    }
+
+    if (method === 'PIX') {
+        // Gera QR Code com o valor restante
         generatePixQRCode();
     }
 
-    updatePaymentSummary();
-}
-
-function updateInstallmentInfo() {
-    const total = getCartTotal(); // Já considera o desconto
-    const cashReceivedInput = document.getElementById('cash-received').value;
-    const cashReceived = parseFloat(cashReceivedInput.replace(',', '.')) || 0;
+    // Preenche o valor restante automaticamente
+    const remaining = Math.max(0, getCartTotal() - currentPayments.reduce((sum, p) => sum + p.valor, 0));
+    const paymentValueInput = document.getElementById('payment-value-input');
     
-    // O valor a ser parcelado é o que resta após um possível pagamento em dinheiro
-    const amountToFinance = Math.max(0, total - cashReceived);
-    
-    const installmentsSelect = document.getElementById('installments');
-    const numInstallments = parseInt(installmentsSelect.value);
-    
-    const infoDiv = document.getElementById('installments-info');
-    
-    if (amountToFinance > 0 && numInstallments > 0) {
-        const installmentValue = amountToFinance / numInstallments;
-        infoDiv.innerHTML = `<strong>${numInstallments}x</strong> de <strong>${installmentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>`;
-        infoDiv.style.display = 'block';
-    } else {
-        infoDiv.style.display = 'none';
+    if(paymentValueInput) {
+        paymentValueInput.value = remaining > 0 ? remaining.toFixed(2).replace('.', ',') : '';
+        paymentValueInput.focus();
+        paymentValueInput.select();
     }
 }
 
-function getCartSubtotal() {
-    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+function addPayment() {
+    const valueInput = document.getElementById('payment-value-input');
+    if (!valueInput) return;
+    
+    const value = parseFloat(valueInput.value.replace(',', '.')) || 0;
+
+    if (value <= 0) {
+        showAlert('O valor do pagamento deve ser maior que zero.', 'error');
+        return;
+    }
+
+    const payment = {
+        forma: activePaymentMethod,
+        valor: value
+    };
+
+    if (activePaymentMethod === 'CREDITO') {
+        payment.parcelas = parseInt(document.getElementById('installments').value);
+    }
+
+    currentPayments.push(payment);
+    renderAddedPayments();
+    updatePaymentSummary();
+
+    // Limpa e foca para o próximo pagamento
+    valueInput.value = '';
+    
+    // Se ainda faltar valor, mantém o foco, senão foca no botão de confirmar
+    const remaining = getCartTotal() - currentPayments.reduce((sum, p) => sum + p.valor, 0);
+    if (remaining > 0.01) {
+        selectPaymentMethod(activePaymentMethod); // Recalcula restante
+    } else {
+        document.getElementById('confirm-payment-btn').focus();
+    }
 }
 
-function getCartTotal() {
-    return Math.max(0, getCartSubtotal() - currentDiscount);
+function removePayment(index) {
+    currentPayments.splice(index, 1);
+    renderAddedPayments();
+    updatePaymentSummary();
+    selectPaymentMethod(activePaymentMethod);
 }
+
+function renderAddedPayments() {
+    const listDiv = document.getElementById('added-payments-list');
+    if (!listDiv) return; // Proteção contra erro se o HTML estiver desatualizado
+    
+    listDiv.innerHTML = '';
+
+    if (currentPayments.length === 0) {
+        listDiv.innerHTML = '<p class="empty-list">Nenhum pagamento adicionado.</p>';
+        return;
+    }
+
+    const fmt = (v) => (typeof v === 'number' ? v : parseFloat(v || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    currentPayments.forEach((p, index) => {
+        const paymentDiv = document.createElement('div');
+        paymentDiv.className = 'added-payment-item';
+        const valor = typeof p.valor === 'number' ? p.valor : parseFloat(p.valor || 0);
+        let text = `${p.forma}: ${fmt(valor)}`;
+        if (p.forma === 'CREDITO' && p.parcelas > 1) {
+            const valorParcela = valor / p.parcelas;
+            text += ` (${p.parcelas}x de ${fmt(valorParcela)})`;
+        }
+        paymentDiv.innerHTML = `
+            <span>${text}</span>
+            <button onclick="removePayment(${index})" class="btn-remove-item" title="Remover Pagamento">&times;</button>
+        `;
+        listDiv.appendChild(paymentDiv);
+    });
+}
+
+function getCartSubtotal() { return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0); }
+function getCartTotal() { return Math.max(0, getCartSubtotal() - currentDiscount); }
 
 function updatePaymentSummary() {
     const total = getCartTotal();
-    const method = document.querySelector('.payment-method-btn.active')?.id.replace('pay-', '').toUpperCase() || 'DINHEIRO';
-
-    let paid = 0;
-    let change = 0;
-    let remaining = 0;
-
-    if (method === 'DINHEIRO') {
-        const cashReceivedInput = document.getElementById('cash-received').value;
-        const cashReceived = parseFloat(cashReceivedInput.replace(',', '.')) || 0;
-        paid = cashReceived;
-        change = Math.max(0, paid - total);
-        remaining = Math.max(0, total - paid);
-    } else { // DEBITO, CREDITO, PIX
-        paid = total;
-        change = 0;
-        remaining = 0;
-    }
-
-    // Se o método de pagamento for crédito, atualiza o valor das parcelas
-    if (method === 'CREDITO') {
-        updateInstallmentInfo();
-    }
+    const totalPaid = currentPayments.reduce((sum, p) => sum + p.valor, 0);
+    const remaining = total - totalPaid;
+    const change = totalPaid > total ? totalPaid - total : 0;
 
     document.getElementById('summary-total').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    document.getElementById('summary-paid').textContent = paid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.getElementById('summary-paid').textContent = totalPaid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.getElementById('summary-remaining').textContent = Math.max(0, remaining).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById('summary-change').textContent = change.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    document.getElementById('summary-remaining').textContent = remaining.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // Habilita o botão de confirmação apenas se o valor total for pago ou ultrapassado
+    const confirmBtn = document.getElementById('confirm-payment-btn');
+    confirmBtn.disabled = remaining > 0.001; // Usar uma pequena tolerância para erros de ponto flutuante
 }
 
 async function processPayment() {
     const total = getCartTotal();
-    if (total <= 0) return;
+    const totalPaid = currentPayments.reduce((sum, p) => sum + p.valor, 0);
 
-    // VALIDAÇÃO: Verifica se há itens com preço inválido antes de enviar
-    for (const item of cart) {
-        // Number.isFinite() é uma verificação robusta que lida com null, undefined, NaN e Infinity.
-        if (!Number.isFinite(item.price)) {
-            showAlert(`Erro: O item "${item.name}" está com um preço inválido. Por favor, remova o item e tente novamente.`, 'error');
-            closeModal('paymentModal'); // Fecha o modal de pagamento para corrigir o carrinho
-            return; // Aborta o pagamento
-        }
+    if (totalPaid < total) {
+        showAlert('O valor pago é inferior ao total da venda.', 'error');
+        return;
     }
 
     const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : { id: null, username: 'Caixa' };
-    // Correção: Pega o ID do botão (ex: pay-credito), remove 'pay-' e converte para maiúsculo
-    const method = document.querySelector('.payment-method-btn.active').id.replace('pay-', '').toUpperCase();
 
     const saleRequest = {
         usuarioId: user.id,
+        cpfCliente: saleCpf || null, // CPF na nota (do cliente indicado ou Ctrl+D)
         itens: cart.map(item => ({
             produtoId: item.productId,
             quantidade: item.quantity,
@@ -849,63 +1077,80 @@ async function processPayment() {
             preco: item.price,
             subtotal: item.price * item.quantity
         })),
-        formaPagamento: method,
         desconto: currentDiscount,
+        pagamentos: currentPayments.map(p => ({
+            forma: p.forma,
+            valor: p.valor,
+            parcelas: p.parcelas
+        }))
     };
-
-    // Adiciona campos específicos com base no método de pagamento
-    if (method === 'CREDITO') {
-        saleRequest.parcelas = parseInt(document.getElementById('installments').value);
-    } else if (method === 'DINHEIRO') {
-        const cashReceivedInput = document.getElementById('cash-received').value;
-        const cashReceived = parseFloat(cashReceivedInput.replace(',', '.')) || 0;
-        if (cashReceived < total) {
-            showAlert('Valor recebido em dinheiro é menor que o total da venda.', 'error');
-            return;
-        }
-        saleRequest.valorRecebido = cashReceived;
-        saleRequest.troco = cashReceived - total;
-    }
 
     try {
         const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+        if (!token) {
+            showAlert('Sessão expirada. Faça login novamente.', 'error');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            return;
+        }
         const response = await fetch('http://localhost:8080/api/vendas', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify(saleRequest)
         });
 
         if (response.ok) {
-            lastSale = await response.json();
+            lastSale = await response.json(); // O backend agora precisa retornar a venda completa
             showAlert('Venda finalizada com sucesso!', 'success');
-
-            // SOLUÇÃO: Adiciona manualmente os detalhes de pagamento ao objeto 'lastSale'
-            // Isso garante que o recibo tenha os dados, mesmo que o backend não os retorne.
-            lastSale.formaPagamento = saleRequest.formaPagamento;
-            lastSale.desconto = saleRequest.desconto;
-            if (saleRequest.formaPagamento === 'DINHEIRO') {
-                lastSale.valorRecebido = saleRequest.valorRecebido;
-                lastSale.troco = saleRequest.troco;
-            }
             
-            // Atraso para garantir que o usuário veja a mensagem de sucesso
+            // Opcional: Adicionar detalhes de pagamento ao `lastSale` para o recibo, se o backend não os retornar
+            lastSale.pagamentos = saleRequest.pagamentos;
+            lastSale.troco = totalPaid > total ? totalPaid - total : 0;
+            lastSale.cpf = saleCpf; // Garante que o CPF apareça no recibo imediato
+            lastSale.cpfCliente = saleCpf;
+
             setTimeout(() => {
                 closeModal('paymentModal');
-                printLastSale();
+                printLastSale(); // Mostra o comprovante e abre a janela de impressão
                 novaVenda();
-                loadProducts(); // Recarrega produtos para atualizar estoque
+                loadProducts();
             }, 1500);
         } else {
-            const errorData = await response.json();
-            showAlert(`Erro ao finalizar venda: ${errorData.message || response.statusText}`, 'error');
+            let msg = response.statusText;
+            try {
+                const errorData = await response.json();
+                msg = errorData.message || msg;
+            } catch (_) { /* body vazio ou não JSON */ }
+            if (response.status === 401) {
+                showAlert('Sessão expirada. Faça login novamente.', 'error');
+                setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            } else if (response.status === 403) {
+                showAlert('Sem permissão para registrar vendas. Contate o administrador.', 'error');
+            } else {
+                showAlert('Erro ao finalizar venda: ' + msg, 'error');
+            }
         }
     } catch (error) {
         showAlert('Falha de comunicação ao finalizar a venda.', 'error');
         console.error('Erro ao processar pagamento:', error);
     }
+}
+
+function updateInstallmentsInfo() {
+    if (activePaymentMethod !== 'CREDITO') return;
+    const valueInput = document.getElementById('payment-value-input');
+    const installmentsSelect = document.getElementById('installments');
+    const infoEl = document.getElementById('installments-info');
+    if (!infoEl || !valueInput || !installmentsSelect) return;
+    const valor = parseFloat(String(valueInput.value).replace(',', '.')) || 0;
+    const n = parseInt(installmentsSelect.value, 10) || 1;
+    if (valor <= 0 || n <= 1) {
+        infoEl.style.display = 'none';
+        infoEl.innerHTML = '';
+        return;
+    }
+    const valorParcela = valor / n;
+    infoEl.innerHTML = `<p><strong>Valor por parcela:</strong> ${valorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>`;
+    infoEl.style.display = 'block';
 }
 
 // =================================================================
@@ -928,9 +1173,11 @@ function formatCopiaECola(id, value) {
 
 function generatePixQRCode() {
     const pixKey = getPixStoreKey();
-    const total = getCartTotal();
+    // O valor do PIX deve ser o que falta pagar, não necessariamente o total
+    const totalPaid = currentPayments.reduce((sum, p) => sum + p.valor, 0);
+    const amountToPay = Math.max(0, getCartTotal() - totalPaid);
     
-    if (!pixKey || total <= 0) {
+    if (!pixKey || amountToPay <= 0) {
         document.getElementById('pix-qrcode').innerHTML = '<p>Erro ao gerar QR Code (verifique valor e chave PIX).</p>';
         return;
     }
@@ -943,7 +1190,7 @@ function generatePixQRCode() {
     payload += formatCopiaECola('26', formatCopiaECola('00', 'br.gov.bcb.pix') + formatCopiaECola('01', pixKey));
     payload += formatCopiaECola('52', '0000');
     payload += formatCopiaECola('53', '986');
-    payload += formatCopiaECola('54', total.toFixed(2));
+    payload += formatCopiaECola('54', amountToPay.toFixed(2));
     payload += formatCopiaECola('58', 'BR');
     payload += formatCopiaECola('59', merchantName);
     payload += formatCopiaECola('60', merchantCity);

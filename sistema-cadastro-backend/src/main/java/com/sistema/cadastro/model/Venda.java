@@ -53,5 +53,8 @@ public class Venda {
 
     @Column(name = "chave_pix", length = 255)
     private String chavePix;
+
+    @Column(name = "cpf_cliente", length = 14)
+    private String cpfCliente;
 }
 
