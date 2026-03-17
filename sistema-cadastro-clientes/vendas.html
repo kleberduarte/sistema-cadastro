@@ -23,9 +23,17 @@
                     <!-- O logo será inserido aqui pelo config.js -->
                 </div>
 
+                <div id="pdv-cliente-indicado" class="pdv-cliente-indicado" style="display: none;">
+                    <label>CLIENTE NA NOTA</label>
+                    <div class="pdv-cliente-indicado__info">
+                        <span id="pdv-cliente-nome">—</span>
+                        <span id="pdv-cliente-cpf" class="pdv-cliente-cpf"></span>
+                        <button type="button" class="pdv-cliente-indicado__clear" onclick="clearClienteIndicado()" title="Remover cliente">✕</button>
+                    </div>
+                </div>
                 <div class="input-group">
                     <label for="pdv-barcode">CÓDIGO DE BARRAS</label>
-                    <input type="text" id="pdv-barcode" placeholder="Leia o código ou pressione F8 para pesquisar">
+                    <input type="text" id="pdv-barcode" placeholder="Leia o código ou pressione F8 para pesquisar" autofocus autocomplete="off">
                 </div>
 
                 <div class="info-display">
@@ -44,64 +52,64 @@
                 </div>
 
                 <div class="discount-section">
-                    <label>DESCONTO</label>
-                    <div class="input-group-addon">
-                        <select id="discountType">
+                    <label class="discount-section__label" for="discountType">Desconto</label>
+                    <div class="discount-section__wrap">
+                        <select id="discountType" class="discount-section__select">
                             <option value="none">Nenhum</option>
                             <option value="percent">%</option>
                             <option value="fixed">R$</option>
                         </select>
-                        <input type="text" id="discountValue" placeholder="Valor" style="display: none;">
-                        <button id="applyDiscountBtn" title="Aplicar Desconto" style="display: none;">✓</button>
+                        <input type="text" id="discountValue" class="discount-section__input" placeholder="Valor" style="display: none;" aria-label="Valor do desconto">
+                        <button type="button" id="applyDiscountBtn" class="discount-section__btn" title="Aplicar Desconto" style="display: none;">Aplicar</button>
                     </div>
                 </div>
 
                 <div class="left-footer">
-                    <label for="pdv-order-code">CÓDIGO / DIGITE O PEDIDO</label>
-                    <input type="text" id="pdv-order-code" placeholder="Use F3 para pesquisar o pedido">
+                    <label class="left-footer__label" for="pdv-order-code">Código ou número do pedido</label>
+                    <input type="text" id="pdv-order-code" class="left-footer__input" placeholder="Digite o código ou F3 para pesquisar" aria-label="Código ou pedido">
                 </div>
             </section>
 
-            <!-- Seção Direita: Cupom Fiscal e Totais -->
+            <!-- Seção Direita: Cupom Fiscal (estilo térmico) -->
             <section class="pdv-right">
-                <div class="cupom-header">
-                    <h3>CUPOM FISCAL</h3>
+                <div class="cupom-paper" id="cupom-paper">
+                    <div class="cupom-header" id="cupom-header">
+                        <div id="cupom-empresa-logo" class="cupom-header__logo" aria-hidden="true"></div>
+                        <div id="cupom-empresa-nome" class="cupom-header__empresa"></div>
+                        <div class="cupom-header__line">********************************</div>
+                        <h3 class="cupom-header__title">CUPOM FISCAL</h3>
+                        <div class="cupom-header__line">********************************</div>
+                    </div>
+                    <div class="cupom-body">
+                        <div class="cupom-body__cabecalho">
+                            <span class="cupom-col item">Item</span>
+                            <span class="cupom-col cod">Cód</span>
+                            <span class="cupom-col desc">Descrição</span>
+                            <span class="cupom-col qtd">Qtd</span>
+                            <span class="cupom-col unit">Unit.</span>
+                            <span class="cupom-col total">Total</span>
+                            <span class="cupom-col acao">Ação</span>
+                        </div>
+                        <div class="cupom-body__separator"></div>
+                        <div class="item-list-container" id="cupom-item-list">
+                            <table id="pdv-item-list" class="cupom-table">
+                                <colgroup><col><col><col><col><col><col><col></colgroup>
+                                <tbody id="pdv-item-list-body">
+                                    <tr class="placeholder-row">
+                                        <td colspan="7">Aguardando itens...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="cupom-body__separator"></div>
+                        <footer class="cupom-footer">
+                            <div class="cupom-footer__line"><span>Subtotal</span><span id="pdv-subtotal">R$ 0,00</span></div>
+                            <div id="discount-display" class="cupom-footer__line cupom-footer__discount" style="display: none;"><span>Desconto</span><span id="pdv-discount">R$ 0,00</span></div>
+                            <div class="cupom-footer__separator"></div>
+                            <div class="cupom-footer__line cupom-footer__total"><span>TOTAL</span><span id="pdv-total">R$ 0,00</span></div>
+                        </footer>
+                    </div>
                 </div>
-                <div class="item-list-container">
-                    <table id="pdv-item-list">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Código</th>
-                                <th>Descrição</th>
-                                <th>Qtd.</th>
-                                <th>Vl. Unit.</th>
-                                <th>Total</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pdv-item-list-body">
-                            <!-- Itens do carrinho serão inseridos aqui -->
-                            <tr class="placeholder-row">
-                                <td colspan="7">Aguardando itens...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <footer class="right-footer">
-                    <div class="total-box">
-                        <label>SUBTOTAL</label>
-                        <span id="pdv-subtotal">R$ 0,00</span>
-                    </div>
-                    <div id="discount-display" class="total-box discount" style="display: none;">
-                        <label>DESCONTO</label>
-                        <span id="pdv-discount">R$ 0,00</span>
-                    </div>
-                    <div class="total-box total-final">
-                        <label>TOTAL</label>
-                        <span id="pdv-total">R$ 0,00</span>
-                    </div>
-                </footer>
             </section>
         </main>
 
@@ -160,13 +168,19 @@
                         <button id="pay-credito" class="payment-method-btn" onclick="selectPaymentMethod('CREDITO')">💳 Crédito</button>
                         <button id="pay-pix" class="payment-method-btn" onclick="selectPaymentMethod('PIX')">📱 PIX</button>
                     </div>
-                    <div id="cash-fields" class="payment-details">
-                        <label for="cash-received">Valor Recebido (R$)</label>
-                        <input type="text" id="cash-received" placeholder="0,00" oninput="updatePaymentSummary()">
+                    
+                    <!-- Campo de valor unificado para qualquer método -->
+                    <div id="payment-value-container" class="payment-details" style="margin-top: 15px;">
+                        <label for="payment-value-input">Valor a Pagar (R$)</label>
+                        <div class="input-group-addon" style="display: flex; gap: 10px;">
+                            <input type="text" id="payment-value-input" placeholder="0,00" style="flex: 1;" oninput="if(typeof updateInstallmentsInfo==='function') updateInstallmentsInfo()">
+                            <button id="btn-add-payment" class="btn btn-secondary" onclick="addPayment()">➕ Adicionar</button>
+                        </div>
                     </div>
-                    <div id="credit-fields" class="payment-details" style="display: none;">
+
+                    <div id="credit-options" class="payment-details" style="display: none; margin-top: 10px;">
                         <label for="installments">Parcelas</label>
-                        <select id="installments">
+                        <select id="installments" onchange="if(typeof updateInstallmentsInfo==='function') updateInstallmentsInfo()">
                             <option value="1">1x</option>
                             <option value="2">2x</option>
                             <option value="3">3x</option>
@@ -188,7 +202,12 @@
                         <input type="text" id="pix-payload-display" readonly style="font-size: 0.7em; margin-top: 10px; text-align: center;">
                         <button id="copy-pix-btn" style="display:none; margin-top: 5px;" class="btn btn-secondary btn-small" onclick="copyPixPayload()">Copiar Código PIX</button>
                     </div>
+
+                    <!-- Lista de pagamentos adicionados (Correção do erro JS) -->
+                    <div id="added-payments-list" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+                    </div>
                 </div>
+
                 <div class="payment-right">
                     <h4>Resumo da Venda</h4>
                     <div class="payment-summary">
@@ -198,7 +217,7 @@
                         <div class="summary-line change"><span>Troco</span><span id="summary-change">R$ 0,00</span></div>
                         <div class="summary-line remaining"><span>Faltam</span><span id="summary-remaining">R$ 0,00</span></div>
                     </div>
-                    <button class="btn btn-primary btn-finalize" onclick="processPayment()">✅ Confirmar Pagamento</button>
+                    <button id="confirm-payment-btn" class="btn btn-primary btn-finalize" onclick="processPayment()">✅ Confirmar Pagamento</button>
                 </div>
             </div>
         </div>
@@ -234,6 +253,49 @@
         </div>
     </div>
 
+    <!-- Modal Indicar Cliente (F12) -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Indicar Cliente (F12) – CPF na Nota</h2>
+                <span class="close-button" onclick="closeModal('clientModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="client-modal-search">
+                    <input type="text" id="clientSearchInput" placeholder="Buscar por nome, e-mail ou CPF...">
+                    <button type="button" class="btn btn-secondary" onclick="searchClients()">Buscar</button>
+                </div>
+                <div class="table-container modal-table">
+                    <table id="client-search-results">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CPF</th>
+                                <th>E-mail</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="client-search-results-body"></tbody>
+                    </table>
+                </div>
+                <hr>
+                <h4>Cadastrar novo cliente</h4>
+                <form id="clientModalForm" class="client-modal-form">
+                    <div class="client-form-row">
+                        <div class="form-group"><label for="clientModalNome">Nome *</label><input type="text" id="clientModalNome" required placeholder="Nome completo"></div>
+                        <div class="form-group"><label for="clientModalCpf">CPF *</label><input type="text" id="clientModalCpf" required placeholder="000.000.000-00"></div>
+                    </div>
+                    <div class="client-form-row">
+                        <div class="form-group"><label for="clientModalEmail">E-mail *</label><input type="email" id="clientModalEmail" required placeholder="email@exemplo.com"></div>
+                        <div class="form-group"><label for="clientModalTelefone">Telefone *</label><input type="text" id="clientModalTelefone" required placeholder="(00) 00000-0000"></div>
+                    </div>
+                    <div class="form-group"><label for="clientModalEndereco">Endereço</label><input type="text" id="clientModalEndereco" placeholder="Rua, número, bairro, cidade"></div>
+                    <button type="submit" class="btn btn-primary">Cadastrar e usar na nota</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Detalhes da Venda -->
     <div id="saleDetailModal" class="modal">
         <div class="modal-content">
@@ -241,25 +303,31 @@
                 <h2>Detalhes da Venda</h2>
                 <span class="close-button" onclick="closeModal('saleDetailModal')">&times;</span>
             </div>
-            <div class="modal-body receipt-style">
+            <div class="modal-body sale-detail-body">
+                <div class="sale-detail-title">COMPROVANTE DE VENDA</div>
+                <p><strong>Venda ID:</strong> <span id="detailId"></span></p>
                 <p><strong>Data:</strong> <span id="detailDate"></span></p>
                 <p><strong>Operador:</strong> <span id="detailOperator"></span></p>
+                <p><strong>CPF na Nota:</strong> <span id="detailCpf"></span></p>
                 <hr>
-                <h4>Itens:</h4>
                 <table id="detailItemsTable">
-                    <thead><tr><th>Produto</th><th>Qtd</th><th>Vl. Unit.</th><th>Subtotal</th></tr></thead>
+                    <thead><tr><th>Produto</th><th>Qtd.</th><th>Preço Un.</th><th>Total</th></tr></thead>
                     <tbody id="detailItems"></tbody>
                 </table>
                 <hr>
                 <div id="detailDiscountInfo" style="display: none;">
-                    <p><strong>Subtotal:</strong> <span id="detailSubtotal"></span></p>
-                    <p><strong>Desconto:</strong> <span id="detailDiscount"></span></p>
+                    <p class="text-right"><strong>Subtotal:</strong> <span id="detailSubtotal"></span></p>
+                    <p class="text-right"><strong>Desconto:</strong> <span id="detailDiscount"></span></p>
                 </div>
                 <h4 class="text-right">Total: <span id="detailTotal"></span></h4>
-                <div id="detailCashInfo" style="display: none;">
-                    <p><strong>Valor Recebido:</strong> <span id="detailValorRecebido"></span></p>
-                    <p><strong>Troco:</strong> <span id="detailTroco"></span></p>
-                    <hr>
+                <hr>
+                <h4>Formas de Pagamento</h4>
+                <div id="detailPayments"></div>
+                <div id="detailChange" style="display: none;">
+                   <p class="text-right">Troco: <span id="detailChangeValue"></span></p>
+                </div>
+                <div class="sale-detail-footer">
+                    <p>Obrigado pela sua preferência!</p>
                 </div>
             </div>
         </div>

@@ -23,6 +23,7 @@ public class VendaResponse {
     private String formaPagamento;
     private Integer parcelas;
     private String chavePix;
+    private String cpfCliente;
     
     @Data
     @NoArgsConstructor

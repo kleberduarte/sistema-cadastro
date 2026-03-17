@@ -119,36 +119,120 @@ body {
     font-size: 2.5em;
 }
 
+/* ========== DESCONTO — estilo moderno ========== */
 .discount-section {
     margin-top: auto;
-    margin-bottom: 20px;
-}
-.discount-section label {
-    display: block;
-    font-size: 0.8em;
-    color: #555;
-    margin-bottom: 5px;
-    font-weight: bold;
+    margin-bottom: 24px;
+    padding: 18px;
+    background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-/* Grupo de input para o desconto */
+.discount-section__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+
+.discount-section__wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.discount-section__wrap:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.discount-section__select {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #334155;
+    background: #f8fafc;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    min-width: 100px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+}
+
+.discount-section__select:hover {
+    background-color: #f1f5f9;
+}
+
+.discount-section__input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    border: none;
+    border-left: 1px solid #e2e8f0;
+    outline: none;
+    background: #fff;
+}
+
+.discount-section__input::placeholder {
+    color: #94a3b8;
+}
+
+.discount-section__btn {
+    flex-shrink: 0;
+    padding: 12px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+    border: none;
+    cursor: pointer;
+    outline: none;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.discount-section__btn:hover {
+    background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+}
+
+.discount-section__btn:active {
+    transform: scale(0.98);
+}
+
+/* Compatibilidade: .input-group-addon fora do desconto (ex.: modal de pagamento) */
 .input-group-addon {
     display: flex;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
     overflow: hidden;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input-group-addon:focus-within {
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .input-group-addon select {
     border: none;
-    background-color: #f1f1f1;
-    padding: 8px 12px;
+    background: #f8fafc;
+    padding: 10px 14px;
     font-size: 1em;
     cursor: pointer;
     outline: none;
@@ -157,114 +241,305 @@ body {
 .input-group-addon input {
     flex-grow: 1;
     border: none;
-    border-left: 1px solid #ccc;
-    padding: 8px 12px;
+    border-left: 1px solid #e2e8f0;
+    padding: 10px 14px;
     font-size: 1em;
     outline: none;
 }
 
 .input-group-addon button {
     border: none;
-    border-left: 1px solid #ccc;
-    background-color: #28a745;
-    color: white;
-    padding: 0 15px;
-    font-size: 1.2em;
+    border-left: 1px solid #e2e8f0;
+    background: #22c55e;
+    color: #fff;
+    padding: 0 16px;
+    font-size: 1em;
     cursor: pointer;
     outline: none;
-    transition: background-color 0.2s;
+    transition: background 0.2s;
 }
 
+/* ========== CÓDIGO / PEDIDO — estilo moderno ========== */
+.left-footer {
+    padding: 18px;
+    background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.left-footer__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+
+.left-footer__input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    color: #334155;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.left-footer__input::placeholder {
+    color: #94a3b8;
+}
+
+.left-footer__input:hover {
+    border-color: #cbd5e1;
+}
+
+.left-footer__input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Fallback para páginas que ainda usam .left-footer input */
 .left-footer input {
-    font-size: 1em;
-    padding: 8px;
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    box-sizing: border-box;
 }
 
-/* Seção Direita */
+/* ========== SEÇÃO DIREITA — CUPOM FISCAL (estilo térmico) ========== */
 .pdv-right {
     flex-basis: 65%;
     display: flex;
     flex-direction: column;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 12px;
+    overflow: hidden;
+}
+
+.cupom-paper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: linear-gradient(180deg, #fffef8 0%, #faf8f0 8%, #fffef8 100%);
+    border: 2px solid #2c2c2c;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06), 2px 4px 12px rgba(0,0,0,0.12);
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     overflow: hidden;
 }
 
 .cupom-header {
     text-align: center;
-    padding: 10px;
-    background-color: #343a40;
-    color: white;
-    font-size: 1.1em;
+    padding: 10px 8px;
+    background: #2c2c2c;
+    color: #e8e8e8;
+}
+
+.cupom-header__logo {
+    margin-bottom: 6px;
+    min-height: 0;
+}
+
+.cupom-header__logo img {
+    max-height: 36px;
+    max-width: 120px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.cupom-header__empresa {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e8e8e8;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cupom-header__line {
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    color: #b0b0b0;
+}
+
+.cupom-header__title {
+    margin: 4px 0 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.cupom-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0 12px 12px;
+    font-size: 0.95rem;
+}
+
+.cupom-body__cabecalho {
+    display: grid;
+    grid-template-columns: 36px 56px minmax(80px, 1fr) 44px 86px 86px 52px;
+    gap: 0;
+    padding: 10px 6px 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #333;
+    border-bottom: 1px dashed #999;
+}
+
+.cupom-col.item { padding-left: 6px; }
+.cupom-col.cod { padding-left: 6px; overflow: hidden; text-overflow: ellipsis; }
+.cupom-col.desc { padding-left: 10px; padding-right: 6px; overflow: hidden; text-overflow: ellipsis; }
+.cupom-col.qtd { text-align: right; padding-right: 8px; }
+.cupom-col.unit { text-align: right; padding-right: 10px; }
+.cupom-col.total { text-align: right; padding-right: 10px; }
+.cupom-col.acao { text-align: center; padding-right: 6px; }
+
+.cupom-body__separator {
+    height: 0;
+    border-bottom: 1px dashed #999;
+    margin: 2px 0;
 }
 
 .item-list-container {
-    flex-grow: 1;
+    flex: 1;
     overflow-y: auto;
+    min-height: 80px;
 }
 
-#pdv-item-list {
+.cupom-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
+    font-size: 0.95rem;
 }
 
-#pdv-item-list thead {
-    background-color: #f1f1f1;
+.cupom-table col:nth-child(1) { width: 36px; }
+.cupom-table col:nth-child(2) { width: 56px; }
+.cupom-table col:nth-child(3) { width: 28%; }
+.cupom-table col:nth-child(4) { width: 44px; }
+.cupom-table col:nth-child(5) { width: 86px; }
+.cupom-table col:nth-child(6) { width: 86px; }
+.cupom-table col:nth-child(7) { width: 52px; }
+
+.cupom-table tbody tr {
+    border-bottom: 1px dotted #ccc;
+    transition: background-color 0.15s ease;
 }
 
-#pdv-item-list th, #pdv-item-list td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
+.cupom-table tbody tr:hover {
+    background-color: rgba(0,0,0,0.03);
 }
 
-#pdv-item-list th {
-    font-size: 0.9em;
+.cupom-table tbody tr.receipt-line-new {
+    background-color: rgba(34, 197, 94, 0.12);
+    animation: receiptLineIn 0.4s ease;
 }
 
-#pdv-item-list td {
-    font-size: 0.95em;
+@keyframes receiptLineIn {
+    0% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+.cupom-table td {
+    padding: 8px 4px;
+    vertical-align: middle;
+    border-left: 1px solid #e5e5e5;
+}
+
+.cupom-table td:first-child {
+    border-left: none;
+}
+
+.cupom-table td:nth-child(1) { text-align: left; padding-left: 8px; }
+.cupom-table td:nth-child(2) { padding-left: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 56px; box-sizing: border-box; }
+.cupom-table td:nth-child(3) { min-width: 0; overflow: hidden; text-overflow: ellipsis; padding-left: 10px; padding-right: 8px; white-space: nowrap; }
+.cupom-table td:nth-child(4) { text-align: right; padding-right: 10px; }
+.cupom-table td:nth-child(5) { text-align: right; padding-right: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; }
+.cupom-table td:nth-child(6) { text-align: right; font-weight: 600; padding-right: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; }
+.cupom-table td:nth-child(7) { text-align: center; padding-left: 8px; padding-right: 8px; }
+
+.cupom-table .btn-remove-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 30px;
+    padding: 5px 8px;
+    font-size: 1.1rem;
+    line-height: 1;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.cupom-table .btn-remove-item:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
 }
 
 #pdv-item-list .placeholder-row td {
     text-align: center;
-    padding: 50px;
-    color: #999;
+    padding: 24px 8px;
+    color: #888;
     font-style: italic;
+    border: none;
 }
 
-.right-footer {
+.cupom-footer {
+    padding: 10px 0 6px;
+    border-top: 2px solid #2c2c2c;
+    margin-top: 6px;
+}
+
+.cupom-footer__line {
     display: flex;
-    justify-content: space-around;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-top: 1px solid #e9ecef;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 1rem;
 }
 
-.total-box {
-    text-align: right;
+.cupom-footer__discount span:last-child {
+    color: #dc2626;
+    font-weight: 600;
 }
 
-.total-box label {
-    font-size: 1em;
-    color: #555;
-    display: block;
+.cupom-footer__separator {
+    height: 0;
+    border-bottom: 1px dashed #666;
+    margin: 6px 0;
 }
 
-.total-box span {
-    font-size: 2em;
-    font-weight: bold;
+.cupom-footer__total {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-top: 6px;
 }
 
-.right-footer .discount span {
-    color: #dc3545;
+.cupom-footer__total span:last-child {
+    color: #16a34a;
+    font-size: 1.25rem;
 }
 
-.right-footer .total-final span {
-    color: #28a745;
-    font-size: 2.5em;
-}
+/* Compatibilidade com seletores antigos */
+.right-footer { display: none; }
+.total-box { display: none; }
 
 /* Rodapé de Atalhos */
 .pdv-shortcuts {
@@ -381,6 +656,64 @@ body {
     background-color: #f1f1f1;
 }
 
+/* Cliente indicado (F12) - bloco no PDV */
+.pdv-cliente-indicado {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, #e8f4fd 0%, #f0f8ff 100%);
+    border: 1px solid #b8d4f0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+.pdv-cliente-indicado label {
+    display: block;
+    font-size: 0.75em;
+    color: #555;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+.pdv-cliente-indicado__info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.pdv-cliente-indicado__info span:first-child { font-weight: 600; }
+.pdv-cliente-cpf { color: #555; font-size: 0.95em; }
+.pdv-cliente-indicado__clear {
+    margin-left: auto;
+    padding: 2px 8px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.pdv-cliente-indicado__clear:hover {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+/* Modal Indicar Cliente (F12) */
+.client-modal-search {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.client-modal-search input {
+    flex: 1;
+    padding: 10px;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+.client-modal-form .form-group { margin-bottom: 12px; }
+.client-modal-form .form-group label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9em; }
+.client-modal-form .form-group input { width: 100%; padding: 8px 10px; box-sizing: border-box; }
+.client-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.client-modal-form hr { margin: 15px 0; }
+#client-search-results-body tr { cursor: pointer; }
+#client-search-results-body tr:hover { background-color: #f1f1f1; }
+
 /* Estilos do Modal de Pagamento */
 .payment-body { display: flex; gap: 20px; }
 .payment-left { flex: 1; }
@@ -423,25 +756,25 @@ body {
 }
 
 /* Estilos para o modal de detalhes da venda (F7) */
-.receipt-style {
+.sale-detail-body {
     font-family: 'Courier New', Courier, monospace;
 }
-.receipt-style h4 {
+.sale-detail-body h4 {
     border-bottom: 1px dashed #ccc;
     padding-bottom: 5px;
     margin-top: 15px;
 }
-.receipt-style table {
+.sale-detail-body table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9em;
 }
-.receipt-style th, .receipt-style td {
+.sale-detail-body th, .sale-detail-body td {
     text-align: left;
     padding: 5px;
     border-bottom: 1px solid #eee;
 }
-.receipt-style .text-right {
+.sale-detail-body .text-right {
     text-align: right;
     font-size: 1.2em;
 }
@@ -490,99 +823,143 @@ body {
 /* ================================================================= */
 
 @media print {
-    /* Define o tamanho da página e remove margens */
     @page {
-        margin: 2mm;
-        size: 80mm; /* Tamanho padrão para impressoras térmicas */
+        margin: 0;
+        size: 80mm auto; /* Tamanho padrão para impressoras térmicas */
     }
 
-    /* Oculta tudo por padrão */
     body * {
         visibility: hidden;
+        height: 0;
+        overflow: hidden;
     }
 
-    /* Torna o modal do recibo e seu conteúdo visíveis */
     #saleDetailModal, #saleDetailModal * {
         visibility: visible;
+        height: auto;
+        overflow: visible;
     }
 
-    /* Posiciona o modal para ocupar toda a área de impressão */
     #saleDetailModal {
         position: absolute;
         left: 0;
         top: 0;
-        width: 100%;
-        height: auto;
+        width: 100% !important;
         background-color: white;
-        z-index: 9999;
         padding: 0;
         margin: 0;
+        border: none;
     }
 
-    /* Estiliza o conteúdo principal do modal para o formato de cupom */
     #saleDetailModal .modal-content {
         box-shadow: none;
         border: none;
-        width: 72mm; /* Largura útil para papel de 80mm */
-        max-width: 72mm;
-        margin: 0;
-        padding: 0;
+        width: 100%;
+        max-width: 72mm; /* Margem de segurança de impressão */
+        margin: 0 auto;
+        padding: 5px 0;
         font-family: 'Courier New', Courier, monospace !important;
-        font-size: 9pt !important;
-        color: #000 !important;
+        font-size: 11px !important;
+        color: black !important;
+    }
+
+    /* Ocultar UI desnecessária */
+    .modal-header, .close-button, .btn {
+        display: none !important;
+    }
+
+    /* Títulos e Separadores */
+    .sale-detail-title {
+        text-align: center;
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 10px;
+        border-bottom: 1px dashed black;
+        padding-bottom: 5px;
+        display: block !important;
+    }
+
+    .sale-detail-body h4 {
+        margin: 10px 0 5px 0;
+        font-size: 12px;
+        text-transform: uppercase;
+        border-bottom: 1px dashed black;
+        display: block !important;
+        font-weight: bold;
+    }
+
+    .sale-detail-body hr {
+        border: none;
+        border-top: 1px dashed black;
+        margin: 5px 0;
+        display: block !important;
+    }
+
+    .sale-detail-body p {
+        margin: 2px 0;
         line-height: 1.2;
     }
 
-    /* Oculta o cabeçalho do modal e o botão de fechar */
-    #saleDetailModal .modal-header {
-        display: none;
-    }
-
-    /* Estilos para o corpo do recibo */
-    .receipt-style {
-        padding: 0;
-    }
-
-    .receipt-style p, .receipt-style h4 {
-        margin: 3px 0;
-    }
-
-    .receipt-style hr {
-        border: none;
-        border-top: 1px dashed #000;
-        margin: 5px 0;
-    }
-
-    /* Estilos para a tabela de itens */
-    .receipt-style table {
+    /* Tabela de Itens */
+    #detailItemsTable {
         width: 100%;
         border-collapse: collapse;
+        margin-bottom: 10px;
     }
 
-    .receipt-style th, .receipt-style td {
-        padding: 2px 0;
-        border-bottom: none;
-    }
-
-    /* Alinhamento das colunas da tabela */
-    .receipt-style th:nth-child(1), .receipt-style td:nth-child(1) { /* Produto */
+    #detailItemsTable th {
+        border-bottom: 1px dashed black;
         text-align: left;
-        width: 50%;
+        padding: 2px 4px 2px 0; /* Padding direito evita colunas grudadas */
+        font-size: 11px;
     }
-    .receipt-style th:nth-child(2), .receipt-style td:nth-child(2) { /* Qtd */
+
+    #detailItemsTable td {
+        border-bottom: none;
+        padding: 2px 4px 2px 0;
+        font-size: 11px;
+        vertical-align: top;
+    }
+
+    /* Colunas Específicas */
+    #detailItemsTable th:nth-child(1), #detailItemsTable td:nth-child(1) { /* Produto */
+        width: 45%;
+        text-align: left;
+    }
+
+    #detailItemsTable th:nth-child(2), #detailItemsTable td:nth-child(2) { /* Qtd */
+        width: 10%;
+        text-align: center;
+    }
+
+    #detailItemsTable th:nth-child(3), #detailItemsTable td:nth-child(3) { /* Preço Un. */
+        width: 20%;
         text-align: right;
+        white-space: nowrap;
     }
-    .receipt-style th:nth-child(3), .receipt-style td:nth-child(3) { /* Vl. Unit. */
+
+    #detailItemsTable th:nth-child(4), #detailItemsTable td:nth-child(4) { /* Total */
+        width: 25%;
         text-align: right;
+        white-space: nowrap;
+        padding-right: 0;
     }
-    .receipt-style th:nth-child(4), .receipt-style td:nth-child(4) { /* Subtotal */
+
+    .text-right {
         text-align: right;
     }
 
-    .receipt-style .text-right {
-        text-align: right;
-        font-size: 1.1em;
-        margin-top: 5px;
+    .sale-detail-footer {
+        text-align: center;
+        margin-top: 15px;
+        border-top: 1px dashed black;
+        padding-top: 10px;
+        display: block !important;
+    }
+
+    /* Ocultar barra de rolagem */
+    ::-webkit-scrollbar {
+        display: none;
     }
 }
 
