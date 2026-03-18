@@ -415,6 +415,35 @@ function applyClientStyles(params) {
         .cupom-footer__separator { border-bottom-color: ${corPrimaria}50 !important; }
     `;
 
+    // ================================================================
+    // Sistema de Alertas (layout único)
+    // ================================================================
+    styleTag.textContent += `
+        .system-alert-dialog {
+            border-top-color: ${corPrimaria} !important;
+            box-shadow: 0 20px 50px ${corPrimaria}2B !important;
+        }
+        .system-alert-icon {
+            background: linear-gradient(135deg, ${corPrimaria}20, ${corSecundaria}14) !important;
+            color: ${corPrimaria} !important;
+        }
+        .system-alert-title {
+            color: ${corTexto} !important;
+        }
+        .system-alert-ok {
+            background: linear-gradient(135deg, ${corBotaoFinal} 0%, ${corSecundaria} 100%) !important;
+            color: ${corBotaoTexto} !important;
+        }
+        .system-alert-confirm {
+            background: linear-gradient(135deg, ${corBotaoFinal} 0%, ${corSecundaria} 100%) !important;
+            color: ${corBotaoTexto} !important;
+        }
+        .modal-content {
+            border-top-color: ${corPrimaria} !important;
+            box-shadow: 0 20px 50px ${corPrimaria}2B !important;
+        }
+    `;
+
     // Cupom Fiscal: preencher nome e logo da empresa (quando na tela do PDV)
     const cupomEmpresaNome = document.getElementById('cupom-empresa-nome');
     const cupomEmpresaLogo = document.getElementById('cupom-empresa-logo');
@@ -530,14 +559,199 @@ async function saveClientParams(params) {
     return null;
 }
 
-// Inicializar quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', function() {
-    loadClientParams();
-});
+// Uma única execução: antes rodava 2x (DOMContentLoaded + interactive), causando piscar no login.
+(function initLoadClientParamsOnce() {
+    if (window.__loadClientParamsScheduled) return;
+    window.__loadClientParamsScheduled = true;
+    function run() {
+        loadClientParams();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', run, { once: true });
+    } else {
+        run();
+    }
+})();
 
-// Também carregar imediatamente (para páginas como login que carregam scripts no final)
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    loadClientParams();
-} else {
-    window.addEventListener('DOMContentLoaded', loadClientParams);
-}
+// ================================================================
+// Sistema de Alertas (layout único) - showSystemAlert(message, type, title?)
+// ================================================================
+(function registerSystemAlerts() {
+    if (typeof window === 'undefined') return;
+
+    var OVERLAY_ID = 'systemAlertOverlay';
+    var timer = null;
+
+    function typeTitle(t) {
+        switch (String(t || '').toLowerCase()) {
+            case 'success':
+                return 'Sucesso';
+            case 'error':
+                return 'Erro';
+            case 'warning':
+                return 'Atenção';
+            case 'info':
+            default:
+                return 'Informação';
+        }
+    }
+
+    function iconSvg(t) {
+        var k = String(t || '').toLowerCase();
+        // SVGs simples, usando stroke="currentColor" para herdar cor do tema.
+        if (k === 'success') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>';
+        }
+        if (k === 'error') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2 2 2M12 9v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        }
+        if (k === 'warning') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.3 4.8l-8.1 14A2 2 0 004 21h16a2 2 0 001.8-2.2l-8.1-14a2 2 0 00-3.4 0z"/></svg>';
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 22a10 10 0 110-20 10 10 0 010 20z"/></svg>';
+    }
+
+    function ensureOverlay() {
+        var ov = document.getElementById(OVERLAY_ID);
+        if (ov) return ov;
+
+        ov = document.createElement('div');
+        ov.id = OVERLAY_ID;
+        ov.className = 'system-alert-overlay';
+        ov.setAttribute('role', 'dialog');
+        ov.setAttribute('aria-modal', 'true');
+        ov.setAttribute('aria-live', 'polite');
+
+        ov.innerHTML =
+            '<div class="system-alert-dialog">' +
+            '  <div class="system-alert-icon" aria-hidden="true"></div>' +
+            '  <h3 class="system-alert-title"></h3>' +
+            '  <p class="system-alert-text"></p>' +
+            '  <div class="system-alert-actions">' +
+            '    <button type="button" class="system-alert-ok">OK</button>' +
+            '  </div>' +
+            '</div>';
+
+        document.body.appendChild(ov);
+
+        // Fechar ao clicar fora do diálogo
+        ov.addEventListener('click', function (e) {
+            if (e.target === ov) window.hideSystemAlert();
+        });
+
+        // Fechar pelo botão OK
+        var btn = ov.querySelector('.system-alert-ok');
+        if (btn) {
+            btn.addEventListener('click', function () {
+                window.hideSystemAlert();
+            });
+        }
+
+        return ov;
+    }
+
+    window.hideSystemAlert = function () {
+        var ov = document.getElementById(OVERLAY_ID);
+        if (!ov) return;
+        ov.classList.remove('show');
+    };
+
+    window.showSystemAlert = function (message, type, title) {
+        var ov = ensureOverlay();
+        var k = String(type || 'info').toLowerCase();
+
+        var iconEl = ov.querySelector('.system-alert-icon');
+        var titleEl = ov.querySelector('.system-alert-title');
+        var textEl = ov.querySelector('.system-alert-text');
+
+        if (iconEl) iconEl.innerHTML = iconSvg(k);
+        if (titleEl) titleEl.textContent = title ? String(title) : typeTitle(k);
+        if (textEl) textEl.textContent = (message == null) ? '' : String(message);
+
+        ov.classList.add('show');
+
+        // Auto-fechar após alguns segundos (mantém comportamento similar aos alertas antigos)
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(function () {
+            window.hideSystemAlert();
+        }, 3000);
+    };
+
+    var CONFIRM_ID = 'systemConfirmOverlay';
+    var confirmResolve = null;
+    var confirmEscHandler = null;
+
+    function ensureConfirmOverlay() {
+        var ov = document.getElementById(CONFIRM_ID);
+        if (ov) return ov;
+        ov = document.createElement('div');
+        ov.id = CONFIRM_ID;
+        ov.className = 'system-alert-overlay';
+        ov.setAttribute('role', 'dialog');
+        ov.setAttribute('aria-modal', 'true');
+        ov.innerHTML =
+            '<div class="system-alert-dialog">' +
+            '  <div class="system-alert-icon" aria-hidden="true"></div>' +
+            '  <h3 class="system-alert-title"></h3>' +
+            '  <p class="system-alert-text"></p>' +
+            '  <div class="system-alert-actions system-alert-actions--dual">' +
+            '    <button type="button" class="system-alert-cancel"></button>' +
+            '    <button type="button" class="system-alert-confirm"></button>' +
+            '  </div>' +
+            '</div>';
+        document.body.appendChild(ov);
+        ov.addEventListener('click', function (e) {
+            if (e.target === ov) finishSystemConfirm(false);
+        });
+        ov.querySelector('.system-alert-cancel').addEventListener('click', function () {
+            finishSystemConfirm(false);
+        });
+        ov.querySelector('.system-alert-confirm').addEventListener('click', function () {
+            finishSystemConfirm(true);
+        });
+        return ov;
+    }
+
+    function finishSystemConfirm(yes) {
+        var ov = document.getElementById(CONFIRM_ID);
+        if (ov) ov.classList.remove('show');
+        if (confirmEscHandler) {
+            document.removeEventListener('keydown', confirmEscHandler);
+            confirmEscHandler = null;
+        }
+        var r = confirmResolve;
+        confirmResolve = null;
+        if (r) r(!!yes);
+    }
+
+    /**
+     * Modal de confirmação estilizado (substitui window.confirm).
+     * Retorna Promise resolvida com true/false.
+     */
+    window.showSystemConfirm = function (message, opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            if (confirmResolve) finishSystemConfirm(false);
+            window.hideSystemAlert();
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+            }
+            confirmResolve = resolve;
+            var ov = ensureConfirmOverlay();
+            var k = String(opts.type || 'warning').toLowerCase();
+            var iconEl = ov.querySelector('.system-alert-icon');
+            if (iconEl) iconEl.innerHTML = iconSvg(k);
+            ov.querySelector('.system-alert-title').textContent =
+                opts.title != null ? String(opts.title) : 'Confirmação';
+            ov.querySelector('.system-alert-text').textContent = message == null ? '' : String(message);
+            ov.querySelector('.system-alert-confirm').textContent = opts.confirmText || 'OK';
+            ov.querySelector('.system-alert-cancel').textContent = opts.cancelText || 'Cancelar';
+            ov.classList.add('show');
+            confirmEscHandler = function (e) {
+                if (e.key === 'Escape') finishSystemConfirm(false);
+            };
+            document.addEventListener('keydown', confirmEscHandler);
+        });
+    };
+})();

@@ -422,25 +422,23 @@ function closeModal() {
 
 // Mostrar alerta
 function showAlert(message, type) {
-    // Remover alertas existentes
-    const existingAlert = document.querySelector('.alert');
-    if (existingAlert) {
-        existingAlert.remove();
+    if (typeof window.showSystemAlert === 'function') {
+        window.showSystemAlert(message, type);
+        return;
     }
-    
-    // Criar novo alerta
+
+    // Fallback (caso a tela não carregue o config.js)
+    const existingAlert = document.querySelector('.alert');
+    if (existingAlert) existingAlert.remove();
+
     const alert = document.createElement('div');
     alert.className = `alert alert-${type}`;
     alert.textContent = message;
-    
-    // Inserir após o header
+
     const main = document.querySelector('main');
-    main.insertBefore(alert, main.firstChild);
-    
-    // Remover após 3 segundos
-    setTimeout(() => {
-        alert.remove();
-    }, 3000);
+    if (main && main.firstChild) main.insertBefore(alert, main.firstChild);
+
+    setTimeout(() => alert.remove(), 3000);
 }
 
 // Fechar modal ao clicar fora

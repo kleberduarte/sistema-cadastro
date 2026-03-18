@@ -17,3 +17,6 @@
 
 # Logs de erro da VM (Máquina Virtual)
 hs_err_pid*
+
+# Front Node
+sistema-cadastro-clientes/node_modules/

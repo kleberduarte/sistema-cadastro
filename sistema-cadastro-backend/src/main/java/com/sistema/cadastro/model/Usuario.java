@@ -38,6 +38,9 @@ public class Usuario {
     @Column(name = "pdv_terminal_id")
     private Long pdvTerminalId;
 
+    @Column(length = 25)
+    private String telefone;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

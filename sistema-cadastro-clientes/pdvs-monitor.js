@@ -242,10 +242,27 @@
         });
         grid.querySelectorAll('[data-del]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                if (!confirm('Excluir este PDV? O caixa não poderá mais logar até recadastrar.')) return;
                 var id = btn.getAttribute('data-del');
-                fetch(API + '/admin/pdv-terminais/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token() } }).then(function () {
-                    refresh();
+                var msg = 'Excluir este PDV? O caixa não poderá mais logar até recadastrar.';
+                var p =
+                    typeof window.showSystemConfirm === 'function'
+                        ? window.showSystemConfirm(msg, {
+                              title: 'Excluir PDV',
+                              confirmText: 'Sim, excluir',
+                              cancelText: 'Cancelar',
+                              type: 'warning'
+                          })
+                        : new Promise(function (res) {
+                              res(confirm(msg));
+                          });
+                p.then(function (ok) {
+                    if (!ok) return;
+                    fetch(API + '/admin/pdv-terminais/' + id, {
+                        method: 'DELETE',
+                        headers: { Authorization: 'Bearer ' + token() }
+                    }).then(function () {
+                        refresh();
+                    });
                 });
             });
         });
