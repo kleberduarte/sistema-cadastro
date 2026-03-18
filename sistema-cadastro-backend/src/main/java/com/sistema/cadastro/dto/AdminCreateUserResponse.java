@@ -8,14 +8,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponse {
-    private String token;
+public class AdminCreateUserResponse {
     private Long id;
     private String username;
     private Role role;
-    private String message;
-    /** ID da empresa usada no PDV (usuário ou padrão). */
     private Long empresaId;
-    /** Se true, o front deve obrigar troca de senha antes do uso normal. */
-    private Boolean mustChangePassword;
+    private String telefone;
+    /** Preenchido só quando a senha foi gerada automaticamente; repassar ao usuário com segurança. */
+    private String senhaTemporaria;
+    private boolean deveRedefinirSenha;
 }

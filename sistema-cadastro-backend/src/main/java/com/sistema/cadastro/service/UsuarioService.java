@@ -1,6 +1,7 @@
 package com.sistema.cadastro.service;
 
 import com.sistema.cadastro.dto.AdminCreateUserRequest;
+import com.sistema.cadastro.dto.AdminCreateUserResponse;
 import com.sistema.cadastro.dto.LoginRequest;
 import com.sistema.cadastro.dto.LoginResponse;
 import com.sistema.cadastro.dto.RegisterRequest;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -50,18 +52,19 @@ public class UsuarioService {
         Optional<Usuario> userOpt = usuarioRepository.findByUsername(request.getUsername());
         
         if (userOpt.isEmpty()) {
-            return new LoginResponse(null, null, null, null, "Usuário não encontrado", null);
+            return new LoginResponse(null, null, null, null, "Usuário não encontrado", null, null);
         }
         
         Usuario user = userOpt.get();
         
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return new LoginResponse(null, null, null, null, "Senha incorreta", null);
+            return new LoginResponse(null, null, null, null, "Senha incorreta", null, null);
         }
         
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
         Long eid = resolveEmpresaPdvId(user);
-        return new LoginResponse(token, user.getId(), user.getUsername(), user.getRole(), "Login realizado com sucesso", eid);
+        boolean troca = Boolean.TRUE.equals(user.getMustChangePassword());
+        return new LoginResponse(token, user.getId(), user.getUsername(), user.getRole(), "Login realizado com sucesso", eid, troca);
     }
 
     /**
@@ -71,16 +74,16 @@ public class UsuarioService {
     @Transactional
     public LoginResponse register(RegisterRequest request) {
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
-            return new LoginResponse(null, null, null, null, "Usuário já existe", null);
+            return new LoginResponse(null, null, null, null, "Usuário já existe", null, null);
         }
         Long empresaId = request.getEmpresaId();
         if (empresaId == null || empresaId < 1) {
             return new LoginResponse(null, null, null, null,
-                    "Informe o ID da empresa e o código de convite fornecido pelo administrador.", null);
+                    "Informe o ID da empresa e o código de convite fornecido pelo administrador.", null, null);
         }
         if (!clienteService.validarCodigoConvite(empresaId, request.getCodigoConvite())) {
             return new LoginResponse(null, null, null, null,
-                    "Código de convite inválido ou empresa sem código ativo. Solicite um novo código ao administrador.", null);
+                    "Código de convite inválido ou empresa sem código ativo. Solicite um novo código ao administrador.", null, null);
         }
 
         Usuario newUser = new Usuario();
@@ -89,6 +92,7 @@ public class UsuarioService {
         newUser.setRole(Role.VENDEDOR);
         newUser.setEmpresaId(empresaId);
         newUser.setTelefone(null);
+        newUser.setMustChangePassword(false);
 
         usuarioRepository.save(newUser);
 
@@ -102,24 +106,74 @@ public class UsuarioService {
         String token = jwtUtil.generateToken(newUser.getUsername(), newUser.getRole().name());
         Long eid = resolveEmpresaPdvId(newUser);
         return new LoginResponse(token, newUser.getId(), newUser.getUsername(), newUser.getRole(),
-                "Usuário cadastrado com sucesso", eid);
+                "Usuário cadastrado com sucesso", eid, false);
     }
 
-    /** Cadastro pelo administrador (retaguarda), sem código de convite. */
-    public Usuario createByAdmin(AdminCreateUserRequest request) {
+    /** Cadastro pelo administrador (retaguarda), sem código de convite. Senha vazia = aleatória + obrigar troca. */
+    @Transactional
+    public AdminCreateUserResponse createByAdmin(AdminCreateUserRequest request) {
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Usuário já existe");
         }
+        String plain = null;
+        boolean gerada;
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            plain = gerarSenhaProvisoria();
+            gerada = true;
+        } else {
+            if (request.getPassword().length() < 4) {
+                throw new IllegalArgumentException("Senha deve ter pelo menos 4 caracteres");
+            }
+            plain = request.getPassword();
+            gerada = false;
+        }
         Usuario u = new Usuario();
         u.setUsername(request.getUsername().trim());
-        u.setPassword(passwordEncoder.encode(request.getPassword()));
+        u.setPassword(passwordEncoder.encode(plain));
         u.setRole(request.getRole() != null ? request.getRole() : Role.VENDEDOR);
         u.setEmpresaId(request.getEmpresaId() != null && request.getEmpresaId() >= 1 ? request.getEmpresaId() : null);
+        u.setMustChangePassword(gerada);
         if (request.getTelefone() != null) {
             String t = request.getTelefone().trim();
             u.setTelefone(t.isEmpty() ? null : t);
         }
-        return usuarioRepository.save(u);
+        u = usuarioRepository.save(u);
+        return new AdminCreateUserResponse(
+                u.getId(),
+                u.getUsername(),
+                u.getRole(),
+                u.getEmpresaId(),
+                u.getTelefone(),
+                gerada ? plain : null,
+                gerada);
+    }
+
+    private static String gerarSenhaProvisoria() {
+        final String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+        SecureRandom r = new SecureRandom();
+        StringBuilder sb = new StringBuilder(14);
+        for (int i = 0; i < 14; i++) {
+            sb.append(chars.charAt(r.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+    @Transactional
+    public void trocarSenhaPrimeiroAcesso(String username, String senhaAtual, String novaSenha) {
+        Usuario user = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+        if (!Boolean.TRUE.equals(user.getMustChangePassword())) {
+            throw new IllegalStateException("Não há obrigatoriedade de troca de senha para esta conta.");
+        }
+        if (!passwordEncoder.matches(senhaAtual, user.getPassword())) {
+            throw new IllegalArgumentException("Senha atual incorreta");
+        }
+        if (novaSenha == null || novaSenha.length() < 6) {
+            throw new IllegalArgumentException("Nova senha deve ter no mínimo 6 caracteres");
+        }
+        user.setPassword(passwordEncoder.encode(novaSenha));
+        user.setMustChangePassword(false);
+        usuarioRepository.save(user);
     }
 
     public List<Usuario> findAll() {
@@ -176,6 +230,7 @@ public class UsuarioService {
         // Atualizar senha se fornecida
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setMustChangePassword(false);
         }
 
         if (Boolean.TRUE.equals(request.getAplicarEmpresaPdv())) {

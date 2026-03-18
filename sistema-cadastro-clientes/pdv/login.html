@@ -154,11 +154,24 @@
             if (!tid || !tok) return;
             fetch(API + '/auth/me', { headers: { Authorization: 'Bearer ' + tok } })
                 .then(function (r) {
-                    if (r.ok) window.location.replace('index.html');
-                    else {
+                    if (!r.ok) {
                         localStorage.removeItem('pdvTerminalId');
                         localStorage.removeItem('pdvTerminalCodigo');
+                        return null;
                     }
+                    return r.json();
+                })
+                .then(function (me) {
+                    if (!me || me.id == null) return;
+                    if (me.mustChangePassword === true) {
+                        try {
+                            var eAuto = me.empresaId != null && me.empresaId >= 1 ? me.empresaId : parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+                            if (eAuto >= 1) sessionStorage.setItem('redefinirSenhaEmpresaId', String(eAuto));
+                        } catch (e0) {}
+                        window.location.replace('../redefinir-senha-primeiro-acesso.html?from=pdv');
+                        return;
+                    }
+                    window.location.replace('index.html');
                 })
                 .catch(function () {
                     localStorage.removeItem('pdvTerminalId');
@@ -186,6 +199,16 @@
                     info.textContent = msgPos;
                     info.classList.add('show');
                     info.style.color = '#1565c0';
+                }
+            }
+            var mpl = sessionStorage.getItem('msgPosLogin');
+            if (mpl) {
+                sessionStorage.removeItem('msgPosLogin');
+                var info2 = document.getElementById('err');
+                if (info2) {
+                    info2.textContent = mpl;
+                    info2.classList.add('show');
+                    info2.style.color = '#1565c0';
                 }
             }
         } catch (e) {}
@@ -399,6 +422,18 @@
                     body: JSON.stringify({ username: username, password: password })
                 });
                 var data = await lr.json().catch(function () { return {}; });
+                var roleNormEarly = normRole(data.role);
+                if (data.token && data.mustChangePassword === true) {
+                    try { sessionStorage.setItem('redefinirSenhaEmpresaId', String(empresaLogin)); } catch (e0) {}
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.id,
+                        username: username,
+                        role: roleNormEarly
+                    }));
+                    window.location.replace('../redefinir-senha-primeiro-acesso.html?from=pdv');
+                    return;
+                }
                 if (!data.token) {
                     var failMsg = (data.message || '').toString();
                     var lower = failMsg.toLowerCase();
