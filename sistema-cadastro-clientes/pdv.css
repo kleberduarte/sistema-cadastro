@@ -44,6 +44,24 @@ body {
     color: white;
 }
 
+.operador-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35em 0.5em;
+    justify-content: flex-end;
+    text-align: right;
+}
+.pdv-header-caixa {
+    font-weight: 600;
+    opacity: 0.95;
+    letter-spacing: 0.02em;
+}
+.pdv-header-sep {
+    opacity: 0.7;
+    user-select: none;
+}
+
 .pdv-main {
     display: flex;
     flex-grow: 1;

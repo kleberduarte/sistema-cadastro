@@ -9,6 +9,7 @@ import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.repository.UsuarioRepository;
 import com.sistema.cadastro.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,37 +25,50 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
+    @Value("${app.pdv.empresa-padrao-id:1}")
+    private long empresaPadraoPdvId;
+
+    public long resolveEmpresaPdvId(Usuario user) {
+        if (user != null && user.getEmpresaId() != null && user.getEmpresaId() >= 1) {
+            return user.getEmpresaId();
+        }
+        return empresaPadraoPdvId;
+    }
+
     public LoginResponse login(LoginRequest request) {
         Optional<Usuario> userOpt = usuarioRepository.findByUsername(request.getUsername());
         
         if (userOpt.isEmpty()) {
-            return new LoginResponse(null, null, null, null, "Usuário não encontrado");
+            return new LoginResponse(null, null, null, null, "Usuário não encontrado", null);
         }
         
         Usuario user = userOpt.get();
         
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return new LoginResponse(null, null, null, null, "Senha incorreta");
+            return new LoginResponse(null, null, null, null, "Senha incorreta", null);
         }
         
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
-        return new LoginResponse(token, user.getId(), user.getUsername(), user.getRole(), "Login realizado com sucesso");
+        Long eid = resolveEmpresaPdvId(user);
+        return new LoginResponse(token, user.getId(), user.getUsername(), user.getRole(), "Login realizado com sucesso", eid);
     }
 
     public LoginResponse register(RegisterRequest request) {
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
-            return new LoginResponse(null, null, null, null, "Usuário já existe");
+            return new LoginResponse(null, null, null, null, "Usuário já existe", null);
         }
         
         Usuario newUser = new Usuario();
         newUser.setUsername(request.getUsername());
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         newUser.setRole(request.getRole() != null ? request.getRole() : Role.VENDEDOR);
+        newUser.setEmpresaId(request.getEmpresaId() != null && request.getEmpresaId() >= 1 ? request.getEmpresaId() : null);
         
         usuarioRepository.save(newUser);
         
         String token = jwtUtil.generateToken(newUser.getUsername(), newUser.getRole().name());
-        return new LoginResponse(token, newUser.getId(), newUser.getUsername(), newUser.getRole(), "Usuário cadastrado com sucesso");
+        Long eid = resolveEmpresaPdvId(newUser);
+        return new LoginResponse(token, newUser.getId(), newUser.getUsername(), newUser.getRole(), "Usuário cadastrado com sucesso", eid);
     }
 
     public List<Usuario> findAll() {
@@ -96,7 +110,16 @@ public class UsuarioService {
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
-        
+
+        if (Boolean.TRUE.equals(request.getAplicarEmpresaPdv())) {
+            Long e = request.getEmpresaIdPdv();
+            user.setEmpresaId(e != null && e >= 1 ? e : null);
+        }
+
+        if (Boolean.TRUE.equals(request.getDesvincularPdv())) {
+            user.setPdvTerminalId(null);
+        }
+
         return usuarioRepository.save(user);
     }
 

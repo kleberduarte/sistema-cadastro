@@ -20,9 +20,12 @@ public class ParametroEmpresaService {
     @Transactional
     public ParametroEmpresaDTO salvar(ParametroEmpresaDTO dto) {
         ParametroEmpresa parametro;
-        
+
         if (dto.getId() != null) {
             parametro = repository.findById(dto.getId())
+                    .orElse(new ParametroEmpresa());
+        } else if (dto.getEmpresaId() != null) {
+            parametro = repository.findByEmpresaId(dto.getEmpresaId())
                     .orElse(new ParametroEmpresa());
         } else {
             parametro = new ParametroEmpresa();
@@ -81,9 +84,37 @@ public class ParametroEmpresaService {
         return dto;
     }
 
+    /**
+     * Garante registro em banco para o ID (padrão visual + nome).
+     * Usado para cadastrar PDV mesmo sem ter "Salvar" em Parâmetros antes.
+     */
+    @Transactional
+    public ParametroEmpresaDTO garantirParametrosMinimos(Long empresaId) {
+        if (empresaId == null || empresaId < 1) {
+            throw new IllegalArgumentException("empresaId inválido");
+        }
+        return repository.findByEmpresaId(empresaId)
+                .map(this::toDTO)
+                .orElseGet(() -> {
+                    ParametroEmpresaDTO dto = getParametrosDefault();
+                    dto.setEmpresaId(empresaId);
+                    return salvar(dto);
+                });
+    }
+
     @Transactional
     public void excluir(Long id) {
         repository.deleteById(id);
+    }
+
+    @Transactional
+    public boolean excluirPorEmpresaId(Long empresaId) {
+        return repository.findByEmpresaId(empresaId)
+                .map(p -> {
+                    repository.delete(p);
+                    return true;
+                })
+                .orElse(false);
     }
 
     public List<ParametroEmpresaDTO> listarTodos() {

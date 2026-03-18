@@ -19,6 +19,86 @@ let currentCaixaStatus = 'LIVRE'; // LIVRE, PAUSADO, FECHADO
 const CURRENT_USER_KEY_LOCAL = 'currentUser';
 const AUTH_TOKEN_KEY_LOCAL = 'authToken';
 
+/** Links da retaguarda a partir da pasta /pdv/ */
+function pdvAppHref(file) {
+    if (typeof window !== 'undefined' && window.IS_PDV_APP) {
+        if (file === 'relatorios.html' || file === 'index.html') return '../' + file;
+    }
+    return file;
+}
+
+function startPdvHeartbeat() {
+    var tid = localStorage.getItem('pdvTerminalId');
+    if (!tid) return;
+    var api = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+    function beat() {
+        var token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+        if (!token) return;
+        fetch(api + '/pdv/heartbeat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ terminalId: parseInt(tid, 10) })
+        }).catch(function () {});
+    }
+    beat();
+    setInterval(beat, 25000);
+}
+
+function normalizePdvRole(role) {
+    if (role == null || role === '') return '';
+    if (typeof role === 'string') return role.trim().toUpperCase();
+    if (typeof role === 'object' && role !== null && typeof role.name === 'string') {
+        return role.name.trim().toUpperCase();
+    }
+    return String(role).trim().toUpperCase();
+}
+
+/** Perfil real: API /auth/me (igual ao login); fallback localStorage */
+/** ADM no PDV: ESC encerra sessão no caixa e volta à retaguarda (mantém login JWT). */
+function pdvAdminSairParaRetaguarda() {
+    var apiBase = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+    var token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+    var tid = localStorage.getItem('pdvTerminalId');
+    function limparPdvERedirecionar() {
+        localStorage.removeItem('pdvTerminalId');
+        localStorage.removeItem('pdvTerminalCodigo');
+        window.location.href = pdvAppHref('index.html');
+    }
+    if (tid && token) {
+        fetch(apiBase + '/pdv/sair', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ terminalId: parseInt(tid, 10) })
+        }).catch(function () {}).finally(limparPdvERedirecionar);
+    } else {
+        limparPdvERedirecionar();
+    }
+}
+
+async function resolvePdvUserRole() {
+    var apiBase = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+    var token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+    if (token) {
+        try {
+            var r = await fetch(apiBase + '/auth/me', {
+                headers: { Authorization: 'Bearer ' + token }
+            });
+            if (r.ok) {
+                var me = await r.json();
+                if (me && me.role != null) return normalizePdvRole(me.role);
+            }
+        } catch (err) { /* rede / CORS */ }
+    }
+    try {
+        var raw = localStorage.getItem(CURRENT_USER_KEY_LOCAL);
+        if (raw) {
+            var u = JSON.parse(raw);
+            if (u && u.role != null) return normalizePdvRole(u.role);
+        }
+    } catch (e) { /* ignore */ }
+    return '';
+}
+
 // Carregar dados ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
     // Atalhos de teclado sempre registrados (em window, fase capture), para funcionar em qualquer foco
@@ -33,9 +113,19 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAllSales();
     setupEventListeners();
     setCaixaStatus('LIVRE');
+    startPdvHeartbeat();
 });
 
 function displayUserNameOnPdv() {
+    var codEl = document.getElementById('pdv-terminal-codigo');
+    if (codEl) {
+        var cod = (localStorage.getItem('pdvTerminalCodigo') || '').trim();
+        if (!cod) {
+            var tid = localStorage.getItem('pdvTerminalId');
+            cod = tid ? ('#' + tid) : '—';
+        }
+        codEl.textContent = cod.toUpperCase();
+    }
     const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (user && user.username) {
         document.getElementById('pdv-operator-name').textContent = user.username;
@@ -182,15 +272,24 @@ function setupKeyboardShortcuts() {
                 if (activeModal) {
                     closeModal(activeModal);
                 } else {
-                    if (typeof isVendedor === 'function' && isVendedor()) {
-                        if (confirm('Deseja sair do PDV e fazer logout?')) {
-                            if (typeof logout === 'function') logout();
+                    if (window.__pdvEscLeavePending) break;
+                    window.__pdvEscLeavePending = true;
+                    resolvePdvUserRole().then(function (roleNorm) {
+                        window.__pdvEscLeavePending = false;
+                        if (roleNorm === 'ADM') {
+                            pdvAdminSairParaRetaguarda();
+                        } else if (roleNorm === 'VENDEDOR') {
+                            if (confirm('Deseja sair do PDV e fazer logout?')) {
+                                if (typeof logout === 'function') logout();
+                            }
+                        } else {
+                            if (confirm('Deseja sair do PDV e voltar para a retaguarda do sistema?')) {
+                                window.location.href = pdvAppHref('index.html');
+                            }
                         }
-                    } else {
-                        if (confirm('Deseja sair do PDV e voltar para a retaguarda do sistema?')) {
-                            window.location.href = 'index.html';
-                        }
-                    }
+                    }).catch(function () {
+                        window.__pdvEscLeavePending = false;
+                    });
                 }
                 break;
         }
@@ -1051,13 +1150,34 @@ function updatePaymentSummary() {
     document.getElementById('summary-remaining').textContent = Math.max(0, remaining).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById('summary-change').textContent = change.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    // Habilita o botão de confirmação apenas se o valor total for pago ou ultrapassado
     const confirmBtn = document.getElementById('confirm-payment-btn');
-    confirmBtn.disabled = remaining > 0.001; // Usar uma pequena tolerância para erros de ponto flutuante
+    // Regra:
+    // - Se não houver nenhum pagamento adicionado, permitir confirmar (pagamento único pela forma selecionada)
+    // - Se houver pagamentos, exigir que o total seja pago ou ultrapassado
+    if (currentPayments.length === 0) {
+        confirmBtn.disabled = total <= 0.001;
+    } else {
+        confirmBtn.disabled = remaining > 0.001; // pequena tolerância para ponto flutuante
+    }
 }
 
 async function processPayment() {
     const total = getCartTotal();
+
+    // Se o usuário não adicionou pagamentos manualmente,
+    // assume-se pagamento único com a forma atualmente selecionada
+    if (currentPayments.length === 0) {
+        const payment = {
+            forma: activePaymentMethod,
+            valor: total
+        };
+        if (activePaymentMethod === 'CREDITO') {
+            const installmentsSelect = document.getElementById('installments');
+            payment.parcelas = installmentsSelect ? parseInt(installmentsSelect.value) : 1;
+        }
+        currentPayments.push(payment);
+    }
+
     const totalPaid = currentPayments.reduce((sum, p) => sum + p.valor, 0);
 
     if (totalPaid < total) {

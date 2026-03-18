@@ -6,10 +6,41 @@ const API_URL = 'http://localhost:8080/api';
 const CURRENT_USER_KEY = 'currentUser';
 const TOKEN_KEY = 'authToken';
 
+/** Normaliza o perfil vindo da API (string, enum JSON, etc.) */
+function normalizeRole(role) {
+    if (role == null || role === '') return 'VENDEDOR';
+    if (typeof role === 'string') return role.trim().toUpperCase();
+    if (typeof role === 'object' && role !== null && typeof role.name === 'string') {
+        return role.name.trim().toUpperCase();
+    }
+    return String(role).trim().toUpperCase();
+}
+
+function redirectAfterLogin(roleNorm) {
+    if (roleNorm === 'ADM') {
+        window.location.href = 'relatorios.html';
+    } else if (localStorage.getItem('pdvTerminalId')) {
+        window.location.href = 'pdv/';
+    } else {
+        window.location.href = 'pdv/login.html';
+    }
+}
+
 // Carregar usuários do localStorage ao iniciar (fallback)
 let users = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+    try {
+        var aviso = sessionStorage.getItem('pdvAvisoRetaguarda');
+        if (aviso) {
+            sessionStorage.removeItem('pdvAvisoRetaguarda');
+            var box = document.getElementById('pdvAvisoRetaguarda');
+            if (box) {
+                box.textContent = aviso;
+                box.style.display = 'block';
+            }
+        }
+    } catch (_) {}
     checkLoggedInUser();
 });
 
@@ -17,7 +48,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function checkLoggedInUser() {
     const currentUser = localStorage.getItem(CURRENT_USER_KEY);
     if (currentUser) {
-        window.location.href = 'vendas.html';
+        try {
+            const user = JSON.parse(currentUser);
+            redirectAfterLogin(normalizeRole(user && user.role));
+        } catch (_) {
+            window.location.href = 'pdv/login.html';
+        }
     }
 }
 
@@ -57,14 +93,31 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         const data = await response.json();
         
         if (data.token) {
-            // Login bem-sucedido
             localStorage.setItem(TOKEN_KEY, data.token);
+            let id = data.id;
+            let username = data.username;
+            let roleNorm = normalizeRole(data.role);
+            try {
+                const meRes = await fetch(`${API_URL}/auth/me`, {
+                    headers: { 'Authorization': 'Bearer ' + data.token }
+                });
+                if (meRes.ok) {
+                    const me = await meRes.json();
+                    if (me && typeof me === 'object' && me.id != null) {
+                        id = me.id;
+                        if (me.username) username = me.username;
+                        roleNorm = normalizeRole(me.role);
+                    }
+                }
+            } catch (e) {
+                console.warn('Não foi possível confirmar perfil em /auth/me, usando resposta do login.', e);
+            }
             localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
-                id: data.id,
-                username: data.username,
-                role: data.role
+                id: id,
+                username: username,
+                role: roleNorm
             }));
-            window.location.href = 'vendas.html';
+            redirectAfterLogin(roleNorm);
         } else {
             // Login falhou
             loginError.textContent = data.message || 'Usuário ou senha incorretos!';

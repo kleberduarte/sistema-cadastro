@@ -4,24 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Usuários - Sistema de Cadastro</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>👥 Gerenciar Usuários</h1>
-                <div class="user-menu">
-                    <button class="btn btn-secondary btn-small" onclick="window.location.href='index.html'">🏠 Clientes</button>
-                    <button class="btn btn-secondary btn-small" onclick="window.location.href='vendas.html'">💰 PDV</button>
-                    <button class="btn btn-secondary btn-small" onclick="window.location.href='produtos.html'">📦 Produtos</button>
-                    <button class="btn btn-secondary btn-small" onclick="logout()">🚪 Sair</button>
-                    <span id="userDisplay">Olá, Usuário</span>
-                </div>
+    <div id="navOverlay" class="nav-overlay" onclick="closeSidebar()"></div>
+    <aside id="navSidebar" class="nav-sidebar" aria-label="Menu lateral">
+        <div class="nav-sidebar__header">
+            <div class="nav-sidebar__brand">
+                <div class="nav-sidebar__title">Menu</div>
+                <div class="nav-sidebar__user">Usuário: <span id="navUserName">—</span></div>
             </div>
-        </header>
+            <button class="nav-sidebar__close" type="button" aria-label="Fechar menu" onclick="closeSidebar()">×</button>
+        </div>
+        <nav class="nav-links">
+            <a href="index.html">🏠 Clientes</a>
+            <a href="pdv/">💰 PDV</a>
+            <a href="produtos.html">📦 Produtos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+            <a href="usuarios.html" class="menu-item-admin">👥 Usuários</a>
+            <a href="parametros.html" class="menu-item-admin">⚙️ Parâmetros</a>
+            <a href="pdvs-monitor.html" class="menu-item-admin">🖥️ PDVs (empresa)</a>
+        </nav>
+        <div class="nav-sidebar__footer">
+            <button class="btn btn-secondary" type="button" onclick="logout()">🚪 Sair</button>
+        </div>
+    </aside>
 
-        <main>
+    <div class="app-content">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <h1>👥 Gerenciar Usuários</h1>
+                    <div class="nav-right">
+                        <button class="nav-burger" type="button" aria-label="Abrir menu" onclick="toggleSidebar()">☰</button>
+                        <span id="userDisplay" class="nav-user">Olá, Usuário</span>
+                    </div>
+                </div>
+            </header>
+
+            <main>
             <section class="form-section">
                 <h2>➕ Cadastrar Novo Usuário</h2>
                 <form id="registerUserForm" class="register-form">
@@ -36,6 +58,12 @@
                                 <option value="VENDEDOR">Vendedor</option>
                                 <option value="ADM">Administrador</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newUserEmpresaPdv">ID empresa (PDV) <small style="font-weight:400">— vazio = padrão sistema (1)</small></label>
+                            <input type="number" id="newUserEmpresaPdv" min="1" placeholder="ex: 770 ou vazio">
                         </div>
                     </div>
                     <div class="form-row">
@@ -72,6 +100,8 @@
                             <tr>
                                 <th>Usuário</th>
                                 <th>Perfil</th>
+                                <th>Empresa PDV</th>
+                                <th>PDV vinc.</th>
                                 <th>Data de Criação</th>
                                 <th>Ações</th>
                             </tr>
@@ -85,11 +115,12 @@
                     Nenhum usuário cadastrado ainda.
                 </div>
             </section>
-        </main>
+            </main>
 
-        <footer>
-            <p>© 2024 Sistema de Cadastro de Clientes</p>
-        </footer>
+            <footer>
+                <p>© 2024 Sistema de Cadastro de Clientes</p>
+            </footer>
+        </div>
     </div>
 
     <!-- Modal de Confirmação -->
@@ -123,6 +154,16 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="editEmpresaPdv">ID empresa (PDV) <small style="font-weight:400">— vazio = padrão sistema</small></label>
+                    <input type="number" id="editEmpresaPdv" min="1" placeholder="ex: 770">
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;">
+                        <input type="checkbox" id="editDesvincularPdv"> Desvincular deste PDV (liberar para cadastrar em outro caixa)
+                    </label>
+                    <small style="display:block;margin-top:4px;color:#666;">Obrigatório para o usuário poder operar em outro terminal.</small>
+                </div>
+                <div class="form-group">
                     <label for="editPassword">Nova Senha (deixe em branco para manter):</label>
                     <input type="password" id="editPassword" placeholder="Digite a nova senha">
                 </div>
@@ -136,7 +177,9 @@
     </div>
 
     <script src="auth.js"></script>
+    <script src="theme-defaults.js"></script>
     <script src="config.js"></script>
+    <script src="nav.js?v=3"></script>
     <script src="usuarios.js"></script>
     <script>
         // Verificar se é admin para acessar esta página

@@ -30,6 +30,14 @@ public class Usuario {
     @Column(nullable = false, length = 20)
     private Role role;
 
+    /** Empresa (ID) para PDV/login inteligente. Null = usar app.pdv.empresa-padrao-id. */
+    @Column(name = "empresa_id_pdv")
+    private Long empresaId;
+
+    /** Único PDV em que o usuário pode operar; null = ainda não cadastrado em caixa. */
+    @Column(name = "pdv_terminal_id")
+    private Long pdvTerminalId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

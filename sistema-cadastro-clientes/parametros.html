@@ -7,18 +7,42 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>Parâmetros da Empresa</h1>
-                <div class="user-menu">
-                    <span id="userName"></span>
-                    <button class="btn btn-secondary btn-small" onclick="logout()">Sair</button>
-                </div>
+    <div id="navOverlay" class="nav-overlay" onclick="closeSidebar()"></div>
+    <aside id="navSidebar" class="nav-sidebar" aria-label="Menu lateral">
+        <div class="nav-sidebar__header">
+            <div class="nav-sidebar__brand">
+                <div class="nav-sidebar__title">Menu</div>
+                <div class="nav-sidebar__user">Usuário: <span id="navUserName">—</span></div>
             </div>
-        </header>
+            <button class="nav-sidebar__close" type="button" aria-label="Fechar menu" onclick="closeSidebar()">×</button>
+        </div>
+        <nav class="nav-links">
+            <a href="index.html">🏠 Clientes</a>
+            <a href="pdv/">💰 PDV</a>
+            <a href="produtos.html">📦 Produtos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+            <a href="usuarios.html" class="menu-item-admin">👥 Usuários</a>
+            <a href="parametros.html" class="menu-item-admin">⚙️ Parâmetros</a>
+            <a href="pdvs-monitor.html" class="menu-item-admin">🖥️ PDVs (empresa)</a>
+        </nav>
+        <div class="nav-sidebar__footer">
+            <button class="btn btn-secondary" type="button" onclick="logout()">🚪 Sair</button>
+        </div>
+    </aside>
 
-        <main>
+    <div class="app-content">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <h1>Parâmetros da Empresa</h1>
+                    <div class="nav-right">
+                        <button class="nav-burger" type="button" aria-label="Abrir menu" onclick="toggleSidebar()">☰</button>
+                        <span id="userName" class="nav-user">Olá, Usuário</span>
+                    </div>
+                </div>
+            </header>
+
+            <main>
             <section class="form-section">
                 <h2>Selecionar Empresa</h2>
                 
@@ -103,6 +127,8 @@
 
                 <button class="btn btn-primary" onclick="salvarParametros()">💾 Salvar Parâmetros</button>
                 <button class="btn btn-secondary" onclick="resetarParametros()">↩️ Restaurar</button>
+                <button type="button" class="btn btn-danger admin-only" id="btnExcluirEmpresa" onclick="excluirCadastroEmpresa()" disabled title="Remove o cadastro de parâmetros desta empresa">🗑️ Excluir cadastro desta empresa</button>
+                <p class="admin-only" style="margin-top:10px;color:#666;font-size:0.9em;"><small><strong>Excluir cadastro:</strong> apaga nome, cores, PIX e demais parâmetros deste ID no banco. <strong>PDVs</strong> já registrados no monitor continuam até serem excluídos na tela de PDVs.</small></p>
             </section>
 
             <section class="form-section">
@@ -112,15 +138,18 @@
                     <button id="previewBotao" style="padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Botão de Exemplo</button>
                 </div>
             </section>
-        </main>
+            </main>
 
-        <footer>
-            <p>&copy; 2024 Sistema de Cadastro</p>
-        </footer>
+            <footer>
+                <p>&copy; 2024 Sistema de Cadastro</p>
+            </footer>
+        </div>
     </div>
 
     <script src="auth.js"></script>
+    <script src="theme-defaults.js"></script>
     <script src="config.js"></script>
+    <script src="nav.js"></script>
     <script src="script.js"></script>
     <script>
         // Variável global para armazenar o ID do parâmetro
@@ -128,8 +157,16 @@
         const DEFAULT_PIX_KEY = 'pix@lojapdv.com';
 
         // Inicializar
+        function atualizarBotaoExcluirEmpresa() {
+            var btn = document.getElementById('btnExcluirEmpresa');
+            if (!btn) return;
+            var eid = document.getElementById('empresaSelect').value || document.getElementById('empresaId').value;
+            btn.disabled = !eid || !parametroId;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             if (!checkAuth()) return;
+            if (!checkPermission('adm')) return;
             displayUserName();
             setupPreviewListeners();
             carregarEmpresas(); // Carregar lista de empresas ao iniciar
@@ -170,6 +207,8 @@
         async function selecionarEmpresa() {
             const empresaId = document.getElementById('empresaSelect').value;
             document.getElementById('empresaId').value = empresaId;
+            parametroId = null;
+            atualizarBotaoExcluirEmpresa();
 
             if (!empresaId) {
                 return;
@@ -190,10 +229,12 @@
                     localStorage.setItem('empresaParams', JSON.stringify(params));
                     
                     applyClientStyles(params);
+                    atualizarBotaoExcluirEmpresa();
                     
                     showAlert('Parâmetros da empresa "' + (params.nomeEmpresa || empresaId) + '" carregados e aplicados!', 'success');
                 } else if (response.status === 404) {
                     showAlert('Empresa selecionada não tem parâmetros cadastrados.', 'info');
+                    atualizarBotaoExcluirEmpresa();
                 } else {
                     showAlert('Erro ao carregar parâmetros da empresa', 'error');
                 }
@@ -250,7 +291,7 @@
             document.getElementById('corBotao').value = params.corBotao || '#667eea';
             document.getElementById('corBotaoTexto').value = params.corBotaoTexto || '#ffffff';
             document.getElementById('mensagemBoasVindas').value = params.mensagemBoasVindas || '';
-            document.getElementById('chavePix').value = params.chavePix || '';
+            document.getElementById('chavePix').value = (params.chavePix && params.chavePix.trim()) ? params.chavePix : DEFAULT_PIX_KEY;
             document.getElementById('ativo').checked = params.ativo !== false;
             
             atualizarPreVisualizacao();
@@ -280,7 +321,7 @@
             
             // Se não tiver ID da empresa, gerar um automaticamente
             if (!params.empresaId || isNaN(params.empresaId)) {
-                params.empresaId = Math.floor(Math.random() * 10000) + 1;
+                params.empresaId = window.EMPRESA_ID_PADRAO_SISTEMA || 1;
             }
 
             try {
@@ -296,6 +337,7 @@
                 if (response.ok) {
                     const savedParams = await response.json();
                     parametroId = savedParams.id;
+                    atualizarBotaoExcluirEmpresa();
                     
                     // Salvar no localStorage para todas as telas
                     localStorage.setItem('selectedEmpresaId', params.empresaId);
@@ -316,18 +358,17 @@
             }
         }
 
-        // Restaurar parâmetros padrão do sistema
-        function resetarParametros() {
+        // Restaurar parâmetros padrão — sempre o mesmo ID (EMPRESA_ID_PADRAO_SISTEMA), alinhado ao monitor de PDVs
+        async function resetarParametros() {
             if (!confirm('Tem certeza que deseja restaurar os parâmetros padrão do sistema?')) {
                 return;
             }
 
-            localStorage.removeItem('selectedEmpresaId');
-            localStorage.removeItem('empresaParams');
-
+            var EP = window.EMPRESA_ID_PADRAO_SISTEMA || 1;
             document.getElementById('empresaSelect').value = '';
-            document.getElementById('empresaId').value = '';
-            
+            document.getElementById('empresaId').value = String(EP);
+            parametroId = null;
+
             document.getElementById('nomeEmpresa').value = 'Sistema de Cadastro';
             document.getElementById('logoUrl').value = '';
             document.getElementById('corPrimaria').value = '#667eea';
@@ -348,7 +389,105 @@
             applyDefaultStyles();
             atualizarPreVisualizacao();
 
-            showAlert('Parâmetros padrão restaurados com sucesso!', 'success');
+            localStorage.setItem('selectedEmpresaId', String(EP));
+            localStorage.setItem('selectedClienteId', String(EP));
+
+            try {
+                const gr = await fetch('http://localhost:8080/api/parametros-empresa/garantir/' + EP, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' }
+                });
+                if (gr.ok) {
+                    const saved = await gr.json();
+                    parametroId = saved.id;
+                    preencherFormulario(saved);
+                    localStorage.setItem('empresaParams', JSON.stringify(saved));
+                } else {
+                    var P = window.SISTEMA_THEME_PADRAO || {};
+                    localStorage.setItem('empresaParams', JSON.stringify({
+                        empresaId: EP,
+                        nomeEmpresa: 'Sistema de Cadastro',
+                        corPrimaria: P.corPrimaria || '#667eea',
+                        corSecundaria: P.corSecundaria || '#764ba2',
+                        corFundo: P.corFundo || '#ffffff',
+                        corTexto: P.corTexto || '#333333',
+                        corBotao: P.corBotao || '#667eea',
+                        corBotaoTexto: P.corBotaoTexto || '#ffffff',
+                        chavePix: DEFAULT_PIX_KEY,
+                        ativo: true
+                    }));
+                }
+            } catch (e) {
+                console.warn('garantir padrão:', e);
+            }
+
+            carregarEmpresas();
+            atualizarBotaoExcluirEmpresa();
+            showAlert('Padrão restaurado. Empresa ID ' + EP + ' — mesmo contexto em PDVs e Parâmetros.', 'success');
+        }
+
+        async function excluirCadastroEmpresa() {
+            var eid = document.getElementById('empresaSelect').value || document.getElementById('empresaId').value;
+            if (!eid) {
+                showAlert('Selecione uma empresa na lista.', 'info');
+                return;
+            }
+            if (!parametroId) {
+                showAlert('Não há cadastro de parâmetros carregado para excluir. Selecione a empresa novamente.', 'info');
+                return;
+            }
+            var EP = window.EMPRESA_ID_PADRAO_SISTEMA || 1;
+            if (String(eid) === String(EP)) {
+                if (!confirm('Esta é a empresa padrão do sistema (ID ' + EP + '). Excluir remove o cadastro de parâmetros; o próximo acesso pode recriar via "Restaurar" ou ao salvar. Continuar?')) {
+                    return;
+                }
+            } else {
+                if (!confirm('Excluir o cadastro de parâmetros da empresa ID ' + eid + '? Esta ação não pode ser desfeita. PDVs no monitor não são apagados automaticamente.')) {
+                    return;
+                }
+            }
+            try {
+                var res = await fetch('http://localhost:8080/api/parametros-empresa/empresa/' + encodeURIComponent(eid) + '/cadastro', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                if (res.ok) {
+                    parametroId = null;
+                    document.getElementById('empresaSelect').value = '';
+                    document.getElementById('empresaId').value = '';
+                    document.getElementById('nomeEmpresa').value = '';
+                    document.getElementById('logoUrl').value = '';
+                    document.getElementById('corPrimaria').value = '#667eea';
+                    document.getElementById('corSecundaria').value = '#764ba2';
+                    document.getElementById('corFundo').value = '#ffffff';
+                    document.getElementById('corTexto').value = '#333333';
+                    document.getElementById('corBotao').value = '#667eea';
+                    document.getElementById('corBotaoTexto').value = '#ffffff';
+                    document.getElementById('mensagemBoasVindas').value = '';
+                    document.getElementById('chavePix').value = DEFAULT_PIX_KEY;
+                    document.getElementById('ativo').checked = true;
+                    atualizarPreVisualizacao();
+                    if (localStorage.getItem('selectedEmpresaId') === String(eid)) {
+                        localStorage.removeItem('selectedEmpresaId');
+                        localStorage.removeItem('empresaParams');
+                        applyDefaultStyles();
+                    }
+                    await carregarEmpresas();
+                    atualizarBotaoExcluirEmpresa();
+                    showAlert('Cadastro de parâmetros da empresa removido.', 'success');
+                } else if (res.status === 404) {
+                    showAlert('Não havia cadastro para esta empresa.', 'info');
+                    await carregarEmpresas();
+                    atualizarBotaoExcluirEmpresa();
+                } else if (res.status === 403) {
+                    showAlert('Apenas administradores podem excluir.', 'error');
+                } else {
+                    showAlert('Erro ao excluir cadastro.', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showAlert('Erro de conexão ao excluir.', 'error');
+            }
         }
     </script>
 </body>
