@@ -72,7 +72,11 @@ function checkPermission(requiredRole) {
     
     if (requiredRole === 'adm') {
         if (!isAdmin()) {
-            alert('Acesso restrito apenas para administradores!');
+            if (typeof window.showSystemAlert === 'function') {
+                window.showSystemAlert('Acesso restrito apenas para administradores!', 'error');
+            } else {
+                alert('Acesso restrito apenas para administradores!');
+            }
             window.location.href = localStorage.getItem('pdvTerminalId') ? 'pdv/' : 'pdv/login.html';
             return false;
         }

@@ -28,5 +28,11 @@ public class UpdateUserRequest {
 
     /** Se true, remove o vínculo do usuário com o PDV (pode cadastrar em outro caixa depois). */
     private Boolean desvincularPdv;
+
+    @jakarta.validation.constraints.Size(max = 25)
+    private String telefone;
+
+    /** Se true, atualiza o telefone (inclusive para limpar). */
+    private Boolean aplicarTelefone;
 }
 

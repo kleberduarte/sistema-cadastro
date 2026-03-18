@@ -22,6 +22,10 @@ public class RegisterRequest {
     
     private Role role = Role.VENDEDOR;
 
-    /** Empresa para contexto PDV; null = padrão do sistema. */
+    /** Empresa (ID do cliente) obrigatório no cadastro público. */
     private Long empresaId;
+
+    /** Código gerado na retaguarda (empresa). Obrigatório no cadastro público. */
+    @Size(max = 40)
+    private String codigoConvite;
 }

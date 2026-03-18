@@ -44,6 +44,36 @@
             </header>
 
             <main>
+            <section class="form-section" id="secaoConvitePdv">
+                <h2>🔑 Código de convite PDV</h2>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;min-width:220px;">
+                        <label for="conviteUserSelect">Colaborador (opcional)</label>
+                        <select id="conviteUserSelect"><option value="">Carregando…</option></select>
+                        <small style="color:#888;display:block;margin-top:6px;">Só para preencher o WhatsApp. O código é sempre da empresa atual.</small>
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button type="button" class="btn btn-primary" id="btnGerarCodigoConvite">Gerar novo código</button>
+                    </div>
+                </div>
+                <div id="conviteCodigoBox" style="display:none;margin-top:16px;padding:18px;background:#f5f7ff;border-radius:12px;border:1px solid #c5cae9;position:relative;">
+                    <p id="conviteTimerText" style="margin:0 0 10px;font-weight:600;color:#c62828;font-size:0.9rem;"></p>
+                    <p style="margin:0 0 10px;"><strong>Código</strong> <span id="conviteEmpresaNome" style="color:#667eea;"></span></p>
+                    <p style="font-family:monospace;font-size:1.35rem;font-weight:700;letter-spacing:.08em;margin:8px 0;" id="conviteCodigoValor"></p>
+                    <button type="button" class="btn btn-secondary btn-small" id="btnCopiarCodigo">📋 Copiar código</button>
+                    <hr style="margin:18px 0;border:none;border-top:1px solid #dde1f5;">
+                    <label for="conviteWhatsAppPhone" style="font-weight:600;">WhatsApp do colaborador (DDD + número)</label>
+                    <div class="form-row" style="margin-top:8px;align-items:flex-end;">
+                        <div class="form-group" style="flex:1;min-width:180px;">
+                            <input type="tel" id="conviteWhatsAppPhone" placeholder="ex: 11999998888 ou 5511999998888">
+                        </div>
+                        <button type="button" class="btn btn-primary" id="btnWhatsAppConvite">📱 Abrir WhatsApp</button>
+                    </div>
+                    <p style="font-size:.82rem;color:#888;margin-top:10px;margin-bottom:0;">A mensagem inclui ID da empresa, código e link da tela de cadastro. Regenerar o código invalida o anterior.</p>
+                </div>
+                <div class="form-error" id="conviteError" style="margin-top:12px;"></div>
+            </section>
+
             <section class="form-section">
                 <h2>➕ Cadastrar Novo Usuário</h2>
                 <form id="registerUserForm" class="register-form">
@@ -62,8 +92,12 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="newUserEmpresaPdv">ID empresa (PDV) <small style="font-weight:400">— vazio = padrão sistema (1)</small></label>
-                            <input type="number" id="newUserEmpresaPdv" min="1" placeholder="ex: 770 ou vazio">
+                            <label for="newUserTelefone">Celular / WhatsApp <small style="font-weight:400">— para enviar o convite</small></label>
+                            <input type="tel" id="newUserTelefone" maxlength="25" placeholder="ex: 11999998888">
+                        </div>
+                        <div class="form-group">
+                            <label for="newUserEmpresaPdv">ID empresa (PDV) <small style="font-weight:400">— preenchido com a empresa atual; vazio + ADM = sem empresa</small></label>
+                            <input type="number" id="newUserEmpresaPdv" min="1" placeholder="ex: 770">
                         </div>
                     </div>
                     <div class="form-row">
@@ -87,7 +121,7 @@
             <section class="search-section">
                 <h2>🔍 Buscar Usuários</h2>
                 <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="Buscar por nome de usuário...">
+                    <input type="text" id="searchInput" placeholder="Buscar por usuário ou telefone...">
                     <button type="button" id="searchBtn" class="btn btn-search">Buscar</button>
                 </div>
             </section>
@@ -99,6 +133,7 @@
                         <thead>
                             <tr>
                                 <th>Usuário</th>
+                                <th>Telefone</th>
                                 <th>Perfil</th>
                                 <th>Empresa PDV</th>
                                 <th>PDV vinc.</th>
@@ -152,6 +187,10 @@
                         <option value="VENDEDOR">Vendedor</option>
                         <option value="ADM">Administrador</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="editTelefone">Celular / WhatsApp</label>
+                    <input type="tel" id="editTelefone" maxlength="25" placeholder="ex: 11999998888">
                 </div>
                 <div class="form-group">
                     <label for="editEmpresaPdv">ID empresa (PDV) <small style="font-weight:400">— vazio = padrão sistema</small></label>

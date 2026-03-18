@@ -18,4 +18,6 @@ public class ClienteResponse {
     private String cpf;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    /** Indica se já existe código de convite PDV configurado (sem expor o código). */
+    private Boolean possuiCodigoConvitePdv;
 }

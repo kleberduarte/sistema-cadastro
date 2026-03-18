@@ -19,12 +19,32 @@ let currentCaixaStatus = 'LIVRE'; // LIVRE, PAUSADO, FECHADO
 const CURRENT_USER_KEY_LOCAL = 'currentUser';
 const AUTH_TOKEN_KEY_LOCAL = 'authToken';
 
+/** Confirmação estilizada (mesmo layout do sistema); fallback em confirm nativo. */
+function pdvConfirm(message, opts) {
+    opts = opts || {};
+    if (typeof window.showSystemConfirm === 'function') {
+        return window.showSystemConfirm(message, opts);
+    }
+    return new Promise(function (res) {
+        res(confirm(message));
+    });
+}
+
 /** Links da retaguarda a partir da pasta /pdv/ */
 function pdvAppHref(file) {
     if (typeof window !== 'undefined' && window.IS_PDV_APP) {
         if (file === 'relatorios.html' || file === 'index.html') return '../' + file;
     }
     return file;
+}
+
+/** Evita loop PDV ↔ login quando o JWT expira mas o terminal ainda está no localStorage */
+function pdvRedirecionarParaLoginCaixa() {
+    try {
+        localStorage.removeItem('pdvTerminalId');
+        localStorage.removeItem('pdvTerminalCodigo');
+    } catch (e) { /* ignore */ }
+    window.location.href = 'login.html';
 }
 
 function startPdvHeartbeat() {
@@ -222,10 +242,17 @@ function setupKeyboardShortcuts() {
         }
 
         if (alt && (key === 'f' || key === 'F')) {
-            if (confirm('Deseja realmente FECHAR o caixa (Final de Expediente)?')) {
-                setCaixaStatus('FECHADO');
-                showAlert('Caixa FECHADO.', 'warning');
-            }
+            pdvConfirm('Deseja realmente FECHAR o caixa (Final de Expediente)?', {
+                title: 'Fechar caixa',
+                confirmText: 'Sim, fechar',
+                cancelText: 'Cancelar',
+                type: 'warning'
+            }).then(function (ok) {
+                if (ok) {
+                    setCaixaStatus('FECHADO');
+                    showAlert('Caixa FECHADO.', 'warning');
+                }
+            });
             return;
         }
 
@@ -257,9 +284,14 @@ function setupKeyboardShortcuts() {
                 if (typeof finalizeSale === 'function') finalizeSale();
                 break;
             case 'F11':
-                if (confirm('Tem certeza que deseja cancelar esta venda?')) {
-                    if (typeof novaVenda === 'function') novaVenda();
-                }
+                pdvConfirm('Tem certeza que deseja cancelar esta venda?', {
+                    title: 'Cancelar venda',
+                    confirmText: 'Sim, cancelar',
+                    cancelText: 'Não',
+                    type: 'warning'
+                }).then(function (ok) {
+                    if (ok && typeof novaVenda === 'function') novaVenda();
+                });
                 break;
             case 'F12':
                 if (typeof openClientModal === 'function') openClientModal();
@@ -279,13 +311,23 @@ function setupKeyboardShortcuts() {
                         if (roleNorm === 'ADM') {
                             pdvAdminSairParaRetaguarda();
                         } else if (roleNorm === 'VENDEDOR') {
-                            if (confirm('Deseja sair do PDV e fazer logout?')) {
-                                if (typeof logout === 'function') logout();
-                            }
+                            pdvConfirm('Deseja sair do PDV e fazer logout?', {
+                                title: 'Sair do PDV',
+                                confirmText: 'Sim, sair',
+                                cancelText: 'Cancelar',
+                                type: 'warning'
+                            }).then(function (ok) {
+                                if (ok && typeof logout === 'function') logout();
+                            });
                         } else {
-                            if (confirm('Deseja sair do PDV e voltar para a retaguarda do sistema?')) {
-                                window.location.href = pdvAppHref('index.html');
-                            }
+                            pdvConfirm('Deseja sair do PDV e voltar para a retaguarda do sistema?', {
+                                title: 'Retaguarda',
+                                confirmText: 'Sim',
+                                cancelText: 'Cancelar',
+                                type: 'info'
+                            }).then(function (ok) {
+                                if (ok) window.location.href = pdvAppHref('index.html');
+                            });
                         }
                     }).catch(function () {
                         window.__pdvEscLeavePending = false;
@@ -515,33 +557,26 @@ function finalizeSale() {
 }
 
 function showAlert(message, type = 'info') {
-    // Remover alertas existentes para não empilhar
-    const existingAlert = document.querySelector('.pdv-alert');
-    if (existingAlert) {
-        existingAlert.remove();
+    if (typeof window.showSystemAlert === 'function') {
+        window.showSystemAlert(message, type);
+        return;
     }
-    
-    // Criar o elemento do novo alerta
+
+    // Fallback (caso a tela não carregue o config.js)
+    const existingAlert = document.querySelector('.pdv-alert');
+    if (existingAlert) existingAlert.remove();
+
     const alert = document.createElement('div');
     alert.className = `pdv-alert alert-${type}`;
     alert.textContent = message;
-    
-    // Adicionar ao corpo da página
     document.body.appendChild(alert);
-    
-    // Forçar o aparecimento com uma pequena pausa para a transição funcionar
-    setTimeout(() => {
-        alert.classList.add('show');
-    }, 10);
 
-    // Agendar a remoção do alerta
+    setTimeout(() => alert.classList.add('show'), 10);
+
     setTimeout(() => {
         alert.classList.remove('show');
-        // Esperar a animação de saída antes de remover o elemento do DOM
         setTimeout(() => {
-            if (alert.parentElement) {
-                alert.remove();
-            }
+            if (alert.parentElement) alert.remove();
         }, 500);
     }, 3000);
 }
@@ -1000,10 +1035,17 @@ function cycleCaixaStatus() {
     const evt = window.event;
     // Permite fechar clicando com Ctrl pressionado
     if (evt && (evt.ctrlKey || evt.altKey)) {
-        if (confirm('Deseja realmente FECHAR o caixa (Final de Expediente)?')) {
-            setCaixaStatus('FECHADO');
-            showAlert('Caixa FECHADO.', 'warning');
-        }
+        pdvConfirm('Deseja realmente FECHAR o caixa (Final de Expediente)?', {
+            title: 'Fechar caixa',
+            confirmText: 'Sim, fechar',
+            cancelText: 'Cancelar',
+            type: 'warning'
+        }).then(function (ok) {
+            if (ok) {
+                setCaixaStatus('FECHADO');
+                showAlert('Caixa FECHADO.', 'warning');
+            }
+        });
         return;
     }
 
@@ -1209,7 +1251,7 @@ async function processPayment() {
         const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
         if (!token) {
             showAlert('Sessão expirada. Faça login novamente.', 'error');
-            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            setTimeout(pdvRedirecionarParaLoginCaixa, 1500);
             return;
         }
         const response = await fetch('http://localhost:8080/api/vendas', {
@@ -1242,7 +1284,7 @@ async function processPayment() {
             } catch (_) { /* body vazio ou não JSON */ }
             if (response.status === 401) {
                 showAlert('Sessão expirada. Faça login novamente.', 'error');
-                setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+                setTimeout(pdvRedirecionarParaLoginCaixa, 1500);
             } else if (response.status === 403) {
                 showAlert('Sem permissão para registrar vendas. Contate o administrador.', 'error');
             } else {

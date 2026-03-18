@@ -35,6 +35,10 @@ public class Cliente {
     @Column(unique = true, nullable = false, length = 14)
     private String cpf;
 
+    /** Código para cadastro público de usuários vinculados ao PDV desta empresa (cliente). */
+    @Column(name = "codigo_convite_pdv", length = 512)
+    private String codigoConvitePdv;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

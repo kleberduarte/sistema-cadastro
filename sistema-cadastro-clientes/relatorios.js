@@ -389,21 +389,22 @@ function escapeHtml(text) {
 }
 
 function showAlert(message, type) {
-    const existingAlert = document.querySelector('.alert');
-    if (existingAlert) {
-        existingAlert.remove();
+    if (typeof window.showSystemAlert === 'function') {
+        window.showSystemAlert(message, type);
+        return;
     }
-    
+
+    const existingAlert = document.querySelector('.alert');
+    if (existingAlert) existingAlert.remove();
+
     const alert = document.createElement('div');
     alert.className = `alert alert-${type}`;
     alert.textContent = message;
-    
+
     const main = document.querySelector('main');
-    main.insertBefore(alert, main.firstChild);
-    
-    setTimeout(() => {
-        alert.remove();
-    }, 3000);
+    if (main && main.firstChild) main.insertBefore(alert, main.firstChild);
+
+    setTimeout(() => alert.remove(), 3000);
 }
 
 // Fechar modal ao clicar fora

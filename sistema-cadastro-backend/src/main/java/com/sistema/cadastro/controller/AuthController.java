@@ -1,5 +1,6 @@
 package com.sistema.cadastro.controller;
 
+import com.sistema.cadastro.dto.AdminCreateUserRequest;
 import com.sistema.cadastro.dto.LoginRequest;
 import com.sistema.cadastro.dto.LoginResponse;
 import com.sistema.cadastro.dto.RegisterRequest;
@@ -7,6 +8,8 @@ import com.sistema.cadastro.dto.UpdateUserRequest;
 import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -14,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -21,6 +25,12 @@ import java.util.List;
 public class AuthController {
 
     private final UsuarioService usuarioService;
+
+    @GetMapping("/pdv-empresa-padrao")
+    @PreAuthorize("hasRole('ADM')")
+    public Map<String, Long> pdvEmpresaPadrao() {
+        return Map.of("empresaId", usuarioService.getEmpresaPadraoPdvId());
+    }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
@@ -40,6 +50,18 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/users")
+    @PreAuthorize("hasRole('ADM')")
+    public ResponseEntity<?> createUserAdmin(@Valid @RequestBody AdminCreateUserRequest request) {
+        try {
+            Usuario u = usuarioService.createByAdmin(request);
+            u.setPassword(null);
+            return ResponseEntity.status(HttpStatus.CREATED).body(u);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+    }
+
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADM')")
     public ResponseEntity<List<Usuario>> getAllUsers() {
@@ -48,9 +70,15 @@ public class AuthController {
 
     @DeleteMapping("/users/{id}")
     @PreAuthorize("hasRole('ADM')")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        usuarioService.delete(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        try {
+            usuarioService.delete(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+        }
     }
 
     @PutMapping("/users/{id}")
