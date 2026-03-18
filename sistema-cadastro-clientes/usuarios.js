@@ -189,6 +189,62 @@ function setupEventListeners() {
     // Formulário de cadastro de usuário
     const registerForm = document.getElementById('registerUserForm');
     registerForm.addEventListener('submit', registerUser);
+
+    var chk = document.getElementById('gerarSenhaAutomatica');
+    if (chk) {
+        function syncSenhaRow() {
+            var manual = !chk.checked;
+            var row = document.getElementById('rowSenhasManual');
+            if (row) row.style.display = manual ? '' : 'none';
+            var p1 = document.getElementById('newUserPassword');
+            var p2 = document.getElementById('confirmUserPassword');
+            if (p1) { p1.required = manual; if (!manual) p1.value = ''; }
+            if (p2) { p2.required = manual; if (!manual) p2.value = ''; }
+        }
+        chk.addEventListener('change', syncSenhaRow);
+        syncSenhaRow();
+    }
+    var btnCop = document.getElementById('btnCopiarSenhaGerada');
+    if (btnCop) {
+        btnCop.addEventListener('click', function () {
+            var el = document.getElementById('senhaGeradaValor');
+            var t = el && el.textContent ? el.textContent.trim() : '';
+            if (!t) return;
+            navigator.clipboard.writeText(t).then(function () {
+                showAlert('Senha copiada.', 'success');
+            }).catch(function () { showAlert('Copie manualmente.', 'error'); });
+        });
+    }
+}
+
+var _senhaGeradaTimer = null;
+function ocultarBoxSenhaGerada() {
+    if (_senhaGeradaTimer) {
+        clearInterval(_senhaGeradaTimer);
+        _senhaGeradaTimer = null;
+    }
+    var b = document.getElementById('boxSenhaGerada');
+    var v = document.getElementById('senhaGeradaValor');
+    if (b) b.style.display = 'none';
+    if (v) v.textContent = '';
+}
+function mostrarSenhaGerada(plain) {
+    ocultarBoxSenhaGerada();
+    var b = document.getElementById('boxSenhaGerada');
+    var v = document.getElementById('senhaGeradaValor');
+    var span = document.getElementById('senhaGeradaTimer');
+    if (!b || !v) return;
+    v.textContent = plain;
+    b.style.display = 'block';
+    var sec = 120;
+    if (span) span.textContent = 'Ocultando em ' + sec + ' s.';
+    _senhaGeradaTimer = setInterval(function () {
+        sec--;
+        if (span) span.textContent = sec > 0 ? ('Ocultando em ' + sec + ' s.') : '';
+        if (sec <= 0) {
+            ocultarBoxSenhaGerada();
+        }
+    }, 1000);
 }
 
 // Cadastrar novo usuário
@@ -196,8 +252,9 @@ async function registerUser(e) {
     e.preventDefault();
     
     const username = document.getElementById('newUsername').value.trim();
-    const password = document.getElementById('newUserPassword').value;
-    const confirmPassword = document.getElementById('confirmUserPassword').value;
+    const gerarAuto = document.getElementById('gerarSenhaAutomatica') && document.getElementById('gerarSenhaAutomatica').checked;
+    const password = gerarAuto ? '' : document.getElementById('newUserPassword').value;
+    const confirmPassword = gerarAuto ? '' : document.getElementById('confirmUserPassword').value;
     const role = document.getElementById('newUserRole').value;
     const empresaPdvRaw = document.getElementById('newUserEmpresaPdv').value.trim();
     const eCtx = getEmpresaRetaguardaAtual();
@@ -217,18 +274,17 @@ async function registerUser(e) {
     successElement.textContent = '';
     successElement.classList.remove('show');
     
-    // Validar senhas
-    if (password !== confirmPassword) {
-        errorElement.textContent = 'As senhas não conferem!';
-        errorElement.classList.add('show');
-        return;
-    }
-    
-    // Validar tamanho da senha
-    if (password.length < 4) {
-        errorElement.textContent = 'A senha deve ter pelo menos 4 caracteres!';
-        errorElement.classList.add('show');
-        return;
+    if (!gerarAuto) {
+        if (password !== confirmPassword) {
+            errorElement.textContent = 'As senhas não conferem!';
+            errorElement.classList.add('show');
+            return;
+        }
+        if (password.length < 4) {
+            errorElement.textContent = 'A senha deve ter pelo menos 4 caracteres!';
+            errorElement.classList.add('show');
+            return;
+        }
     }
     
     const telefone = document.getElementById('newUserTelefone').value.trim();
@@ -239,7 +295,7 @@ async function registerUser(e) {
             headers: authHeaders(),
             body: JSON.stringify({
                 username: username,
-                password: password,
+                password: gerarAuto ? '' : password,
                 role: role,
                 empresaId: empresaId != null && empresaId >= 1 ? empresaId : null,
                 telefone: telefone || null
@@ -248,10 +304,19 @@ async function registerUser(e) {
 
         const data = await response.json().catch(function () { return {}; });
 
-        if (response.ok && data.id) {
-            successElement.textContent = 'Usuário cadastrado com sucesso!';
+        if (response.ok && data.id != null) {
+            successElement.textContent = data.senhaTemporaria
+                ? 'Usuário cadastrado. Copie a senha provisória abaixo e envie com segurança ao colaborador.'
+                : 'Usuário cadastrado com sucesso!';
             successElement.classList.add('show');
+            if (data.senhaTemporaria) {
+                mostrarSenhaGerada(data.senhaTemporaria);
+            } else {
+                ocultarBoxSenhaGerada();
+            }
             document.getElementById('registerUserForm').reset();
+            var chk = document.getElementById('gerarSenhaAutomatica');
+            if (chk) { chk.checked = true; chk.dispatchEvent(new Event('change')); }
             
             // Recarregar lista de usuários
             loadUsers();

@@ -41,6 +41,10 @@ public class Usuario {
     @Column(length = 25)
     private String telefone;
 
+    /** true = cadastro pelo ADM com senha provisória; usuário deve trocar no 1º acesso. */
+    @Column(name = "must_change_password", nullable = false)
+    private Boolean mustChangePassword = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

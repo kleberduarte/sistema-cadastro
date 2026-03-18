@@ -64,6 +64,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cm && cm.classList.contains('show')) finishConfirmCadastro(false);
     });
     try {
+        var mpl = sessionStorage.getItem('msgPosLogin');
+        if (mpl) {
+            sessionStorage.removeItem('msgPosLogin');
+            var le0 = document.getElementById('loginError');
+            if (le0) {
+                le0.textContent = mpl;
+                le0.style.color = '#1565c0';
+                le0.classList.add('show');
+            }
+        }
         var aviso = sessionStorage.getItem('pdvAvisoRetaguarda');
         if (aviso) {
             sessionStorage.removeItem('pdvAvisoRetaguarda');
@@ -130,6 +140,14 @@ function initBannerSessaoValida() {
                     return;
                 }
             } catch (_) {}
+            if (me.mustChangePassword === true) {
+                try {
+                    var eBanner = me.empresaId != null && me.empresaId >= 1 ? me.empresaId : parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+                    if (eBanner >= 1) sessionStorage.setItem('redefinirSenhaEmpresaId', String(eBanner));
+                } catch (_) {}
+                window.location.href = 'redefinir-senha-primeiro-acesso.html';
+                return;
+            }
             var userEl = document.getElementById('sessaoAtivaUser');
             var roleNorm = normalizeRole(me.role);
             if (userEl) userEl.textContent = (me.username || '') + ' (' + roleNorm + ')';
@@ -228,6 +246,23 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         const data = await response.json();
         
         if (data.token) {
+            if (data.mustChangePassword === true) {
+                localStorage.setItem(TOKEN_KEY, data.token);
+                let id0 = data.id;
+                let user0 = data.username;
+                let role0 = normalizeRole(data.role);
+                localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
+                    id: id0,
+                    username: user0,
+                    role: role0
+                }));
+                try {
+                    var eLogin = data.empresaId != null && data.empresaId >= 1 ? data.empresaId : parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+                    if (eLogin >= 1) sessionStorage.setItem('redefinirSenhaEmpresaId', String(eLogin));
+                } catch (_) {}
+                window.location.href = 'redefinir-senha-primeiro-acesso.html';
+                return;
+            }
             localStorage.setItem(TOKEN_KEY, data.token);
             let id = data.id;
             let username = data.username;

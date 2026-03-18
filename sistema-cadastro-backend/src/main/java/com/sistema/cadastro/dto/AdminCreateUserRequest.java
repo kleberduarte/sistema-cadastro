@@ -12,8 +12,10 @@ public class AdminCreateUserRequest {
     @Size(min = 3, max = 50)
     private String username;
 
-    @NotBlank(message = "Senha é obrigatória")
-    @Size(min = 4, max = 100)
+    /**
+     * Opcional: vazio ou null = gera senha aleatória e exige redefinição no 1º login.
+     */
+    @Size(max = 100)
     private String password;
 
     private Role role = Role.VENDEDOR;

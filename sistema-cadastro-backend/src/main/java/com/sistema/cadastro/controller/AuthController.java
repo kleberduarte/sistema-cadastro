@@ -1,7 +1,9 @@
 package com.sistema.cadastro.controller;
 
 import com.sistema.cadastro.dto.AdminCreateUserRequest;
+import com.sistema.cadastro.dto.AdminCreateUserResponse;
 import com.sistema.cadastro.dto.LoginRequest;
+import com.sistema.cadastro.dto.TrocarSenhaPrimeiroAcessoRequest;
 import com.sistema.cadastro.dto.LoginResponse;
 import com.sistema.cadastro.dto.RegisterRequest;
 import com.sistema.cadastro.dto.UpdateUserRequest;
@@ -54,11 +56,38 @@ public class AuthController {
     @PreAuthorize("hasRole('ADM')")
     public ResponseEntity<?> createUserAdmin(@Valid @RequestBody AdminCreateUserRequest request) {
         try {
-            Usuario u = usuarioService.createByAdmin(request);
-            u.setPassword(null);
-            return ResponseEntity.status(HttpStatus.CREATED).body(u);
+            AdminCreateUserResponse body = usuarioService.createByAdmin(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(body);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+    }
+
+    /**
+     * Troca de senha no 1º acesso (contas com senha provisória gerada pelo ADM).
+     * Exige JWT do login com a senha provisória.
+     */
+    @PostMapping("/trocar-senha-primeiro-acesso")
+    public ResponseEntity<?> trocarSenhaPrimeiroAcesso(
+            @Valid @RequestBody TrocarSenhaPrimeiroAcessoRequest body,
+            Authentication auth) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String username;
+        Object principal = auth.getPrincipal();
+        if (principal instanceof Usuario u) {
+            username = u.getUsername();
+        } else {
+            username = auth.getName();
+        }
+        try {
+            usuarioService.trocarSenhaPrimeiroAcesso(username, body.getSenhaAtual(), body.getNovaSenha());
+            return ResponseEntity.ok(Map.of("message", "Senha alterada com sucesso"));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
         }
     }
 
