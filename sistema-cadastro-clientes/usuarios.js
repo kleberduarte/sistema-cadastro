@@ -37,6 +37,8 @@ async function registerUser(e) {
     const password = document.getElementById('newUserPassword').value;
     const confirmPassword = document.getElementById('confirmUserPassword').value;
     const role = document.getElementById('newUserRole').value;
+    const empresaPdvRaw = document.getElementById('newUserEmpresaPdv').value.trim();
+    const empresaId = empresaPdvRaw === '' ? null : parseInt(empresaPdvRaw, 10);
     const errorElement = document.getElementById('registerUserError');
     const successElement = document.getElementById('registerUserSuccess');
     
@@ -69,7 +71,8 @@ async function registerUser(e) {
             body: JSON.stringify({
                 username: username,
                 password: password,
-                role: role
+                role: role,
+                empresaId: empresaId != null && !isNaN(empresaId) && empresaId >= 1 ? empresaId : null
             })
         });
         
@@ -150,10 +153,16 @@ function renderUsers(userList = users) {
         
         // Traduzir perfil
         const roleText = user.role === 'ADM' ? '👑 Administrador' : '🛒 Vendedor';
+        const empPdvCell = (user.empresaId != null && user.empresaId >= 1)
+            ? escapeHtml(String(user.empresaId))
+            : '<span style="opacity:.75">Padrão</span>';
+        const pdvVinc = user.pdvTerminalId != null ? ('#' + escapeHtml(String(user.pdvTerminalId))) : '—';
         
         row.innerHTML = `
             <td>${escapeHtml(user.username)}</td>
             <td>${roleText}</td>
+            <td>${empPdvCell}</td>
+            <td>${pdvVinc}</td>
             <td>${formatDate(user.createdAt)}</td>
             <td>
                 ${!isCurrentUser ? `
@@ -288,6 +297,8 @@ function editUser(id) {
     document.getElementById('editUserId').value = user.id;
     document.getElementById('editUsername').value = user.username;
     document.getElementById('editUserRole').value = user.role;
+    document.getElementById('editEmpresaPdv').value = (user.empresaId != null && user.empresaId >= 1) ? user.empresaId : '';
+    document.getElementById('editDesvincularPdv').checked = false;
     document.getElementById('editPassword').value = '';
     document.getElementById('editUserError').textContent = '';
     document.getElementById('editUserError').classList.remove('show');
@@ -308,6 +319,9 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
     const username = document.getElementById('editUsername').value.trim();
     const role = document.getElementById('editUserRole').value;
     const password = document.getElementById('editPassword').value;
+    const empresaPdvRaw = document.getElementById('editEmpresaPdv').value.trim();
+    const empresaIdPdv = empresaPdvRaw === '' ? null : parseInt(empresaPdvRaw, 10);
+    const desvincularPdv = document.getElementById('editDesvincularPdv').checked;
     const errorElement = document.getElementById('editUserError');
     
     // Limpar erro anterior
@@ -331,7 +345,10 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
             body: JSON.stringify({
                 username: username,
                 role: role,
-                password: password || null
+                password: password || null,
+                aplicarEmpresaPdv: true,
+                empresaIdPdv: empresaIdPdv != null && !isNaN(empresaIdPdv) && empresaIdPdv >= 1 ? empresaIdPdv : null,
+                desvincularPdv: desvincularPdv
             })
         });
         

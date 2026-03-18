@@ -21,4 +21,7 @@ public class RegisterRequest {
     private String password;
     
     private Role role = Role.VENDEDOR;
+
+    /** Empresa para contexto PDV; null = padrão do sistema. */
+    private Long empresaId;
 }

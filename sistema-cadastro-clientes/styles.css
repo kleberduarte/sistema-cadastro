@@ -1,4 +1,4 @@
-/* Reset e Estilos Gerais */
+/* Reset e Estilos Gerais — gradiente do body: manter igual a theme-defaults.js (SISTEMA_THEME_PADRAO) */
 * {
     margin: 0;
     padding: 0;
@@ -10,6 +10,10 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     padding: 20px;
+}
+
+.nav-locked {
+    overflow: hidden;
 }
 
 .container {
@@ -58,6 +62,181 @@ header h1 {
     margin: 0;
     padding: 8px 15px;
     font-size: 0.85rem;
+}
+
+/* ===============================================================
+   Menu lateral FIXO à esquerda - Retaguarda (exceto PDV)
+   =============================================================== */
+/* Quando existe sidebar, o conteúdo principal fica à direita (usa :has para não depender de JS) */
+body:has(#navSidebar) .app-content,
+body.has-nav-sidebar .app-content {
+    margin-left: 260px;
+    max-width: calc(100% - 260px);
+    transition: margin-left 0.2s ease, max-width 0.2s ease;
+}
+
+.nav-burger {
+    display: none; /* no desktop o menu fica fixo; no mobile aparece o botão */
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+.nav-burger:hover {
+    background: rgba(255,255,255,0.18);
+    transform: translateY(-1px);
+}
+
+.header-content .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.nav-user {
+    color: white;
+    font-size: 0.95rem;
+    opacity: 0.95;
+}
+
+.nav-overlay {
+    display: none; /* usado só no mobile quando o menu abre */
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 999;
+}
+.nav-overlay.is-open {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Sidebar: fixo à esquerda, sempre visível no desktop */
+.nav-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 260px;
+    background: #0f172a;
+    color: #e2e8f0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+    transition: transform 0.22s ease;
+    transform: translateX(0); /* sempre visível no desktop */
+}
+.nav-sidebar.is-open {
+    transform: translateX(0);
+}
+
+.nav-sidebar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px 16px;
+    border-bottom: 1px solid rgba(148,163,184,0.18);
+}
+.nav-sidebar__brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.nav-sidebar__title {
+    font-weight: 700;
+    letter-spacing: 0.4px;
+}
+.nav-sidebar__user {
+    font-size: 0.9rem;
+    color: rgba(226,232,240,0.85);
+}
+.nav-sidebar__close {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(148,163,184,0.25);
+    background: rgba(148,163,184,0.08);
+    color: #e2e8f0;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.nav-sidebar__close:hover {
+    background: rgba(148,163,184,0.14);
+}
+.nav-sidebar__close {
+    display: none; /* no desktop o menu fica fixo; no mobile mostra para fechar */
+}
+
+.nav-links {
+    padding: 10px 10px 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.nav-links a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 12px;
+    border-radius: 12px;
+    color: #e2e8f0;
+    text-decoration: none;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.nav-links a:hover {
+    background: rgba(148,163,184,0.10);
+    border-color: rgba(148,163,184,0.18);
+}
+.nav-links a.is-active {
+    background: rgba(99,102,241,0.22);
+    border-color: rgba(99,102,241,0.35);
+}
+
+.nav-sidebar__footer {
+    margin-top: auto;
+    padding: 14px 16px 18px 16px;
+    border-top: 1px solid rgba(148,163,184,0.18);
+    display: flex;
+    gap: 10px;
+}
+.nav-sidebar__footer .btn {
+    flex: 1;
+    margin: 0;
+}
+
+/* Mobile: menu escondido por padrão, hamburger abre o drawer */
+@media (max-width: 820px) {
+    header h1 { font-size: 1.35rem; }
+    .nav-user { display: none; }
+    .nav-burger { display: inline-flex; }
+    .nav-sidebar__close { display: inline-flex; align-items: center; justify-content: center; }
+    body:has(#navSidebar) .app-content,
+    body.has-nav-sidebar .app-content {
+        margin-left: 0;
+        max-width: 100%;
+    }
+    .nav-sidebar {
+        transform: translateX(-102%);
+    }
+    .nav-overlay {
+        display: block;
+    }
 }
 
 /* Main Content */

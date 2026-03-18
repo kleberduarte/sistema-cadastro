@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login PDV</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <style id="pdv-login-base-styles">
+        * { box-sizing: border-box; }
+        .pdv-login-page {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .pdv-login-box {
+            background: #fff; border-radius: 16px; padding: 36px; max-width: 420px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,.35);
+            border-top: 4px solid #667eea;
+        }
+        .pdv-login-header { text-align: center; margin-bottom: 8px; }
+        .pdv-login-logo { margin-bottom: 16px; }
+        .pdv-login-logo img { max-width: 160px; max-height: 72px; object-fit: contain; vertical-align: middle; }
+        #pdvLoginTitle { margin: 0 0 8px; font-size: 1.45rem; color: #2c3e50; font-weight: 700; }
+        .pdv-login-sub { color: #666; font-size: .9rem; margin-bottom: 22px; line-height: 1.45; }
+        .pdv-login-box label { display: block; font-weight: 600; color: #444; margin-bottom: 6px; font-size: .9rem; }
+        .pdv-login-box input {
+            width: 100%; padding: 12px 14px; border: 2px solid #e8e8e8; border-radius: 10px; font-size: 1rem; margin-bottom: 16px;
+        }
+        .pdv-login-box input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
+        .pdv-login-box button[type="submit"] {
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 8px;
+        }
+        .pdv-login-box button[type="submit"]:hover { opacity: .95; filter: brightness(1.03); }
+        .err { color: #c0392b; font-size: .85rem; margin-top: -8px; margin-bottom: 12px; display: none; }
+        .err.show { display: block; }
+        .hint { font-size: .8rem; color: #888; margin-top: 16px; line-height: 1.4; }
+        a.pdv-login-back { font-size: .9rem; display: inline-block; margin-top: 20px; color: #667eea; font-weight: 600; text-decoration: none; }
+        a.pdv-login-back:hover { text-decoration: underline; }
+        .pdv-empresa-badge {
+            display: inline-block; font-size: .75rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+            background: rgba(102, 126, 234, 0.12); color: #5a67d8; margin-bottom: 12px;
+        }
+    </style>
+    <script src="../theme-defaults.js"></script>
+</head>
+<body class="pdv-login-page">
+    <div class="pdv-login-box">
+        <div class="pdv-login-header">
+            <div id="pdvEmpresaBadge" class="pdv-empresa-badge" style="display: none;"></div>
+            <div id="pdvLoginLogo" class="pdv-login-logo" style="display: none;"></div>
+            <h1 id="pdvLoginTitle">PDV — Acesso</h1>
+            <p class="pdv-login-sub" id="pdvLoginSub">Informe o <strong>ID da empresa</strong> em que este caixa opera (ex.: <strong>770</strong>). Esse mesmo ID é usado para <strong>cadastrar o PDV</strong> no monitor. Depois: usuário e senha.</p>
+        </div>
+        <form id="pdvLoginForm">
+            <label for="empresaIdPdv">ID da empresa</label>
+            <input id="empresaIdPdv" type="number" min="1" required placeholder="ex: 770" autocomplete="off" autofocus>
+
+            <label for="username">Usuário</label>
+            <input id="username" name="username" autocomplete="username" required>
+
+            <label for="password">Senha</label>
+            <input id="password" type="password" name="password" autocomplete="current-password" required>
+
+            <div id="err" class="err"></div>
+            <button type="submit" id="pdvLoginSubmit">Entrar no PDV</button>
+        </form>
+        <p class="hint">Se já existir caixa cadastrado no <strong>monitor</strong> sem operador vinculado, o login usa esse caixa (ex.: 02). Só cria um novo se todos estiverem em uso. Um usuário = um caixa.</p>
+        <a class="pdv-login-back" href="../login.html">← Login retaguarda</a>
+    </div>
+    <script>
+    (function () {
+        var API = 'http://localhost:8080/api';
+
+        if (localStorage.getItem('pdvTerminalId') && localStorage.getItem('authToken')) {
+            window.location.replace('index.html');
+            return;
+        }
+
+        function normalizeLogoUrl(logoUrl) {
+            if (!logoUrl || !String(logoUrl).trim()) return '';
+            var u = String(logoUrl).trim();
+            if (/^[A-Z]:/i.test(u) || u.indexOf(':\\') >= 0) {
+                u = u.split(/[/\\]/).pop();
+            }
+            return u;
+        }
+
+        function temaPadraoLogin() {
+            return window.SISTEMA_THEME_PADRAO || {
+                corPrimaria: '#667eea', corSecundaria: '#764ba2', corFundo: '#ffffff',
+                corTexto: '#333333', corBotao: '#667eea', corBotaoTexto: '#ffffff', nomeEmpresa: 'Sistema de Cadastro'
+            };
+        }
+
+        function defaultBranding() {
+            var P = temaPadraoLogin();
+            applyBranding({
+                empresaId: 0,
+                nomeEmpresa: P.nomeEmpresa,
+                corPrimaria: P.corPrimaria,
+                corSecundaria: P.corSecundaria,
+                corFundo: P.corFundo,
+                corTexto: P.corTexto,
+                corBotao: P.corBotao,
+                corBotaoTexto: P.corBotaoTexto,
+                logoUrl: null
+            });
+        }
+
+        function applyBranding(b) {
+            var P0 = temaPadraoLogin();
+            var prim = (b.corPrimaria && b.corPrimaria.trim()) || P0.corPrimaria;
+            var sec = (b.corSecundaria && b.corSecundaria.trim()) || P0.corSecundaria;
+            var fundo = (b.corFundo && b.corFundo.trim()) || P0.corFundo;
+            var texto = (b.corTexto && b.corTexto.trim()) || P0.corTexto;
+            var btn = (b.corBotao && b.corBotao.trim()) || P0.corBotao;
+            var btnTxt = (b.corBotaoTexto && b.corBotaoTexto.trim()) || P0.corBotaoTexto;
+            var eid = parseInt(b.empresaId, 10) || 0;
+
+            var st = document.getElementById('pdv-login-theme');
+            if (!st) {
+                st = document.createElement('style');
+                st.id = 'pdv-login-theme';
+                document.head.appendChild(st);
+            }
+            st.textContent =
+                '.pdv-login-page { background: linear-gradient(135deg, ' + prim + ' 0%, ' + sec + ' 100%) !important; }' +
+                '.pdv-login-box { border-top-color: ' + prim + ' !important; background: ' + fundo + ' !important; color: ' + texto + ' !important; }' +
+                '.pdv-login-box label { color: ' + texto + ' !important; opacity: 0.92; }' +
+                '#pdvLoginTitle { color: ' + prim + ' !important; }' +
+                '.pdv-login-sub { color: ' + texto + ' !important; opacity: 0.8; }' +
+                '.pdv-login-box input { border-color: #e0e0e0 !important; color: ' + texto + ' !important; background: #fff !important; }' +
+                '.pdv-login-box input:focus { border-color: ' + prim + ' !important; box-shadow: 0 0 0 3px ' + prim + '22 !important; }' +
+                '.pdv-login-box button[type="submit"] { background: linear-gradient(135deg, ' + btn + ', ' + sec + ') !important; color: ' + btnTxt + ' !important; }' +
+                'a.pdv-login-back { color: ' + prim + ' !important; }' +
+                '.hint { color: ' + texto + ' !important; opacity: 0.75; }' +
+                '.pdv-empresa-badge { background: ' + prim + '22 !important; color: ' + prim + ' !important; }' +
+                '.err { color: #c0392b !important; }';
+
+            var badge = document.getElementById('pdvEmpresaBadge');
+            var logoEl = document.getElementById('pdvLoginLogo');
+            if (eid >= 1) {
+                var nome = (b.nomeEmpresa && b.nomeEmpresa.trim()) || ('Empresa #' + eid);
+                document.getElementById('pdvLoginTitle').textContent = nome + ' — PDV';
+                document.title = nome + ' — PDV';
+                badge.textContent = 'ID empresa: ' + eid;
+                badge.style.display = 'inline-block';
+                badge.style.background = '';
+                badge.style.color = '';
+                var logo = normalizeLogoUrl(b.logoUrl);
+                if (logo) {
+                    var src = logo.indexOf('http') === 0 || logo.indexOf('data:') === 0 ? logo : ('../' + logo);
+                    logoEl.innerHTML = '<img src="' + src.replace(/"/g, '&quot;') + '" alt="Logo" onerror="this.parentNode.style.display=\'none\'">';
+                    logoEl.style.display = 'block';
+                } else {
+                    logoEl.style.display = 'none';
+                    logoEl.innerHTML = '';
+                }
+            } else {
+                document.getElementById('pdvLoginTitle').textContent = 'PDV — Acesso';
+                document.title = 'Login PDV';
+                badge.style.display = 'none';
+                badge.textContent = '';
+                logoEl.style.display = 'none';
+                logoEl.innerHTML = '';
+            }
+        }
+
+        function fetchBranding(empresaId) {
+            if (!empresaId || empresaId < 1) {
+                defaultBranding();
+                return;
+            }
+            fetch(API + '/parametros-cliente/branding/' + empresaId)
+                .then(function (r) {
+                    if (!r.ok) {
+                        defaultBranding();
+                        return null;
+                    }
+                    return r.json();
+                })
+                .then(function (b) {
+                    if (b) applyBranding(b);
+                })
+                .catch(function () { defaultBranding(); });
+        }
+
+        var EP = typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number' ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+        var inpEmpresa = document.getElementById('empresaIdPdv');
+        var saved = localStorage.getItem('selectedEmpresaId');
+        var initialEid = (saved && parseInt(saved, 10) >= 1) ? parseInt(saved, 10) : EP;
+        inpEmpresa.value = String(initialEid);
+        var debounceT = null;
+        function scheduleBrandingPdv() {
+            clearTimeout(debounceT);
+            debounceT = setTimeout(function () {
+                var v = parseInt(inpEmpresa.value, 10);
+                fetchBranding(v >= 1 ? v : EP);
+            }, 300);
+        }
+        inpEmpresa.addEventListener('input', scheduleBrandingPdv);
+        inpEmpresa.addEventListener('change', function () {
+            clearTimeout(debounceT);
+            var v = parseInt(inpEmpresa.value, 10);
+            fetchBranding(v >= 1 ? v : EP);
+        });
+        fetchBranding(initialEid);
+
+        function normRole(r) {
+            if (r == null || r === '') return '';
+            if (typeof r === 'string') return r.trim().toUpperCase();
+            if (typeof r === 'object' && r.name) return String(r.name).trim().toUpperCase();
+            return String(r).trim().toUpperCase();
+        }
+
+        function voltarParaLoginInicial(mensagem) {
+            try {
+                sessionStorage.setItem('pdvAvisoRetaguarda',
+                    (mensagem || '').trim() || 'Não foi possível acessar o PDV. Use o login inicial da retaguarda.');
+            } catch (e) {}
+            window.location.replace('../login.html');
+        }
+
+        document.getElementById('pdvLoginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            var err = document.getElementById('err');
+            err.classList.remove('show');
+            var empresaLogin = parseInt(document.getElementById('empresaIdPdv').value, 10);
+            if (!empresaLogin || empresaLogin < 1) {
+                err.textContent = 'Informe o ID da empresa (número ≥ 1).';
+                err.classList.add('show');
+                return;
+            }
+            var username = document.getElementById('username').value.trim();
+            var password = document.getElementById('password').value;
+            try {
+                var lr = await fetch(API + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+                var data = await lr.json().catch(function () { return {}; });
+                if (!data.token) {
+                    var failMsg = (data.message || '').toString();
+                    var lower = failMsg.toLowerCase();
+                    if (lower.indexOf('não encontrado') >= 0 || lower.indexOf('nao encontrado') >= 0) {
+                        try {
+                            sessionStorage.setItem('pdvAvisoRetaguarda',
+                                'O usuário informado não existe no sistema. Cadastre o usuário em Usuários na retaguarda (admin) e defina a empresa (ID) para o PDV, ou use o padrão do sistema.');
+                        } catch (e2) {}
+                        window.location.replace('../login.html');
+                        return;
+                    }
+                    voltarParaLoginInicial(failMsg || 'Senha incorreta ou falha no login. Tente na tela inicial.');
+                    return;
+                }
+                var token = data.token;
+                var id = data.id;
+                var roleNorm = normRole(data.role);
+                try {
+                    var mr = await fetch(API + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (mr.ok) {
+                        var me = await mr.json();
+                        if (me && me.id != null) {
+                            id = me.id;
+                            if (me.username) username = me.username;
+                            roleNorm = normRole(me.role);
+                        }
+                    }
+                } catch (x) {}
+                var vr = await fetch(API + '/pdv/entrar-inteligente', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ empresaId: empresaLogin })
+                });
+                if (!vr.ok) {
+                    var msg = 'Não foi possível abrir o PDV.';
+                    try { var j = await vr.json(); if (j.message) msg = j.message; } catch (x) {}
+                    voltarParaLoginInicial(msg + ' — redirecionando para o login inicial.');
+                    return;
+                }
+                var term = await vr.json();
+                var eid = term.empresaId;
+                localStorage.setItem('authToken', token);
+                localStorage.setItem('currentUser', JSON.stringify({ id: id, username: username, role: roleNorm }));
+                localStorage.setItem('selectedEmpresaId', String(eid));
+                localStorage.setItem('selectedClienteId', String(eid));
+                localStorage.setItem('pdvTerminalId', String(term.id));
+                localStorage.setItem('pdvTerminalCodigo', term.codigo || '');
+                try {
+                    var pr = await fetch(API + '/parametros-empresa/empresa/' + eid, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (pr.ok) {
+                        localStorage.setItem('empresaParams', JSON.stringify(await pr.json()));
+                    }
+                } catch (x) {}
+                window.location.href = 'index.html';
+            } catch (ex) {
+                voltarParaLoginInicial('Erro de conexão no PDV. Verifique a API e use o login inicial.');
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -43,16 +43,25 @@ function getCurrentUser() {
     return null;
 }
 
+function normalizeUserRole(role) {
+    if (role == null || role === '') return '';
+    if (typeof role === 'string') return role.trim().toUpperCase();
+    if (typeof role === 'object' && role !== null && typeof role.name === 'string') {
+        return role.name.trim().toUpperCase();
+    }
+    return String(role).trim().toUpperCase();
+}
+
 // Verificar se o usuário é Administrador
 function isAdmin() {
     const user = getCurrentUser();
-    return user && user.role === 'ADM';
+    return user && normalizeUserRole(user.role) === 'ADM';
 }
 
 // Verificar se o usuário é Vendedor
 function isVendedor() {
     const user = getCurrentUser();
-    return user && user.role === 'VENDEDOR';
+    return user && normalizeUserRole(user.role) === 'VENDEDOR';
 }
 
 // Verificar permissão para acessar a página
@@ -64,7 +73,7 @@ function checkPermission(requiredRole) {
     if (requiredRole === 'adm') {
         if (!isAdmin()) {
             alert('Acesso restrito apenas para administradores!');
-            window.location.href = 'vendas.html';
+            window.location.href = localStorage.getItem('pdvTerminalId') ? 'pdv/' : 'pdv/login.html';
             return false;
         }
     }
@@ -95,6 +104,10 @@ function logout() {
     
     localStorage.removeItem(CURRENT_USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
+    if (typeof window !== 'undefined' && window.IS_PDV_APP) {
+        localStorage.removeItem('pdvTerminalId');
+        localStorage.removeItem('pdvTerminalCodigo');
+    }
     window.location.href = 'login.html';
 }
 

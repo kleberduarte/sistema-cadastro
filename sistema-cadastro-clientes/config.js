@@ -1,5 +1,19 @@
 // Configurações do Cliente
 // Gerencia a aplicação de estilos personalizados por cliente
+// theme-defaults.js deve ser carregado antes deste arquivo (define SISTEMA_THEME_PADRAO).
+
+function temaPadrao() {
+    var p = typeof window !== 'undefined' && window.SISTEMA_THEME_PADRAO;
+    return p || {
+        nomeEmpresa: 'Sistema de Cadastro',
+        corPrimaria: '#667eea',
+        corSecundaria: '#764ba2',
+        corFundo: '#ffffff',
+        corTexto: '#333333',
+        corBotao: '#667eea',
+        corBotaoTexto: '#ffffff'
+    };
+}
 
 // ID do cliente configurado manualmente no sistema
 // Altere este valor para mudar o visual do sistema
@@ -217,12 +231,13 @@ function applyClientStyles(params) {
     }
 
 
-    const corPrimaria = params.corPrimaria || '#667eea';
-    const corSecundaria = params.corSecundaria || '#764ba2';
-    const corFundo = params.corFundo || '#ffffff';
-    const corTexto = params.corTexto || '#333333';
-    const corBotao = params.corBotao || '#667eea';
-    const corBotaoTexto = params.corBotaoTexto || '#ffffff';
+    const P0 = temaPadrao();
+    const corPrimaria = params.corPrimaria || P0.corPrimaria;
+    const corSecundaria = params.corSecundaria || P0.corSecundaria;
+    const corFundo = params.corFundo || P0.corFundo;
+    const corTexto = params.corTexto || P0.corTexto;
+    const corBotao = params.corBotao || P0.corBotao;
+    const corBotaoTexto = params.corBotaoTexto || P0.corBotaoTexto;
 
     // Criar/Injetar tag de estilos com !important
     let styleTag = document.getElementById('custom-client-styles');
@@ -233,8 +248,7 @@ function applyClientStyles(params) {
     }
 
     // CSS com !important para sobrescrever o styles.css
-    // Usa corBotao quando especificada, senão usa corPrimaria
-    const corBotaoFinal = corBotao !== '#667eea' ? corBotao : corPrimaria;
+    const corBotaoFinal = corBotao !== P0.corBotao ? corBotao : corPrimaria;
     
     styleTag.textContent = `
         body {
@@ -329,6 +343,57 @@ function applyClientStyles(params) {
             color: ${corTexto} !important;
         }
 
+        /* Menu lateral - identidade visual da empresa (ID / parâmetros) */
+        .nav-burger {
+            border-color: rgba(255,255,255,0.35) !important;
+            background: rgba(255,255,255,0.12) !important;
+        }
+        .nav-burger:hover {
+            background: rgba(255,255,255,0.2) !important;
+        }
+        .nav-sidebar {
+            background: linear-gradient(180deg, ${corPrimaria} 0%, ${corSecundaria} 38%, #0d0d12 92%, #08080b 100%) !important;
+            border-right: 4px solid ${corPrimaria} !important;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06) !important;
+        }
+        .nav-sidebar__header {
+            background: rgba(0,0,0,0.22) !important;
+            border-bottom-color: rgba(255,255,255,0.14) !important;
+        }
+        .nav-sidebar__title { color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35) !important; }
+        .nav-sidebar__user, .nav-sidebar__user span { color: rgba(255,255,255,0.9) !important; }
+        .nav-sidebar__close {
+            border-color: rgba(255,255,255,0.35) !important;
+            color: #fff !important;
+            background: rgba(0,0,0,0.2) !important;
+        }
+        .nav-sidebar__close:hover { background: rgba(255,255,255,0.12) !important; }
+        .nav-links a {
+            color: #fff !important;
+            border-color: transparent !important;
+        }
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.14) !important;
+            border-color: rgba(255,255,255,0.2) !important;
+        }
+        .nav-links a.is-active {
+            background: rgba(0,0,0,0.35) !important;
+            border-left: 4px solid ${corPrimaria} !important;
+            padding-left: 8px !important;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08) !important;
+        }
+        .nav-sidebar__footer {
+            border-top-color: rgba(255,255,255,0.14) !important;
+            background: rgba(0,0,0,0.18) !important;
+        }
+        .nav-sidebar__footer .btn {
+            background: ${corBotaoFinal} !important;
+            color: ${corBotaoTexto} !important;
+        }
+        .nav-sidebar__footer .btn:hover {
+            filter: brightness(1.08) !important;
+        }
+
         /* Cupom Fiscal - estilização por empresa */
         .cupom-header {
             background: linear-gradient(135deg, ${corPrimaria} 0%, ${corSecundaria} 100%) !important;
@@ -385,8 +450,9 @@ function applyClientStyles(params) {
 
 // Atualizar estilos dinâmicos (gradients, etc)
 function updateDynamicStyles(params) {
-    const corPrimaria = params.corPrimaria || '#667eea';
-    const corSecundaria = params.corSecundaria || '#764ba2';
+    const P0 = temaPadrao();
+    const corPrimaria = params.corPrimaria || P0.corPrimaria;
+    const corSecundaria = params.corSecundaria || P0.corSecundaria;
     
     // Gradient correto
     const gradient = `linear-gradient(135deg, ${corPrimaria} 0%, ${corSecundaria} 100%)`;
@@ -417,26 +483,25 @@ function updateDynamicStyles(params) {
     const containers = document.querySelectorAll('.container, main, .form-section, .list-section, .search-section');
     containers.forEach(el => {
         if (el.style.backgroundColor === 'rgb(255, 255, 255)' || !el.style.backgroundColor) {
-            el.style.backgroundColor = params.corFundo || '#ffffff';
+            el.style.backgroundColor = params.corFundo || P0.corFundo;
         }
     });
 
-    // Aplicar cor do texto
-    document.body.style.color = params.corTexto || '#333333';
+    document.body.style.color = params.corTexto || P0.corTexto;
 }
 
 // Aplicar estilos padrão do sistema
 function applyDefaultStyles() {
-    const defaultParams = {
-        nomeEmpresa: 'Sistema de Cadastro',
-        corPrimaria: '#667eea',
-        corSecundaria: '#764ba2',
-        corFundo: '#ffffff',
-        corTexto: '#333333',
-        corBotao: '#667eea',
-        corBotaoTexto: '#ffffff'
-    };
-    applyClientStyles(defaultParams);
+    const p = temaPadrao();
+    applyClientStyles({
+        nomeEmpresa: p.nomeEmpresa,
+        corPrimaria: p.corPrimaria,
+        corSecundaria: p.corSecundaria,
+        corFundo: p.corFundo,
+        corTexto: p.corTexto,
+        corBotao: p.corBotao,
+        corBotaoTexto: p.corBotaoTexto
+    });
 }
 
 // Função para salvar parâmetros (para uso futuro via admin)

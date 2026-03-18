@@ -19,5 +19,14 @@ public class UpdateUserRequest {
     private Role role;
     
     private String password; // Opcional - se vazio, mantém a senha atual
+
+    /** ID empresa para PDV; null se vazio. Só aplica se {@link #aplicarEmpresaPdv} for true. */
+    private Long empresaIdPdv;
+
+    /** Se true, grava {@link #empresaIdPdv} (null ou &lt;1 = usar empresa padrão do sistema). */
+    private Boolean aplicarEmpresaPdv;
+
+    /** Se true, remove o vínculo do usuário com o PDV (pode cadastrar em outro caixa depois). */
+    private Boolean desvincularPdv;
 }
 

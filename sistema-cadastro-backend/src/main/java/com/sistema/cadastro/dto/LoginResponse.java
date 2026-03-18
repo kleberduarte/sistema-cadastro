@@ -14,4 +14,6 @@ public class LoginResponse {
     private String username;
     private Role role;
     private String message;
+    /** ID da empresa usada no PDV (usuário ou padrão). */
+    private Long empresaId;
 }

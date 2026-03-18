@@ -9,6 +9,8 @@ import com.sistema.cadastro.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -64,15 +66,25 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<Usuario> getCurrentUser() {
-        Usuario user = usuarioService.findByUsername(
-            org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication().getName()
-        ).orElse(null);
-        
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return ResponseEntity.status(401).build();
+        }
+        // JWT filter usa Usuario como principal; getName() seria toString(), não o login
+        Object principal = auth.getPrincipal();
+        Usuario user = null;
+        if (principal instanceof Usuario u) {
+            user = u;
+        } else if (principal instanceof String username) {
+            user = usuarioService.findByUsername(username).orElse(null);
+        } else {
+            user = usuarioService.findByUsername(auth.getName()).orElse(null);
+        }
         if (user != null) {
             user.setPassword(null);
+            return ResponseEntity.ok(user);
         }
-        return ResponseEntity.ok(user);
+        return ResponseEntity.status(401).build();
     }
 }
 

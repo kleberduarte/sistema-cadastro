@@ -7,22 +7,42 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>📊 Relatórios de Vendas</h1>
-                <div class="user-menu">
-                    <button class="btn btn-secondary btn-small" onclick="window.location.href='index.html'">🏠 Início</button>
-                    <button class="btn btn-secondary btn-small" onclick="window.location.href='vendas.html'">💰 PDV</button>
-                    <button class="btn btn-secondary btn-small" onclick="window.location.href='produtos.html'">📦 Produtos</button>
-                    <button class="btn btn-secondary btn-small" onclick="window.location.href='usuarios.html'">👥 Usuários</button>
-                    <button class="btn btn-secondary btn-small" onclick="logout()">🚪 Sair</button>
-                    <span id="userDisplay">Olá, Usuário</span>
-                </div>
+    <div id="navOverlay" class="nav-overlay" onclick="closeSidebar()"></div>
+    <aside id="navSidebar" class="nav-sidebar" aria-label="Menu lateral">
+        <div class="nav-sidebar__header">
+            <div class="nav-sidebar__brand">
+                <div class="nav-sidebar__title">Menu</div>
+                <div class="nav-sidebar__user">Usuário: <span id="navUserName">—</span></div>
             </div>
-        </header>
+            <button class="nav-sidebar__close" type="button" aria-label="Fechar menu" onclick="closeSidebar()">×</button>
+        </div>
+        <nav class="nav-links">
+            <a href="index.html">🏠 Clientes</a>
+            <a href="pdv/">💰 PDV</a>
+            <a href="produtos.html">📦 Produtos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+            <a href="usuarios.html" class="menu-item-admin">👥 Usuários</a>
+            <a href="parametros.html" class="menu-item-admin">⚙️ Parâmetros</a>
+            <a href="pdvs-monitor.html" class="menu-item-admin">🖥️ PDVs (empresa)</a>
+        </nav>
+        <div class="nav-sidebar__footer">
+            <button class="btn btn-secondary" type="button" onclick="logout()">🚪 Sair</button>
+        </div>
+    </aside>
 
-        <main>
+    <div class="app-content">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <h1>📊 Relatórios de Vendas</h1>
+                    <div class="nav-right">
+                        <button class="nav-burger" type="button" aria-label="Abrir menu" onclick="toggleSidebar()">☰</button>
+                        <span id="userDisplay" class="nav-user">Olá, Usuário</span>
+                    </div>
+                </div>
+            </header>
+
+            <main>
             <section class="form-section">
                 <h2>🔍 Filtros</h2>
                 <div class="filter-container">
@@ -150,11 +170,12 @@
                     Nenhum produto vendido no período.
                 </div>
             </section>
-        </main>
+            </main>
 
-        <footer>
-            <p>© 2024 Sistema de Cadastro - Relatórios</p>
-        </footer>
+            <footer>
+                <p>© 2024 Sistema de Cadastro - Relatórios</p>
+            </footer>
+        </div>
     </div>
 
     <div id="saleDetailModal" class="modal">
@@ -190,7 +211,9 @@
     </div>
 
     <script src="auth.js"></script>
+    <script src="theme-defaults.js"></script>
     <script src="config.js"></script>
+    <script src="nav.js"></script>
     <script src="relatorios.js"></script>
 </body>
 </html>

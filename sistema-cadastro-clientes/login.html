@@ -139,6 +139,16 @@
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
+        .pdv-aviso-retaguarda {
+            margin-bottom: 18px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #e8f4fd;
+            border: 1px solid #90caf9;
+            color: #1565c0;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
     </style>
 </head>
 <body>
@@ -148,6 +158,8 @@
                 <h1>🏢 Sistema de Clientes</h1>
                 <p>Acesse sua conta para continuar</p>
             </div>
+
+            <div id="pdvAvisoRetaguarda" class="pdv-aviso-retaguarda" style="display:none;" role="status"></div>
             
             <form class="login-form" id="loginForm">
                 <div class="form-group">
@@ -204,6 +216,7 @@
     </div>
 
     <script src="login.js"></script>
+    <script src="theme-defaults.js"></script>
     <script src="config.js"></script>
 </body>
 </html>
