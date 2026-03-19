@@ -216,11 +216,15 @@
             var card = document.createElement('div');
             card.className = 'pdv-card';
             var on = p.online === true;
+            var st = (p.statusCaixa || 'LIVRE').toString().toUpperCase();
+            var stLabel = st === 'PAUSADO' ? 'Pausado' : (st === 'FECHADO' ? 'Fechado' : 'Livre');
+            var stClass = st === 'PAUSADO' ? 'pdv-caixa--pausado' : (st === 'FECHADO' ? 'pdv-caixa--fechado' : 'pdv-caixa--livre');
             card.innerHTML =
                 '<div class="pdv-card__icon">🖥️' +
                 '<span class="pdv-card__status ' + (on ? 'pdv-card__status--on' : 'pdv-card__status--off') + '" title="' + (on ? 'Conectado' : 'Desconectado') + '"></span></div>' +
                 '<div class="pdv-card__title">PDV ' + escapeHtml(p.codigo) + '</div>' +
                 '<div class="pdv-card__sub">Empresa ID: ' + eid + (p.nome ? ' · ' + escapeHtml(p.nome) : '') + '</div>' +
+                '<div class="pdv-card__op">Caixa: <span class="pdv-caixa-badge ' + stClass + '">' + stLabel + '</span></div>' +
                 '<div class="pdv-card__op">Último operador: ' + escapeHtml(p.ultimoOperador || '—') + '</div>' +
                 '<div class="pdv-card__actions" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">' +
                 '<button type="button" class="btn btn-primary btn-small pdv-btn-edit" data-edit="' + p.id + '">Editar</button>' +

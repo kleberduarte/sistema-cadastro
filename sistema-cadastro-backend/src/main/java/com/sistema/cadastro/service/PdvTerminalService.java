@@ -1,6 +1,7 @@
 package com.sistema.cadastro.service;
 
 import com.sistema.cadastro.dto.*;
+import com.sistema.cadastro.model.PdvCaixaStatus;
 import com.sistema.cadastro.model.PdvTerminal;
 import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.repository.PdvTerminalRepository;
@@ -53,6 +54,7 @@ public class PdvTerminalService {
                 .codigo(codigo)
                 .nome(req.getNome() != null ? req.getNome().trim() : null)
                 .ativo(true)
+                .statusCaixa(PdvCaixaStatus.LIVRE)
                 .build();
         return toResponse(pdvTerminalRepository.save(t));
     }
@@ -242,6 +244,9 @@ public class PdvTerminalService {
             if (!t.isAtivo()) {
                 continue;
             }
+            if (t.getStatusCaixa() != null && t.getStatusCaixa() != PdvCaixaStatus.LIVRE) {
+                continue;
+            }
             if (usuarioRepository.findByPdvTerminalId(t.getId()).isEmpty()) {
                 return Optional.of(t);
             }
@@ -336,6 +341,9 @@ public class PdvTerminalService {
         }
         t.setUltimoHeartbeat(Instant.now());
         t.setUltimoOperador(operador);
+        if (req.getStatusCaixa() != null) {
+            t.setStatusCaixa(req.getStatusCaixa());
+        }
         pdvTerminalRepository.save(t);
     }
 
@@ -350,6 +358,7 @@ public class PdvTerminalService {
         PdvTerminal t = pdvTerminalRepository.findById(terminalId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Terminal não encontrado"));
         t.setUltimoOperador(null);
+        t.setStatusCaixa(PdvCaixaStatus.LIVRE);
         pdvTerminalRepository.save(t);
     }
 
@@ -365,6 +374,7 @@ public class PdvTerminalService {
                 .ultimoHeartbeat(hb)
                 .ultimoOperador(t.getUltimoOperador())
                 .online(online)
+                .statusCaixa(t.getStatusCaixa() != null ? t.getStatusCaixa() : PdvCaixaStatus.LIVRE)
                 .build();
     }
 }
