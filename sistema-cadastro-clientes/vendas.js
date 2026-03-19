@@ -250,17 +250,7 @@ function setupKeyboardShortcuts() {
         }
 
         if (alt && (key === 'f' || key === 'F')) {
-            pdvConfirm('Deseja realmente FECHAR o caixa (Final de Expediente)?', {
-                title: 'Fechar caixa',
-                confirmText: 'Sim, fechar',
-                cancelText: 'Cancelar',
-                type: 'warning'
-            }).then(function (ok) {
-                if (ok) {
-                    setCaixaStatus('FECHADO');
-                    showAlert('Caixa FECHADO.', 'warning');
-                }
-            });
+            openFechamentoCaixaModal();
             return;
         }
 
@@ -424,6 +414,82 @@ async function addProductByBarcode(codigoLido) {
     if (barcodeInput) { barcodeInput.value = ''; barcodeInput.focus(); }
 }
 
+function parseIsoDateToLocalMidnight(dateValue) {
+    if (!dateValue) return null;
+    var s = String(dateValue).trim();
+    if (!s) return null;
+    if (s.includes('T')) s = s.split('T')[0];
+    if (s.includes(' ')) s = s.split(' ')[0];
+    var d = new Date(s + 'T00:00:00');
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function isPromocaoAtiva(product) {
+    if (!product) return false;
+
+    var precoPromo = product.precoPromocional != null ? Number(product.precoPromocional) : null;
+    if (precoPromo == null || isNaN(precoPromo) || precoPromo <= 0) return false;
+
+    if (product.emPromocao === true) return true;
+
+    var ini = parseIsoDateToLocalMidnight(product.promocaoInicio);
+    var fim = parseIsoDateToLocalMidnight(product.promocaoFim);
+    if (!ini && !fim) return false;
+
+    var now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    if (ini && now < ini) return false;
+    if (fim && now > fim) return false;
+    return true;
+}
+
+function getPrecoProdutoAtual(product) {
+    var promoAtiva = isPromocaoAtiva(product);
+    var precoPromo = product.precoPromocional != null ? Number(product.precoPromocional) : null;
+    if (promoAtiva && precoPromo != null && !isNaN(precoPromo)) return precoPromo;
+    return product.preco != null ? Number(product.preco) : 0;
+}
+
+function calcItemSubtotal(item) {
+    // `item.price` é o preço unitário atual (normal ou promocional por data/flag).
+    // Se houver promo por quantidade (leve X, pague Y), ajusta o total para refletir a quantidade pagável.
+    var unit = Number(item && item.price != null ? item.price : 0);
+    var qty = Math.max(0, Math.floor(Number(item && item.quantity != null ? item.quantity : 0)));
+    if (!unit || qty <= 0) return 0;
+
+    var levar = item && item.promoQtdLevar != null ? Number(item.promoQtdLevar) : null;
+    var pagar = item && item.promoQtdPagar != null ? Number(item.promoQtdPagar) : null;
+
+    if (levar && pagar && levar > 0 && pagar > 0 && pagar < levar && qty >= levar) {
+        var sets = Math.floor(qty / levar);
+        var remainder = qty % levar;
+        var payableQty = (sets * pagar) + remainder; // resto paga cheio
+        return payableQty * unit;
+    }
+
+    return qty * unit;
+}
+
+function getPromoQtdInfo(item) {
+    if (!item) return null;
+    var levar = item.promoQtdLevar != null ? Number(item.promoQtdLevar) : null;
+    var pagar = item.promoQtdPagar != null ? Number(item.promoQtdPagar) : null;
+    if (!levar || !pagar || pagar >= levar) return null;
+
+    var qty = Math.max(0, Math.floor(Number(item.quantity || 0)));
+    var unit = Number(item.price || 0);
+    var totalSemPromo = qty * unit;
+    var totalComPromo = calcItemSubtotal(item);
+    var economia = Math.max(0, totalSemPromo - totalComPromo);
+
+    return {
+        levar: levar,
+        pagar: pagar,
+        economia: economia
+    };
+}
+
 function addToCart(productId, quantity = 1) {
     const product = products.find(p => p.id === productId);
     if (!product) {
@@ -431,17 +497,43 @@ function addToCart(productId, quantity = 1) {
         return;
     }
 
+    // Estoque mínimo: alerta quando o estoque restante estiver abaixo ou igual ao mínimo
+    var min = product.estoqueMinimo != null ? product.estoqueMinimo : 0;
+    var estoqueAtual = product.quantidadeEstoque != null ? Number(product.quantidadeEstoque) : null;
+    if (estoqueAtual != null && estoqueAtual <= min && min > 0) {
+        showAlert(
+            'Estoque baixo: ' +
+                product.nome +
+                ' (min: ' +
+                min +
+                ', estoque: ' +
+                estoqueAtual +
+                ').',
+            'warning'
+        );
+    } else if (estoqueAtual != null && min === 0 && estoqueAtual <= 5) {
+        // compatibilidade: se não houver mínimo configurado, mantém comportamento antigo <= 5
+        showAlert('Estoque baixo: ' + product.nome + ' (estoque: ' + estoqueAtual + ').', 'warning');
+    }
+
     const existingItem = cart.find(item => item.productId === productId);
 
     if (existingItem) {
         existingItem.quantity = parseFloat(existingItem.quantity) + parseFloat(quantity);
+        // Recalcula o preço para refletir promoção ativa (se o operador mudar a data/uso no mesmo dia)
+        existingItem.price = getPrecoProdutoAtual(product);
+        // Mantém regras de quantidade do produto
+        existingItem.promoQtdLevar = product.promoQtdLevar != null ? Number(product.promoQtdLevar) : null;
+        existingItem.promoQtdPagar = product.promoQtdPagar != null ? Number(product.promoQtdPagar) : null;
     } else {
         cart.push({
             productId: product.id,
             name: product.nome,
-            price: parseFloat(product.preco),
+            price: getPrecoProdutoAtual(product),
             quantity: quantity,
-            code: product.codigoProduto
+            code: product.codigoProduto,
+            promoQtdLevar: product.promoQtdLevar != null ? Number(product.promoQtdLevar) : null,
+            promoQtdPagar: product.promoQtdPagar != null ? Number(product.promoQtdPagar) : null
         });
     }
     
@@ -477,7 +569,7 @@ function renderCart(highlightNewLine) {
     } else {
         cart.forEach((item, index) => {
             const row = document.createElement('tr');
-            const itemTotal = item.price * item.quantity;
+            const itemTotal = calcItemSubtotal(item);
             row.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${item.code || '-'}</td>
@@ -501,15 +593,33 @@ function renderCart(highlightNewLine) {
 }
 
 function updateDisplayInfo() {
+    const promoMsgEl = document.getElementById('pdv-promo-qtd-msg');
+
     if (currentItem) {
         document.getElementById('pdv-unit-price').textContent = currentItem.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         document.getElementById('pdv-quantity').textContent = currentItem.quantity;
-        const itemTotal = currentItem.price * currentItem.quantity;
+        const itemTotal = calcItemSubtotal(currentItem);
         document.getElementById('pdv-item-total').textContent = itemTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        if (promoMsgEl) {
+            const promoInfo = getPromoQtdInfo(currentItem);
+            if (promoInfo) {
+                const eco = promoInfo.economia.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                promoMsgEl.textContent = `Promocao ativa: leve ${promoInfo.levar}, pague ${promoInfo.pagar}. Economia atual: ${eco}`;
+                promoMsgEl.style.display = 'block';
+            } else {
+                promoMsgEl.style.display = 'none';
+                promoMsgEl.textContent = '';
+            }
+        }
     } else {
         document.getElementById('pdv-unit-price').textContent = 'R$ 0,00';
         document.getElementById('pdv-quantity').textContent = '0';
         document.getElementById('pdv-item-total').textContent = 'R$ 0,00';
+        if (promoMsgEl) {
+            promoMsgEl.style.display = 'none';
+            promoMsgEl.textContent = '';
+        }
     }
 }
 
@@ -641,17 +751,7 @@ function changeQuantity() {
         showAlert('Nenhum item selecionado para alterar a quantidade.', 'warning');
         return;
     }
-    const newQty = prompt(`Digite a nova quantidade para "${currentItem.name}":`, currentItem.quantity);
-    if (newQty !== null && !isNaN(newQty) && parseFloat(newQty) > 0) {
-        const itemInCart = cart.find(item => item.productId === currentItem.productId);
-        if (itemInCart) {
-            itemInCart.quantity = parseFloat(newQty);
-            renderCart();
-            showAlert(`Quantidade de "${itemInCart.name}" alterada para ${itemInCart.quantity}.`, 'success');
-        }
-    } else if (newQty !== null) {
-        showAlert('Quantidade inválida.', 'error');
-    }
+    openQuantityChangeModal();
 }
 
 function addCpfToSale() {
@@ -662,6 +762,35 @@ function addCpfToSale() {
         updateClienteIndicadoDisplay();
         showAlert(saleCpf ? `CPF ${saleCpf} associado à venda.` : 'CPF removido da venda.', 'success');
     }
+}
+
+function openQuantityChangeModal() {
+    if (!currentItem) return;
+    var inp = document.getElementById('quantityChangeInput');
+    if (!inp) return;
+    inp.value = String(currentItem.quantity != null ? currentItem.quantity : 1);
+    try { inp.focus(); inp.select(); } catch (e) {}
+    openModal('quantityChangeModal');
+}
+
+function confirmarQuantidadeChange() {
+    if (!currentItem) return;
+    var inp = document.getElementById('quantityChangeInput');
+    if (!inp) return;
+    var raw = String(inp.value || '').trim();
+    var newQty = parseFloat(raw);
+    if (isNaN(newQty) || newQty <= 0) {
+        showAlert('Quantidade inválida.', 'error');
+        return;
+    }
+
+    var itemInCart = cart.find(function (item) { return item.productId === currentItem.productId; });
+    if (itemInCart) {
+        itemInCart.quantity = newQty;
+        renderCart();
+        showAlert('Quantidade de "' + itemInCart.name + '" alterada para ' + itemInCart.quantity + '.', 'success');
+    }
+    closeModal('quantityChangeModal');
 }
 
 // --- Indicar Cliente (F12) ---
@@ -831,10 +960,20 @@ function renderSearchResults() {
 
     filtered.slice(0, 50).forEach(p => { // Limita a 50 resultados para performance
         const row = document.createElement('tr');
+        var min = p.estoqueMinimo != null ? p.estoqueMinimo : 5;
+        var estoqueAtual = p.quantidadeEstoque != null ? Number(p.quantidadeEstoque) : null;
+        var low = estoqueAtual != null ? (estoqueAtual <= min && min > 0 ? true : (min === 0 ? estoqueAtual <= 5 : false)) : false;
+        var lowBadge = low ? ' <span style="color:#d97706;font-weight:800;">⚠️</span>' : '';
+        var promoAtiva = isPromocaoAtiva(p);
+        var precoAtual = getPrecoProdutoAtual(p);
+        var precoNormal = p.preco != null ? Number(p.preco) : 0;
+        var precoHtml = promoAtiva
+            ? `${precoAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<div style="font-size:12px;opacity:.7;text-decoration:line-through;margin-top:2px;">${precoNormal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>`
+            : `${Number(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
         row.innerHTML = `
             <td>${p.codigoProduto}</td>
-            <td>${p.nome}</td>
-            <td>${p.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td>${p.nome}${lowBadge}</td>
+            <td>${precoHtml}</td>
             <td><button class="btn btn-primary btn-small" onclick="selectProductFromSearch(${p.id})">Adicionar</button></td>
         `;
         resultsBody.appendChild(row);
@@ -908,12 +1047,16 @@ function openSaleDetailModal(sale) {
     
     const itens = sale.itens || [];
     itens.forEach(item => {
+        const linePreco = item.preco != null ? parseFloat(item.preco) : 0;
+        const lineSubtotal = item.subtotal != null
+            ? parseFloat(item.subtotal)
+            : linePreco * Number(item.quantidade || 0);
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${item.nome}</td>
             <td>${item.quantidade}</td>
-            <td>${parseFloat(item.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-            <td>${(item.preco * item.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td>${linePreco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td>${lineSubtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
         `;
         itemsBody.appendChild(row);
     });
@@ -975,7 +1118,9 @@ function openSaleDetailModal(sale) {
         changeDiv.style.display = 'none';
     }
 
-    const total = sale.total !== undefined ? sale.total : itens.reduce((sum, i) => sum + (i.preco * i.quantidade), 0);
+    const total = sale.total !== undefined
+        ? sale.total
+        : itens.reduce((sum, i) => sum + (i.subtotal != null ? Number(i.subtotal) : (i.preco * i.quantidade)), 0);
     document.getElementById('detailTotal').textContent = parseFloat(total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     openModal('saleDetailModal');
 }
@@ -1040,6 +1185,102 @@ function setCaixaStatus(status) {
     } catch (e) {}
 }
 
+function fmtMoedaBr(v) {
+    return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function parseMoedaBr(raw) {
+    if (raw == null) return null;
+    var s = String(raw).trim();
+    if (!s) return null;
+    s = s.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+    if (!s) return null;
+    var n = Number(s);
+    return isNaN(n) ? null : n;
+}
+
+async function openFechamentoCaixaModal() {
+    var token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+    if (!token) {
+        showAlert('Sessão inválida. Faça login novamente.', 'error');
+        return;
+    }
+    try {
+        var api = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+        var r = await fetch(api + '/pdv/fechamentos/resumo-hoje', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!r.ok) {
+            showAlert('Não foi possível carregar o resumo de fechamento.', 'error');
+            return;
+        }
+        var resumo = await r.json();
+        document.getElementById('fcQtdVendas').textContent = String(resumo.quantidadeVendas || 0);
+        document.getElementById('fcTotalDinheiro').textContent = fmtMoedaBr(resumo.totalDinheiro);
+        document.getElementById('fcTotalCartao').textContent = fmtMoedaBr(resumo.totalCartao);
+        document.getElementById('fcTotalPix').textContent = fmtMoedaBr(resumo.totalPix);
+        document.getElementById('fcTotalGeral').textContent = fmtMoedaBr(resumo.totalGeral);
+        var inp = document.getElementById('fcValorCaixa');
+        var pv = document.getElementById('fcPreviewDiferenca');
+        if (inp) inp.value = '';
+        if (pv) pv.textContent = '';
+
+        if (inp) {
+            inp.oninput = function () {
+                var n = parseMoedaBr(inp.value);
+                if (n == null) {
+                    pv.textContent = '';
+                    return;
+                }
+                var diff = n - Number(resumo.totalDinheiro || 0);
+                var tipo = diff > 0 ? 'Sobra' : (diff < 0 ? 'Falta' : 'Conferência exata');
+                pv.textContent = tipo + ': ' + fmtMoedaBr(Math.abs(diff));
+            };
+        }
+        openModal('fechamentoCaixaModal');
+    } catch (e) {
+        showAlert('Erro ao abrir fechamento de caixa.', 'error');
+    }
+}
+
+async function confirmarFechamentoCaixa() {
+    var token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+    if (!token) {
+        showAlert('Sessão inválida. Faça login novamente.', 'error');
+        return;
+    }
+    var raw = document.getElementById('fcValorCaixa').value;
+    var valor = parseMoedaBr(raw);
+    var tid = localStorage.getItem('pdvTerminalId');
+    var body = { terminalId: tid ? parseInt(tid, 10) : null };
+    if (valor != null) body.valorInformadoDinheiro = Number(valor.toFixed(2));
+    try {
+        var api = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+        var r = await fetch(api + '/pdv/fechamentos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(body)
+        });
+        var data = await r.json().catch(function () { return {}; });
+        if (!r.ok) {
+            showAlert((data && data.message) ? data.message : 'Não foi possível registrar o fechamento.', 'error');
+            return;
+        }
+        closeModal('fechamentoCaixaModal');
+        setCaixaStatus('FECHADO');
+        if (data.diferencaDinheiro != null) {
+            var d = Number(data.diferencaDinheiro || 0);
+            if (d > 0) showAlert('Caixa FECHADO. Sobra em dinheiro: ' + fmtMoedaBr(d), 'success');
+            else if (d < 0) showAlert('Caixa FECHADO. Falta em dinheiro: ' + fmtMoedaBr(Math.abs(d)), 'warning');
+            else showAlert('Caixa FECHADO. Conferência exata.', 'success');
+        } else {
+            showAlert('Caixa FECHADO e fechamento registrado.', 'success');
+        }
+    } catch (e) {
+        showAlert('Erro ao registrar fechamento.', 'error');
+    }
+}
+
 function cycleCaixaStatus() {
     // Regra de negócio alterada: O clique simples alterna apenas entre LIVRE e PAUSADO (Almoço/Intervalo)
     // Para FECHAR (Fim de expediente), deve-se usar Alt+F ou Ctrl+Clique
@@ -1047,17 +1288,7 @@ function cycleCaixaStatus() {
     const evt = window.event;
     // Permite fechar clicando com Ctrl pressionado
     if (evt && (evt.ctrlKey || evt.altKey)) {
-        pdvConfirm('Deseja realmente FECHAR o caixa (Final de Expediente)?', {
-            title: 'Fechar caixa',
-            confirmText: 'Sim, fechar',
-            cancelText: 'Cancelar',
-            type: 'warning'
-        }).then(function (ok) {
-            if (ok) {
-                setCaixaStatus('FECHADO');
-                showAlert('Caixa FECHADO.', 'warning');
-            }
-        });
+        openFechamentoCaixaModal();
         return;
     }
 
@@ -1190,7 +1421,7 @@ function renderAddedPayments() {
     });
 }
 
-function getCartSubtotal() { return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0); }
+function getCartSubtotal() { return cart.reduce((sum, item) => sum + calcItemSubtotal(item), 0); }
 function getCartTotal() { return Math.max(0, getCartSubtotal() - currentDiscount); }
 
 function updatePaymentSummary() {
@@ -1246,10 +1477,10 @@ async function processPayment() {
         cpfCliente: saleCpf || null, // CPF na nota (do cliente indicado ou Ctrl+D)
         itens: cart.map(item => ({
             produtoId: item.productId,
-            quantidade: item.quantity,
+                quantidade: Math.floor(Number(item.quantity || 0)),
             nome: item.name,
             preco: item.price,
-            subtotal: item.price * item.quantity
+                subtotal: calcItemSubtotal(item)
         })),
         desconto: currentDiscount,
         pagamentos: currentPayments.map(p => ({

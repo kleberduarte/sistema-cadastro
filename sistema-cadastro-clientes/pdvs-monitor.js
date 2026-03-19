@@ -32,7 +32,6 @@
         var eid = getActiveEmpresaId();
         var el = document.getElementById('pdvEmpresaContextoTexto');
         var btnNovo = document.getElementById('btnNovoPdv');
-        var intro = document.getElementById('pdvIntro');
         if (!el) return;
         var nome = getContextEmpresaNome();
         var semNomeSalvo = !nome && eid === EP;
@@ -45,7 +44,6 @@
             btnNovo.disabled = false;
             btnNovo.title = '';
         }
-        if (intro) intro.style.display = '';
     }
 
     function normalizeLogoUrl(logoUrl) {
@@ -112,8 +110,6 @@
             'body.page-pdvs-monitor { background: linear-gradient(135deg, ' + prim + ' 0%, ' + sec + ' 100%) !important; }' +
             'body.page-pdvs-monitor .container > header { background: linear-gradient(135deg, ' + prim + ' 0%, ' + sec + ' 100%) !important; }' +
             'body.page-pdvs-monitor .pdv-monitor-main { background: ' + fundo + ' !important; color: ' + texto + ' !important; }' +
-            'body.page-pdvs-monitor .pdv-monitor-intro { color: ' + texto + ' !important; opacity: 0.88; }' +
-            'body.page-pdvs-monitor .pdv-monitor-intro strong { color: ' + prim + ' !important; opacity: 1; }' +
             'body.page-pdvs-monitor #pdvEmpty { color: ' + texto + ' !important; opacity: 0.65; }' +
             'body.page-pdvs-monitor .pdv-monitor-toolbar label { color: ' + texto + ' !important; }' +
             'body.page-pdvs-monitor .pdv-monitor-contexto-box { border-color: ' + prim + '40 !important; background: ' + prim + '0d !important; }' +

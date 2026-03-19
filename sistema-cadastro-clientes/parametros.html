@@ -169,7 +169,7 @@
             if (!checkPermission('adm')) return;
             displayUserName();
             setupPreviewListeners();
-            carregarEmpresas(); // Carregar lista de empresas ao iniciar
+            carregarEmpresas(); // Carregar lista + aplicar contexto de empresa ao iniciar
         });
 
         // Carregar lista de empresas cadastradas
@@ -205,6 +205,7 @@
                         select.value = String(n);
                         document.getElementById('empresaId').value = String(n);
                         atualizarBotaoExcluirEmpresa();
+                        await selecionarEmpresa(true);
                     }
                 } catch (e) {}
             } catch (error) {
@@ -213,7 +214,7 @@
         }
 
         // Selecionar empresa e carregar parâmetros
-        async function selecionarEmpresa() {
+        async function selecionarEmpresa(silent) {
             const empresaId = document.getElementById('empresaSelect').value;
             document.getElementById('empresaId').value = empresaId;
             parametroId = null;
@@ -240,9 +241,13 @@
                     applyClientStyles(params);
                     atualizarBotaoExcluirEmpresa();
                     
-                    showAlert('Parâmetros da empresa "' + (params.nomeEmpresa || empresaId) + '" carregados e aplicados!', 'success');
+                    if (!silent) {
+                        showAlert('Parâmetros da empresa "' + (params.nomeEmpresa || empresaId) + '" carregados e aplicados!', 'success');
+                    }
                 } else if (response.status === 404) {
-                    showAlert('Empresa selecionada não tem parâmetros cadastrados.', 'info');
+                    if (!silent) {
+                        showAlert('Empresa selecionada não tem parâmetros cadastrados.', 'info');
+                    }
                     atualizarBotaoExcluirEmpresa();
                 } else {
                     showAlert('Erro ao carregar parâmetros da empresa', 'error');
@@ -352,7 +357,6 @@
                         // garante que o combo reflita a empresa recém-configurada
                         const sel = document.getElementById('empresaSelect');
                         if (sel) {
-                            // adiciona opção se for uma empresa nova criada ao salvar
                             const v = String(savedParams.empresaId);
                             if (!Array.from(sel.options).some(function (o) { return String(o.value) === v; })) {
                                 const opt = document.createElement('option');

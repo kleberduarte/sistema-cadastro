@@ -66,6 +66,24 @@ function setupEventListeners() {
         
         e.target.value = value;
     });
+
+    // Máscara para preço promocional (formato monetário brasileiro)
+    const promoPriceInput = document.getElementById('promoPrice');
+    if (promoPriceInput) {
+        promoPriceInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+
+            if (value.length > 0) {
+                value = parseInt(value) / 100;
+                value = value.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+
+            e.target.value = value;
+        });
+    }
     
     // Validar quantidade mínima
     const quantityInput = document.getElementById('quantity');
@@ -187,6 +205,36 @@ async function validateProductCodeUniqueness(codigoInformado) {
     return true;
 }
 
+function parseIsoDateToLocalMidnight(dateValue) {
+    if (!dateValue) return null;
+    var s = String(dateValue).trim();
+    if (!s) return null;
+    if (s.includes('T')) s = s.split('T')[0];
+    if (s.includes(' ')) s = s.split(' ')[0];
+    var d = new Date(s + 'T00:00:00');
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function isPromocaoAtiva(product) {
+    if (!product) return false;
+
+    var precoPromo = product.precoPromocional != null ? Number(product.precoPromocional) : null;
+    if (precoPromo == null || isNaN(precoPromo) || precoPromo <= 0) return false;
+
+    if (product.emPromocao === true) return true;
+
+    var ini = parseIsoDateToLocalMidnight(product.promocaoInicio);
+    var fim = parseIsoDateToLocalMidnight(product.promocaoFim);
+    if (!ini && !fim) return false;
+
+    var now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    if (ini && now < ini) return false;
+    if (fim && now > fim) return false;
+    return true;
+}
+
 // Validar formulário
 function validateForm(formData) {
     const errors = {};
@@ -205,10 +253,51 @@ function validateForm(formData) {
     if (!formData.preco || formData.preco <= 0) {
         errors.price = 'Preço deve ser maior que zero';
     }
+
+    // Validar promoção (campos opcionais)
+    const promoEnabled = !!formData.emPromocao;
+    const promoPrice = formData.precoPromocional;
+    const promoStart = formData.promocaoInicio;
+    const promoEnd = formData.promocaoFim;
+
+    if (promoEnabled) {
+        if (promoPrice == null || promoPrice <= 0) {
+            errors.promoPrice = 'Informe o preço promocional quando "Em promoção" estiver ligado';
+        }
+    }
+
+    if (promoPrice != null && promoPrice <= 0) {
+        errors.promoPrice = 'Preço promocional deve ser maior que zero';
+    }
+
+    if ((promoStart || promoEnd) && (promoPrice == null || promoPrice <= 0)) {
+        errors.promoPrice = 'Informe o preço promocional quando usar datas de promoção';
+    }
+
+    if (promoStart && promoEnd && promoStart > promoEnd) {
+        errors.promoEnd = 'A data de fim deve ser igual ou posterior à data de início';
+    }
+
+    // Validar promo por quantidade (opcional)
+    const qtdLevar = formData.promoQtdLevar;
+    const qtdPagar = formData.promoQtdPagar;
+    if (qtdLevar != null || qtdPagar != null) {
+        if (qtdLevar == null || qtdPagar == null) {
+            errors.promoQtdLevar = 'Informe "Levar" e "Pagar" juntos';
+            errors.promoQtdPagar = 'Informe "Levar" e "Pagar" juntos';
+        } else if (qtdPagar >= qtdLevar) {
+            errors.promoQtdPagar = '"Pagar" deve ser menor que "Levar" (ex.: 2 < 3)';
+        }
+    }
     
     // Validar quantidade
     if (formData.quantidadeEstoque < 0) {
         errors.quantity = 'Quantidade não pode ser negativa';
+    }
+
+    const min = formData.estoqueMinimo != null ? formData.estoqueMinimo : 0;
+    if (min < 0) {
+        errors.stockMin = 'Estoque mínimo não pode ser negativo';
     }
     
     // Validar categoria (simples)
@@ -260,15 +349,48 @@ async function handleSubmit(e) {
     // Parse Brazilian price format (1.250,50 -> 1250.50)
     let priceValue = priceInput.replace(/\./g, '').replace(',', '.');
     priceValue = parseFloat(priceValue);
+
+    const promoEnabledEl = document.getElementById('promoEnabled');
+    const promoEnabled = promoEnabledEl ? !!promoEnabledEl.checked : false;
+
+    const promoPriceInput = document.getElementById('promoPrice');
+    let promoPriceValue = null;
+    if (promoPriceInput && String(promoPriceInput.value || '').trim() !== '') {
+        let rawPromo = String(promoPriceInput.value).replace(/\./g, '').replace(',', '.');
+        let parsed = parseFloat(rawPromo);
+        promoPriceValue = isNaN(parsed) ? null : parsed;
+    }
+
+    const promoStart = document.getElementById('promoStart') ? document.getElementById('promoStart').value : '';
+    const promoEnd = document.getElementById('promoEnd') ? document.getElementById('promoEnd').value : '';
+    const promoStartValue = promoStart ? promoStart : null;
+    const promoEndValue = promoEnd ? promoEnd : null;
+
+    const qtdLevarEl = document.getElementById('promoQtdLevar');
+    const qtdPagarEl = document.getElementById('promoQtdPagar');
+    const qtdLevarRaw = qtdLevarEl ? String(qtdLevarEl.value || '').trim() : '';
+    const qtdPagarRaw = qtdPagarEl ? String(qtdPagarEl.value || '').trim() : '';
+    const promoQtdLevarValue = qtdLevarRaw ? parseInt(qtdLevarRaw, 10) : null;
+    const promoQtdPagarValue = qtdPagarRaw ? parseInt(qtdPagarRaw, 10) : null;
     
     const formData = {
         nome: document.getElementById('name').value.trim(),
         descricao: document.getElementById('description').value.trim(),
         preco: isNaN(priceValue) ? 0 : priceValue,
         quantidadeEstoque: parseInt(document.getElementById('quantity').value) || 0,
+        estoqueMinimo: parseInt(document.getElementById('stockMin').value) || 0,
         categoria: document.getElementById('category').value,
         codigoProduto: document.getElementById('productCode').value.trim(),
-        tipo: document.getElementById('tipo').value
+        tipo: document.getElementById('tipo').value,
+
+        // Promoções
+        emPromocao: promoEnabled,
+        precoPromocional: promoPriceValue,
+        promocaoInicio: promoStartValue,
+        promocaoFim: promoEndValue,
+
+        promoQtdLevar: promoQtdLevarValue,
+        promoQtdPagar: promoQtdPagarValue
     };
     
     // Revalidar unicidade do código (digitado manualmente ou por leitor)
@@ -357,23 +479,40 @@ function renderProducts(productList = products) {
     
     // Criar linhas da tabela
     productList.forEach(product => {
+        const min = product.estoqueMinimo != null ? product.estoqueMinimo : 5;
         const row = document.createElement('tr');
         
-        // Formatar preço
-        const formattedPrice = parseFloat(product.preco).toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-        });
+        const promoAtiva = isPromocaoAtiva(product);
+        const precoNormal = parseFloat(product.preco);
+        const precoPromo = product.precoPromocional != null ? parseFloat(product.precoPromocional) : null;
+        const qtdPromoAtiva = product.promoQtdLevar != null && product.promoQtdPagar != null && Number(product.promoQtdPagar) < Number(product.promoQtdLevar);
+
+        const formattedPrice = (promoAtiva && precoPromo != null)
+            ? precoPromo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            : precoNormal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        const promoExtraHtml = (promoAtiva && precoPromo != null && !isNaN(precoNormal))
+            ? `<div style="font-size:12px;opacity:.7;text-decoration:line-through;margin-top:2px;">${precoNormal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>`
+            : '';
+
+        const promoBadgeHtml = promoAtiva ? ' <span style="font-size:12px;font-weight:900;color:#d97706;">PROMO</span>' : '';
+        const qtdPromoBadgeHtml = qtdPromoAtiva
+            ? `<div style="font-size:12px;font-weight:900;color:#0f766e;margin-top:4px;">Leve ${product.promoQtdLevar}, pague ${product.promoQtdPagar}</div>`
+            : '';
         
-        // Verificar estoque baixo
-        const stockClass = product.quantidadeEstoque <= 5 ? 'low-stock' : '';
-        const stockIcon = product.quantidadeEstoque <= 5 ? '⚠️ ' : '';
+        // Verificar estoque baixo (quantidade <= estoque mínimo)
+        const stockClass = product.quantidadeEstoque <= min ? 'low-stock' : '';
+        const stockIcon = product.quantidadeEstoque <= min ? '⚠️ ' : '';
         
         row.innerHTML = `
             <td>${escapeHtml(product.nome)}</td>
             <td>${escapeHtml(product.codigoProduto || '-')}</td>
             <td>${escapeHtml((product.descricao || '').substring(0, 50))}${(product.descricao || '').length > 50 ? '...' : ''}</td>
-            <td>${formattedPrice}</td>
+            <td>
+                ${formattedPrice}${promoBadgeHtml}
+                ${promoExtraHtml}
+                ${qtdPromoBadgeHtml}
+            </td>
             <td class="${stockClass}">${stockIcon}${product.quantidadeEstoque}</td>
             <td>${escapeHtml(product.categoria || 'Sem categoria')}</td>
             <td>
@@ -506,9 +645,31 @@ function editProduct(id) {
             maximumFractionDigits: 2
         });
         document.getElementById('quantity').value = product.quantidadeEstoque;
+        document.getElementById('stockMin').value = product.estoqueMinimo != null ? product.estoqueMinimo : 0;
         document.getElementById('category').value = product.categoria || '';
         document.getElementById('productCode').value = product.codigoProduto || '';
         document.getElementById('tipo').value = product.tipo || '';
+
+        // Promoções
+        const promoEnabledEl = document.getElementById('promoEnabled');
+        if (promoEnabledEl) promoEnabledEl.checked = product.emPromocao === true;
+        const promoPriceEl = document.getElementById('promoPrice');
+        if (promoPriceEl) {
+            promoPriceEl.value = product.precoPromocional != null ? parseFloat(product.precoPromocional).toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }) : '';
+        }
+        const promoStartEl = document.getElementById('promoStart');
+        if (promoStartEl) promoStartEl.value = product.promocaoInicio || '';
+        const promoEndEl = document.getElementById('promoEnd');
+        if (promoEndEl) promoEndEl.value = product.promocaoFim || '';
+
+        // Promo por quantidade
+        const qtdLevarEl = document.getElementById('promoQtdLevar');
+        if (qtdLevarEl) qtdLevarEl.value = product.promoQtdLevar != null ? product.promoQtdLevar : '';
+        const qtdPagarEl = document.getElementById('promoQtdPagar');
+        if (qtdPagarEl) qtdPagarEl.value = product.promoQtdPagar != null ? product.promoQtdPagar : '';
         
         // Alterar modo do formulário
         document.getElementById('submitBtn').textContent = '💾 Salvar Alterações';

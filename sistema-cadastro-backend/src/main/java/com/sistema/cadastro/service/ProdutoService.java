@@ -21,12 +21,24 @@ public class ProdutoService {
     public ProdutoResponse create(ProdutoRequest request) {
         String codigoNormalizado = normalizeCodigoProduto(request.getCodigoProduto());
         validateCodigoProdutoDuplicado(codigoNormalizado, null);
+        validatePromoQtd(request);
 
         Produto produto = new Produto();
         produto.setNome(request.getNome());
         produto.setDescricao(request.getDescricao());
         produto.setPreco(request.getPreco());
+
+        produto.setPrecoPromocional(request.getPrecoPromocional());
+        produto.setPromocaoInicio(request.getPromocaoInicio());
+        produto.setPromocaoFim(request.getPromocaoFim());
+        produto.setEmPromocao(request.getEmPromocao() != null ? request.getEmPromocao() : false);
+
+        // Promoção por quantidade ("leve X, pague Y") (opcional)
+        produto.setPromoQtdLevar(request.getPromoQtdLevar());
+        produto.setPromoQtdPagar(request.getPromoQtdPagar());
+
         produto.setQuantidadeEstoque(request.getQuantidadeEstoque());
+        produto.setEstoqueMinimo(request.getEstoqueMinimo() != null ? request.getEstoqueMinimo() : 0);
         produto.setCategoria(request.getCategoria());
         produto.setCodigoProduto(codigoNormalizado);
         produto.setTipo(request.getTipo());
@@ -56,11 +68,23 @@ public class ProdutoService {
 
         String codigoNormalizado = normalizeCodigoProduto(request.getCodigoProduto());
         validateCodigoProdutoDuplicado(codigoNormalizado, id);
+        validatePromoQtd(request);
         
         produto.setNome(request.getNome());
         produto.setDescricao(request.getDescricao());
         produto.setPreco(request.getPreco());
+
+        produto.setPrecoPromocional(request.getPrecoPromocional());
+        produto.setPromocaoInicio(request.getPromocaoInicio());
+        produto.setPromocaoFim(request.getPromocaoFim());
+        produto.setEmPromocao(request.getEmPromocao() != null ? request.getEmPromocao() : false);
+
+        // Promoção por quantidade ("leve X, pague Y") (opcional)
+        produto.setPromoQtdLevar(request.getPromoQtdLevar());
+        produto.setPromoQtdPagar(request.getPromoQtdPagar());
+
         produto.setQuantidadeEstoque(request.getQuantidadeEstoque());
+        produto.setEstoqueMinimo(request.getEstoqueMinimo() != null ? request.getEstoqueMinimo() : 0);
         produto.setCategoria(request.getCategoria());
         produto.setCodigoProduto(codigoNormalizado);
         produto.setTipo(request.getTipo());
@@ -113,13 +137,37 @@ public class ProdutoService {
         }
     }
 
+    private void validatePromoQtd(ProdutoRequest request) {
+        Integer levar = request.getPromoQtdLevar();
+        Integer pagar = request.getPromoQtdPagar();
+
+        // Ambos ausentes => sem promo de quantidade
+        if (levar == null && pagar == null) return;
+
+        // Um presente e outro ausente => inválido
+        if (levar == null || pagar == null) {
+            throw new RuntimeException("Promoção por quantidade: informe 'Levar' e 'Pagar' juntos.");
+        }
+
+        if (pagar >= levar) {
+            throw new RuntimeException("Promoção por quantidade: 'Pagar' deve ser menor que 'Levar'.");
+        }
+    }
+
     private ProdutoResponse toResponse(Produto produto) {
         ProdutoResponse response = new ProdutoResponse();
         response.setId(produto.getId());
         response.setNome(produto.getNome());
         response.setDescricao(produto.getDescricao());
         response.setPreco(produto.getPreco());
+        response.setPrecoPromocional(produto.getPrecoPromocional());
+        response.setPromocaoInicio(produto.getPromocaoInicio());
+        response.setPromocaoFim(produto.getPromocaoFim());
+        response.setEmPromocao(produto.getEmPromocao());
+        response.setPromoQtdLevar(produto.getPromoQtdLevar());
+        response.setPromoQtdPagar(produto.getPromoQtdPagar());
         response.setQuantidadeEstoque(produto.getQuantidadeEstoque());
+        response.setEstoqueMinimo(produto.getEstoqueMinimo());
         response.setCategoria(produto.getCategoria());
         response.setCodigoProduto(produto.getCodigoProduto());
         response.setTipo(produto.getTipo());

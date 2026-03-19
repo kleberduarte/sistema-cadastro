@@ -7,13 +7,111 @@ let sales = [];
 let filteredSales = [];
 
 // Carregar dados ao iniciar
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     displayUserName();
-    loadSales();
+    // Garante que as cores do tema (empresaId vigente) já estejam aplicadas
+    try {
+        if (typeof loadClientParams === 'function') {
+            await loadClientParams();
+        }
+    } catch (_) { /* ignore */ }
+    await loadSales();
     initializeFilters();
     applyFilter();
 });
+
+function toLocalDateStr(dateLike) {
+    if (!dateLike) return null;
+    var d = new Date(dateLike.includes(' ') ? dateLike.replace(' ', 'T') : dateLike);
+    if (isNaN(d.getTime())) return null;
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+}
+
+function renderDailyChart() {
+    try {
+        var chart = document.getElementById('dailyChart');
+        if (!chart) return;
+
+        // Cores do tema (derivadas do que o `config.js` aplicou para a empresa vigente)
+        var h2 = document.querySelector('section h2');
+        var themePrimary = h2 ? getComputedStyle(h2).borderBottomColor : '#667eea';
+        if (!themePrimary || themePrimary === 'transparent') themePrimary = '#667eea';
+        var themeText = document.body ? getComputedStyle(document.body).color : '#333333';
+
+        var now = new Date();
+
+        // últimos 7 dias (hoje inclusive)
+        var dailyTotals = [];
+        for (var i = 6; i >= 0; i--) {
+            var dd = new Date(now);
+            dd.setDate(dd.getDate() - i);
+            dailyTotals.push({ dateStr: toLocalDateStr(dd.toISOString()), total: 0 });
+        }
+
+        sales.forEach(function (sale) {
+            var ds = toLocalDateStr(sale.date);
+            if (!ds) return;
+            var t = Number(sale.total || 0);
+
+            for (var j = 0; j < dailyTotals.length; j++) {
+                if (dailyTotals[j].dateStr === ds) {
+                    dailyTotals[j].total += t;
+                    break;
+                }
+            }
+        });
+
+        // render gráfico simples (barras)
+        chart.innerHTML = '';
+        var max = 0.0001;
+        dailyTotals.forEach(function (d) { if (d.total > max) max = d.total; });
+
+        dailyTotals.forEach(function (d) {
+            var parts = d.dateStr.split('-');
+            var label = parts.length === 3 ? (parts[2] + '/' + parts[1]) : d.dateStr;
+            var h = Math.round((d.total / max) * 100);
+
+            var bar = document.createElement('div');
+            bar.style.flex = '1';
+            bar.style.display = 'flex';
+            bar.style.flexDirection = 'column';
+            bar.style.alignItems = 'center';
+            bar.style.gap = '6px';
+
+            var rect = document.createElement('div');
+            rect.style.width = '100%';
+            rect.style.maxWidth = '54px';
+            rect.style.minWidth = '38px';
+            rect.style.height = (h + 6) + 'px';
+            rect.style.background = themePrimary;
+            rect.style.borderRadius = '10px';
+            rect.style.border = '1px solid rgba(0,0,0,.06)';
+
+            var cap = document.createElement('div');
+            cap.style.fontSize = '.78rem';
+            cap.style.color = themeText;
+            cap.style.textAlign = 'center';
+            cap.textContent = label;
+
+            var val = document.createElement('div');
+            val.style.fontSize = '.78rem';
+            val.style.fontWeight = '800';
+            val.style.color = themePrimary;
+            val.textContent = formatCurrency(d.total);
+
+            bar.appendChild(rect);
+            bar.appendChild(cap);
+            bar.appendChild(val);
+            chart.appendChild(bar);
+        });
+    } catch (e) {
+        /* ignore */
+    }
+}
 
 // Carregar vendas da API
 async function loadSales() {
@@ -202,6 +300,9 @@ function applyFilter() {
     renderSummary();
     renderSalesList();
     renderTopProducts();
+
+    // Gráfico (independente do filtro)
+    renderDailyChart();
 }
 
 // Limpar filtros

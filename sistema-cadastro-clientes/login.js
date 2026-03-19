@@ -49,6 +49,15 @@ function openConfirmCadastroModal(username) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Foco inicial no campo de usuário para agilizar o login
+    var usernameInput = document.getElementById('username');
+    if (usernameInput) {
+        try {
+            usernameInput.focus();
+            usernameInput.select();
+        } catch (_) {}
+    }
+
     var cm = document.getElementById('confirmCadastroModal');
     var sim = document.getElementById('confirmCadastroSim');
     var nao = document.getElementById('confirmCadastroNao');

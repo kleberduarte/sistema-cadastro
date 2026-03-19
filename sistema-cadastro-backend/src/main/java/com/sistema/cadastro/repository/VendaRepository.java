@@ -26,5 +26,10 @@ public interface VendaRepository extends JpaRepository<Venda, Long> {
     
     @Query("SELECT v FROM Venda v WHERE v.dataVenda >= :startDate AND v.dataVenda <= :endDate")
     List<Venda> findAllByDataVendaBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT v FROM Venda v WHERE v.usuario.id = :usuarioId AND v.dataVenda >= :startDate AND v.dataVenda <= :endDate ORDER BY v.dataVenda DESC")
+    List<Venda> findByUsuarioIdAndDataVendaBetween(@Param("usuarioId") Long usuarioId,
+                                                   @Param("startDate") LocalDateTime startDate,
+                                                   @Param("endDate") LocalDateTime endDate);
 }
 
