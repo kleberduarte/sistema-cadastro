@@ -37,4 +37,9 @@ public class PdvTerminal {
 
     @Column(name = "ultimo_operador", length = 80)
     private String ultimoOperador;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_caixa", nullable = false, length = 10)
+    @Builder.Default
+    private PdvCaixaStatus statusCaixa = PdvCaixaStatus.LIVRE;
 }

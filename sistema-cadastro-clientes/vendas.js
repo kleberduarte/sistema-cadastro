@@ -51,17 +51,25 @@ function startPdvHeartbeat() {
     var tid = localStorage.getItem('pdvTerminalId');
     if (!tid) return;
     var api = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
-    function beat() {
+    function beatOnce() {
         var token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
         if (!token) return;
         fetch(api + '/pdv/heartbeat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ terminalId: parseInt(tid, 10) })
+            body: JSON.stringify({
+                terminalId: parseInt(tid, 10),
+                statusCaixa: currentCaixaStatus
+            })
         }).catch(function () {});
+    }
+    function beat() {
+        beatOnce();
     }
     beat();
     setInterval(beat, 25000);
+    // expõe para setCaixaStatus disparar batida imediata ao mudar o status
+    window._pdvBeatOnce = beatOnce;
 }
 
 function normalizePdvRole(role) {
@@ -1026,6 +1034,10 @@ function setCaixaStatus(status) {
             barcodeInput.disabled = true;
         }
     }
+
+    try {
+        if (typeof window._pdvBeatOnce === 'function') window._pdvBeatOnce();
+    } catch (e) {}
 }
 
 function cycleCaixaStatus() {

@@ -21,6 +21,14 @@ public class ParametroEmpresaService {
     public ParametroEmpresaDTO salvar(ParametroEmpresaDTO dto) {
         ParametroEmpresa parametro;
 
+        // Se não informar empresaId (e não é update por id), gera automaticamente (novo cadastro)
+        if (dto.getId() == null && dto.getEmpresaId() == null) {
+            Long max = repository.maxEmpresaId();
+            long next = (max != null ? max : 0L) + 1L;
+            if (next < 2L) next = 2L; // reserva 1 para o padrão do sistema
+            dto.setEmpresaId(next);
+        }
+
         if (dto.getId() != null) {
             parametro = repository.findById(dto.getId())
                     .orElse(new ParametroEmpresa());

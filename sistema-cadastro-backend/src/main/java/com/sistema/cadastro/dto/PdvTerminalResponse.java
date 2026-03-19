@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.sistema.cadastro.model.PdvCaixaStatus;
 
 import java.time.Instant;
 
@@ -20,4 +21,5 @@ public class PdvTerminalResponse {
     private Instant ultimoHeartbeat;
     private String ultimoOperador;
     private boolean online;
+    private PdvCaixaStatus statusCaixa;
 }
