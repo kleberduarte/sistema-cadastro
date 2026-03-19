@@ -97,6 +97,56 @@
                             <input type="number" id="quantity" name="quantity" required placeholder="0" min="0">
                             <span class="error-message" id="quantityError"></span>
                         </div>
+
+                        <div class="form-group">
+                            <label for="stockMin">Estoque mínimo:</label>
+                            <input type="number" id="stockMin" name="stockMin" placeholder="0" min="0">
+                            <span class="error-message" id="stockMinError"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="display:flex;gap:10px;align-items:center;">
+                                <input type="checkbox" id="promoEnabled" name="promoEnabled" />
+                                Em promoção
+                            </label>
+                            <small style="display:block;margin-top:4px;color:#666;">
+                                Se ligado, usa `Preço promocional` no PDV.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="promoPrice">Preço promocional (R$):</label>
+                            <input type="text" id="promoPrice" name="promoPrice" placeholder="0,00">
+                            <span class="error-message" id="promoPriceError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="promoStart">Início promoção:</label>
+                            <input type="date" id="promoStart" name="promoStart">
+                            <span class="error-message" id="promoStartError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="promoEnd">Fim promoção:</label>
+                            <input type="date" id="promoEnd" name="promoEnd">
+                            <span class="error-message" id="promoEndError"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="promoQtdLevar">Promo por quantidade — Levar (X):</label>
+                            <input type="number" id="promoQtdLevar" name="promoQtdLevar" placeholder="Ex.: 3" min="1">
+                            <span class="error-message" id="promoQtdLevarError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="promoQtdPagar">Promo por quantidade — Pagar (Y):</label>
+                            <input type="number" id="promoQtdPagar" name="promoQtdPagar" placeholder="Ex.: 2" min="1">
+                            <span class="error-message" id="promoQtdPagarError"></span>
+                        </div>
                     </div>
 
                     <div class="form-group">

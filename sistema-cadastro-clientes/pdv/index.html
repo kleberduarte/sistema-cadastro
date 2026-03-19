@@ -59,6 +59,9 @@
                         <span id="pdv-item-total">R$ 0,00</span>
                     </div>
                 </div>
+                <div id="pdv-promo-qtd-msg" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(15,118,110,.12);border:1px solid rgba(15,118,110,.35);color:#0f766e;font-weight:700;font-size:.9rem;">
+                    Promoção ativa
+                </div>
 
                 <div class="discount-section">
                     <label class="discount-section__label" for="discountType">Desconto</label>
@@ -232,6 +235,40 @@
         </div>
     </div>
 
+    <!-- Modal de Fechamento de Caixa (Alt+F) -->
+    <div id="fechamentoCaixaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Fechamento de Caixa</h2>
+                <span class="close-button" onclick="closeModal('fechamentoCaixaModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="margin-top:0;color:#666;">Resumo do dia atual (operador logado).</p>
+                <div class="table-container">
+                    <table>
+                        <tbody>
+                            <tr><td><strong>Qtd. vendas</strong></td><td id="fcQtdVendas">0</td></tr>
+                            <tr><td><strong>Total dinheiro</strong></td><td id="fcTotalDinheiro">R$ 0,00</td></tr>
+                            <tr><td><strong>Total cartão</strong></td><td id="fcTotalCartao">R$ 0,00</td></tr>
+                            <tr><td><strong>Total PIX</strong></td><td id="fcTotalPix">R$ 0,00</td></tr>
+                            <tr><td><strong>Total geral</strong></td><td id="fcTotalGeral">R$ 0,00</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label for="fcValorCaixa">Valor em dinheiro contado no caixa (opcional)</label>
+                    <input type="text" id="fcValorCaixa" placeholder="ex: 150,00">
+                    <small style="color:#666;display:block;margin-top:6px;">Se informado, o sistema calcula sobra/falta comparando com o total em dinheiro.</small>
+                </div>
+                <div id="fcPreviewDiferenca" style="margin:10px 0 4px;font-weight:600;color:#555;"></div>
+                <div class="modal-buttons" style="margin-top:14px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('fechamentoCaixaModal')">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmarFechamentoCaixa()">✅ Confirmar fechamento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Pesquisa de Venda (F7) -->
     <div id="saleSearchModal" class="modal">
         <div class="modal-content large">
@@ -337,6 +374,27 @@
                 </div>
                 <div class="sale-detail-footer">
                     <p>Obrigado pela sua preferência!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Alterar Quantidade (usado no PDV) -->
+    <div id="quantityChangeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Alterar Quantidade</h2>
+                <span class="close-button" onclick="closeModal('quantityChangeModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="quantityChangeHint" style="margin-top:0;color:#666;">Digite a nova quantidade.</p>
+                <div class="form-group">
+                    <label for="quantityChangeInput">Quantidade</label>
+                    <input id="quantityChangeInput" type="number" min="1" step="1" placeholder="1">
+                </div>
+                <div class="modal-buttons" style="margin-top:14px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('quantityChangeModal')">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmarQuantidadeChange()">✅ OK</button>
                 </div>
             </div>
         </div>
