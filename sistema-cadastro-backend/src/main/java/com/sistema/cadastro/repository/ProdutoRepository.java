@@ -11,14 +11,28 @@ import java.util.Optional;
 
 @Repository
 public interface ProdutoRepository extends JpaRepository<Produto, Long> {
-    @Query("SELECT p FROM Produto p WHERE LOWER(p.nome) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(p.descricao) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(p.categoria) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    List<Produto> search(@Param("searchTerm") String searchTerm);
-    
-    List<Produto> findByCategoria(String categoria);
 
-    Optional<Produto> findByCodigoProduto(String codigoProduto);
+    List<Produto> findByEmpresaId(Long empresaId);
 
-    boolean existsByCodigoProduto(String codigoProduto);
+    Optional<Produto> findByEmpresaIdAndCodigoProduto(Long empresaId, String codigoProduto);
 
-    boolean existsByCodigoProdutoAndIdNot(String codigoProduto, Long id);
+    boolean existsByEmpresaIdAndCodigoProduto(Long empresaId, String codigoProduto);
+
+    boolean existsByEmpresaIdAndCodigoProdutoAndIdNot(Long empresaId, String codigoProduto, Long id);
+
+    @Query("""
+            SELECT p FROM Produto p
+            WHERE (LOWER(p.nome) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+                OR LOWER(p.descricao) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+                OR LOWER(p.categoria) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+              AND (:empresaId IS NULL OR p.empresaId = :empresaId)
+            """)
+    List<Produto> search(@Param("searchTerm") String searchTerm, @Param("empresaId") Long empresaId);
+
+    @Query("""
+            SELECT p FROM Produto p
+            WHERE p.categoria = :categoria
+              AND (:empresaId IS NULL OR p.empresaId = :empresaId)
+            """)
+    List<Produto> findByCategoriaScoped(@Param("categoria") String categoria, @Param("empresaId") Long empresaId);
 }

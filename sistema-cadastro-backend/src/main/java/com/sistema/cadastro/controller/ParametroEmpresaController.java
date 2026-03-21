@@ -1,10 +1,13 @@
 package com.sistema.cadastro.controller;
 
 import com.sistema.cadastro.dto.ParametroEmpresaDTO;
+import com.sistema.cadastro.model.Role;
+import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.service.ParametroEmpresaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,12 +22,26 @@ public class ParametroEmpresaController {
     private ParametroEmpresaService service;
 
     @PostMapping
-    public ResponseEntity<ParametroEmpresaDTO> salvar(@RequestBody ParametroEmpresaDTO dto) {
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<ParametroEmpresaDTO> salvar(@RequestBody ParametroEmpresaDTO dto, Authentication auth) {
+        Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
+        if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA) {
+            if (requester.getEmpresaId() == null || requester.getEmpresaId() < 1) {
+                return ResponseEntity.status(403).build();
+            }
+            dto.setEmpresaId(requester.getEmpresaId());
+        }
         return ResponseEntity.ok(service.salvar(dto));
     }
 
     @GetMapping("/empresa/{empresaId}")
-    public ResponseEntity<ParametroEmpresaDTO> buscarPorEmpresaId(@PathVariable Long empresaId) {
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<ParametroEmpresaDTO> buscarPorEmpresaId(@PathVariable Long empresaId, Authentication auth) {
+        Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
+        if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA
+                && (requester.getEmpresaId() == null || !requester.getEmpresaId().equals(empresaId))) {
+            return ResponseEntity.status(403).build();
+        }
         Optional<ParametroEmpresaDTO> parametro = service.buscarPorEmpresaIdComInativos(empresaId);
         return parametro.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -32,8 +49,13 @@ public class ParametroEmpresaController {
 
     /** Cria parâmetros padrão no banco para o ID, se ainda não existir (admin). */
     @PostMapping("/garantir/{empresaId}")
-    @PreAuthorize("hasRole('ADM')")
-    public ResponseEntity<ParametroEmpresaDTO> garantirParametros(@PathVariable Long empresaId) {
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<ParametroEmpresaDTO> garantirParametros(@PathVariable Long empresaId, Authentication auth) {
+        Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
+        if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA
+                && (requester.getEmpresaId() == null || !requester.getEmpresaId().equals(empresaId))) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(service.garantirParametrosMinimos(empresaId));
     }
 
@@ -43,8 +65,16 @@ public class ParametroEmpresaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ParametroEmpresaDTO> buscarPorId(@PathVariable Long id) {
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<ParametroEmpresaDTO> buscarPorId(@PathVariable Long id, Authentication auth) {
+        Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
         Optional<ParametroEmpresaDTO> parametro = service.buscarPorId(id);
+        if (parametro.isPresent() && requester != null && requester.getRole() == Role.ADMIN_EMPRESA) {
+            Long eid = parametro.get().getEmpresaId();
+            if (requester.getEmpresaId() == null || !requester.getEmpresaId().equals(eid)) {
+                return ResponseEntity.status(403).build();
+            }
+        }
         return parametro.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -67,7 +97,12 @@ public class ParametroEmpresaController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ParametroEmpresaDTO>> listarTodos() {
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<List<ParametroEmpresaDTO>> listarTodos(Authentication auth) {
+        Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
+        if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA) {
+            return ResponseEntity.ok(service.listarPorEmpresaId(requester.getEmpresaId()));
+        }
         return ResponseEntity.ok(service.listarTodos());
     }
 }

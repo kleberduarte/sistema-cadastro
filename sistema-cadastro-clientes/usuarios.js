@@ -161,6 +161,7 @@ function abrirWhatsAppComTexto(phone, texto) {
 // Carregar usuários ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
     if (!checkPermission('adm')) return;
+    aplicarRestricoesPorPerfilLogado();
     displayUserName();
     loadPdvEmpresaPadrao().then(function () { loadUsers(); });
     setupEventListeners();
@@ -169,12 +170,49 @@ document.addEventListener('DOMContentLoaded', function() {
         if (ev.key === 'selectedEmpresaId' || ev.key === 'selectedClienteId') loadUsers();
     });
     window.addEventListener('focus', function () {
-        if (!users.length) return;
-        aplicarEmpresaNoFormularioCadastro();
-        renderUsers();
-        populateConviteSelectFromUsers();
+        aplicarRestricoesPorPerfilLogado();
+        loadUsers();
+    });
+    window.addEventListener('pageshow', function () {
+        // Garante consistência ao voltar pelo histórico (bfcache) sem hard reload
+        if (!checkPermission('adm')) return;
+        aplicarRestricoesPorPerfilLogado();
+        loadUsers();
     });
 });
+
+function aplicarRestricoesPorPerfilLogado() {
+    try {
+        const me = getCurrentUser();
+        const roleNorm = me && me.role ? String(me.role).toUpperCase() : '';
+        const isAdminEmpresa = roleNorm === 'ADMIN_EMPRESA';
+        const allOptions = [
+            { value: 'VENDEDOR', label: 'Vendedor' },
+            { value: 'ADMIN_EMPRESA', label: 'Administrador (empresa)' },
+            { value: 'ADM', label: 'Administrador' }
+        ];
+        const allowed = isAdminEmpresa
+            ? allOptions.filter(function (o) { return o.value !== 'ADM'; })
+            : allOptions;
+
+        ['newUserRole', 'editUserRole'].forEach(function (id) {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+
+            const selected = sel.value;
+            sel.innerHTML = '';
+            allowed.forEach(function (opt) {
+                const el = document.createElement('option');
+                el.value = opt.value;
+                el.textContent = opt.label;
+                sel.appendChild(el);
+            });
+
+            const selectedStillAllowed = allowed.some(function (o) { return o.value === selected; });
+            sel.value = selectedStillAllowed ? selected : 'VENDEDOR';
+        });
+    } catch (_) {}
+}
 
 // Configurar event listeners
 function setupEventListeners() {
@@ -192,6 +230,13 @@ function setupEventListeners() {
 
     var chk = document.getElementById('gerarSenhaAutomatica');
     if (chk) {
+        function syncSenhaAutoVisual() {
+            var card = document.querySelector('.user-auto-pass-card');
+            if (!card) return;
+            if (chk.checked) card.classList.add('is-active');
+            else card.classList.remove('is-active');
+        }
+
         function syncSenhaRow() {
             var manual = !chk.checked;
             var row = document.getElementById('rowSenhasManual');
@@ -200,6 +245,7 @@ function setupEventListeners() {
             var p2 = document.getElementById('confirmUserPassword');
             if (p1) { p1.required = manual; if (!manual) p1.value = ''; }
             if (p2) { p2.required = manual; if (!manual) p2.value = ''; }
+            syncSenhaAutoVisual();
         }
         chk.addEventListener('change', syncSenhaRow);
         syncSenhaRow();
@@ -257,17 +303,21 @@ async function registerUser(e) {
     const confirmPassword = gerarAuto ? '' : document.getElementById('confirmUserPassword').value;
     const role = document.getElementById('newUserRole').value;
     const empresaPdvRaw = document.getElementById('newUserEmpresaPdv').value.trim();
+    const errorElement = document.getElementById('registerUserError');
+    const successElement = document.getElementById('registerUserSuccess');
     const eCtx = getEmpresaRetaguardaAtual();
     let empresaId = null;
     if (role === 'ADM' && empresaPdvRaw === '') {
         empresaId = null;
+    } else if (role === 'ADMIN_EMPRESA' && empresaPdvRaw === '') {
+        errorElement.textContent = 'Para Admin Empresa, informe o ID da empresa.';
+        errorElement.classList.add('show');
+        return;
     } else {
         empresaId = empresaPdvRaw === '' ? eCtx : parseInt(empresaPdvRaw, 10);
         if (empresaId == null || isNaN(empresaId) || empresaId < 1) empresaId = eCtx;
     }
-    const errorElement = document.getElementById('registerUserError');
-    const successElement = document.getElementById('registerUserSuccess');
-    
+
     // Limpar mensagens anteriores
     errorElement.textContent = '';
     errorElement.classList.remove('show');
@@ -394,7 +444,10 @@ function renderUsers(userList) {
         const isCurrentUser = currentUser && currentUser.username === user.username;
         
         // Traduzir perfil
-        const roleText = user.role === 'ADM' ? '👑 Administrador' : '🛒 Vendedor';
+        const roleNorm = String(user.role || '').toUpperCase();
+        const roleText = roleNorm === 'ADM'
+            ? '👑 Super Admin'
+            : (roleNorm === 'ADMIN_EMPRESA' ? '🏢 Admin Empresa' : '🛒 Vendedor');
         const empPdvCell = (user.empresaId != null && user.empresaId >= 1)
             ? escapeHtml(String(user.empresaId))
             : '<span style="opacity:.75">Padrão</span>';

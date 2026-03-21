@@ -349,7 +349,8 @@ async function loadProducts() {
     try {
         const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
         
-        const response = await fetch('http://localhost:8080/api/produtos', {
+        var apiRoot = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+        const response = await fetch(appendEmpresaIdToApiUrl(apiRoot + '/produtos'), {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         if (response.ok) {
@@ -366,7 +367,8 @@ async function loadProducts() {
 async function loadAllSales() {
     try {
         const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
-        const response = await fetch('http://localhost:8080/api/vendas', {
+        var apiRoot2 = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+        const response = await fetch(appendEmpresaIdToApiUrl(apiRoot2 + '/vendas'), {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         if (response.ok) {
@@ -836,7 +838,7 @@ function searchClients() {
     const tbody = document.getElementById('client-search-results-body');
     if (!tbody) return;
     const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
-    const url = API_BASE + '/clientes/search?q=' + encodeURIComponent(q);
+    const url = appendEmpresaIdToApiUrl(API_BASE + '/clientes/search?q=' + encodeURIComponent(q));
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Buscando...</td></tr>';
     fetch(url, { headers: token ? { 'Authorization': 'Bearer ' + token } : {} })
         .then(function(res) {
@@ -1497,7 +1499,8 @@ async function processPayment() {
             setTimeout(pdvRedirecionarParaLoginCaixa, 1500);
             return;
         }
-        const response = await fetch('http://localhost:8080/api/vendas', {
+        var apiRootPost = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+        const response = await fetch(appendEmpresaIdToApiUrl(apiRootPost + '/vendas'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify(saleRequest)

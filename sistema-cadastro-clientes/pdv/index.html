@@ -3,11 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
     <title>PDV - Frente de Caixa</title>
+    <link rel="manifest" href="../manifest.json">
     <script>
     (function () {
         if (!localStorage.getItem('pdvTerminalId')) {
-            window.location.replace('login.html');
+            var eid = parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+            if (eid >= 1) {
+                window.location.replace('login.html?empresaId=' + encodeURIComponent(String(eid)));
+            } else {
+                window.location.replace('login.html?empresaId=1');
+            }
         }
     })();
     </script>
@@ -406,5 +413,6 @@
     <script src="../theme-defaults.js"></script>
     <script src="../config.js"></script>
     <script src="../vendas.js"></script>
+    <script src="../pwa-register.js?v=20260320-1"></script>
 </body>
 </html>

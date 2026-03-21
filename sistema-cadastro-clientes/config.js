@@ -15,10 +15,90 @@ function temaPadrao() {
     };
 }
 
+function getEmpresaIdFromUrl() {
+    try {
+        if (typeof window === 'undefined' || !window.location || !window.location.search) return null;
+        var params = new URLSearchParams(window.location.search);
+        var raw = params.get('empresaId');
+        if (!raw) return null;
+        var parsed = parseInt(raw, 10);
+        if (isNaN(parsed) || parsed < 1) return null;
+        return parsed;
+    } catch (_) {
+        return null;
+    }
+}
+
+function getEmpresaPadraoSistemaId() {
+    return (typeof window !== 'undefined' && typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number')
+        ? window.EMPRESA_ID_PADRAO_SISTEMA
+        : 1;
+}
+
+/** URL do login da retaguarda com tenant explícito (super ADM / empresa padrão). */
+function loginRetaguardaUrlComEmpresaPadrao() {
+    return 'login.html?empresaId=' + encodeURIComponent(String(getEmpresaPadraoSistemaId()));
+}
+
+function applyEmpresaIdFromUrlIfPresent() {
+    var empresaIdFromUrl = getEmpresaIdFromUrl();
+    var path = '';
+    try {
+        path = (window.location && window.location.pathname) ? String(window.location.pathname).toLowerCase() : '';
+    } catch (_) {}
+    var isRetaguardaLogin = path.endsWith('/login.html') || path === '/login.html' || path === 'login.html';
+
+    if (empresaIdFromUrl) {
+        localStorage.setItem('selectedEmpresaId', String(empresaIdFromUrl));
+        localStorage.setItem('selectedClienteId', String(empresaIdFromUrl));
+        // Evita reaplicar tema antigo de outra empresa quando o link vier com tenant explicito.
+        localStorage.removeItem('empresaParams');
+        localStorage.removeItem('clientParams');
+        return;
+    }
+
+    // Sem ?empresaId= na retaguarda: bloquear tela de login (somente link com tenant ou empresa padrão).
+    if (isRetaguardaLogin) {
+        // Fluxo PDV → cadastro na retaguarda: redireciona para login com tenant em vez de bloquear.
+        try {
+            if (sessionStorage.getItem('abrirCadastroRetaguarda') === '1') {
+                var eidPdv = parseInt(sessionStorage.getItem('cadastroEmpresaIdPdv') || '0', 10);
+                if (eidPdv >= 1) {
+                    window.location.replace('login.html?empresaId=' + encodeURIComponent(String(eidPdv)));
+                    return;
+                }
+            }
+        } catch (_) {}
+        try {
+            window.__LOGIN_RETAGUARDA_BLOQUEADO_SEM_TENANT = true;
+        } catch (_) {}
+        try {
+            localStorage.removeItem('selectedEmpresaId');
+            localStorage.removeItem('selectedClienteId');
+            localStorage.removeItem('empresaParams');
+            localStorage.removeItem('clientParams');
+        } catch (_) {}
+        return;
+    }
+}
+
+applyEmpresaIdFromUrlIfPresent();
+
 // ID do cliente configurado manualmente no sistema
 // Altere este valor para mudar o visual do sistema
 // Ex: 1 = Adidas, 2 = Nike, 3 = Adidas (Novo), etc.
-let CLIENTE_ID = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || 1;
+let CLIENTE_ID;
+if (typeof window !== 'undefined' && window.__LOGIN_RETAGUARDA_BLOQUEADO_SEM_TENANT) {
+    CLIENTE_ID = 0;
+} else {
+    // Priorizar empresaId da URL, depois localStorage, depois padrão 1
+    var empresaIdFromUrl = getEmpresaIdFromUrl();
+    if (empresaIdFromUrl) {
+        CLIENTE_ID = empresaIdFromUrl;
+    } else {
+        CLIENTE_ID = parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '1', 10);
+    }
+}
 
 // Função para alterar o cliente atual (pode ser chamada via console ou botão)
 function setClienteId(id) {
@@ -41,6 +121,39 @@ function setSelectedEmpresaId(id) {
 // Função para obter o ID do cliente atual
 function getClienteId() {
     return CLIENTE_ID;
+}
+
+/**
+ * Anexa ?empresaId= ou &empresaId= à URL da API conforme o tenant (CLIENTE_ID / selectedEmpresaId).
+ * Usado pelas telas que chamam endpoints com escopo por empresa.
+ */
+function appendEmpresaIdToApiUrl(url) {
+    if (typeof url !== 'string' || !url) return url;
+    var role = '';
+    try {
+        var cuRaw = localStorage.getItem('currentUser');
+        if (cuRaw) {
+            var cu = JSON.parse(cuRaw);
+            role = String(cu && cu.role ? cu.role : '').trim().toUpperCase();
+        }
+    } catch (_) {}
+
+    var rawSelected = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId');
+    if (role === 'ADM') {
+        // Para ADM: sem seleção explícita de empresa => sem filtro (backend retorna todas).
+        var adminSelected = parseInt(rawSelected || '0', 10);
+        if (isNaN(adminSelected) || adminSelected < 1) return url;
+        var sepAdmin = url.indexOf('?') >= 0 ? '&' : '?';
+        return url + sepAdmin + 'empresaId=' + encodeURIComponent(adminSelected);
+    }
+
+    var raw = typeof getClienteId === 'function'
+        ? getClienteId()
+        : parseInt(rawSelected || '0', 10);
+    var id = parseInt(raw, 10);
+    if (isNaN(id) || id < 1) return url;
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    return url + sep + 'empresaId=' + encodeURIComponent(id);
 }
 
 /**
@@ -94,6 +207,10 @@ let clientParams = null;
 
 // Carregar parâmetros do cliente ao iniciar
 async function loadClientParams() {
+    if (typeof window !== 'undefined' && window.__LOGIN_RETAGUARDA_BLOQUEADO_SEM_TENANT) {
+        applyDefaultStyles();
+        return;
+    }
     // Primeiro verificar localStorage - verificar ambas as chaves
     const storedParams = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
     const selectedEmpresaId = localStorage.getItem('selectedEmpresaId');
@@ -117,35 +234,40 @@ async function loadClientParams() {
         }
     }
 
+    // Aplicar estilos padrão imediatamente para garantir que a tela funcione
+    // mesmo se a busca do servidor falhar ou demorar
+    applyDefaultStyles();
+
     // Verificar se há um token (usuário logado)
     const token = localStorage.getItem('token');
     
     // Se não tem token, ainda tenta carregar do servidor usando o empresaId do localStorage
     try {
-        // Usar o CLIENTE_ID atual - buscar por empresaId
-        const response = await fetch(`http://localhost:8080/api/parametros-empresa/empresa/${CLIENTE_ID}`, {
+        // Sem token (tela de login), usa endpoint público de branding.
+        // Com token, usa endpoint completo de parâmetros da empresa.
+        const endpoint = token
+            ? `http://localhost:8080/api/parametros-empresa/empresa/${CLIENTE_ID}`
+            : `http://localhost:8080/api/parametros-cliente/branding/${CLIENTE_ID}`;
+        const response = await fetch(endpoint, {
             headers: token ? {
                 'Authorization': 'Bearer ' + token
             } : {}
+        }).catch(function (err) {
+            // Erro de rede (API offline) - já aplicamos padrão, apenas retornar
+            return null;
         });
 
-        if (response.ok) {
+        if (response && response.ok) {
             clientParams = await response.json();
             // Salvar no localStorage para próximas cargas
             localStorage.setItem('empresaParams', JSON.stringify(clientParams));
+            // Aplicar estilos personalizados (sobrescreve o padrão)
             applyClientStyles(clientParams);
             console.log('Parâmetros do cliente carregados:', clientParams);
-        } else if (response.status === 404) {
-            // 404 é esperado quando não há parâmetros salvos - usar padrão
-            console.log('Nenhum parâmetro encontrado para empresa ID ' + CLIENTE_ID + '. Usando estilos padrão.');
-            applyDefaultStyles();
-        } else {
-            console.log('Erro ao carregar parâmetros, usando estilos padrão');
-            applyDefaultStyles();
         }
+        // 404 ou outros erros: já aplicamos estilos padrão acima, não precisa fazer nada
     } catch (error) {
-        console.error('Erro ao carregar parâmetros do cliente:', error);
-        applyDefaultStyles();
+        // Erro inesperado: já aplicamos estilos padrão acima, não precisa fazer nada
     }
 }
 

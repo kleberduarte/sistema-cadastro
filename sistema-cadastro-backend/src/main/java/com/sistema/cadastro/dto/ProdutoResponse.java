@@ -14,6 +14,8 @@ import java.util.List;
 @AllArgsConstructor
 public class ProdutoResponse {
     private Long id;
+    /** Empresa dona do cadastro. */
+    private Long empresaId;
     private String nome;
     private String descricao;
     private BigDecimal preco;

@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
     <title>Login PDV</title>
+    <link rel="manifest" href="../manifest.json">
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <style id="pdv-login-base-styles">
         * { box-sizing: border-box; }
@@ -102,10 +104,21 @@
             background: #f1f3f5; color: #495057; border: 2px solid #e9ecef;
         }
         .pdv-confirm-btns .pdv-confirm-no:hover { background: #e9ecef; }
+        .pdv-login-blocked h2 { color: #c0392b; margin: 0 0 14px; font-size: 1.25rem; }
+        .pdv-login-blocked p { color: #555; line-height: 1.55; font-size: 0.92rem; margin: 0 0 12px; text-align: left; }
+        .pdv-login-blocked .pdv-login-back { margin-top: 12px; }
     </style>
     <script src="../theme-defaults.js"></script>
 </head>
 <body class="pdv-login-page">
+    <div id="pdvLoginBlockedPanel" class="pdv-login-box pdv-login-blocked" style="display:none;">
+        <h2>🔒 Acesso restrito</h2>
+        <p>O PDV não pode ser aberto pelo endereço genérico. Use o <strong>link da sua empresa</strong> com <code>?empresaId=</code> na URL.</p>
+        <p>Se você veio da retaguarda, volte pelo link correto ou peça o link ao administrador.</p>
+        <a class="pdv-login-back" href="../login.html" id="pdvBlockedLinkRetaguarda">← Voltar ao login da retaguarda</a>
+        <a class="pdv-login-back" href="../login.html?empresaId=1" id="pdvBlockedLinkRetaguardaAdmin">Entrar como administrador do sistema (retaguarda)</a>
+    </div>
+    <div id="pdvLoginNormalPanel">
     <div class="pdv-login-box">
         <div class="pdv-login-header">
             <div id="pdvEmpresaBadge" class="pdv-empresa-badge" style="display: none;"></div>
@@ -129,6 +142,7 @@
         <p class="hint">Se já existir caixa cadastrado no <strong>monitor</strong> sem operador vinculado, o login usa esse caixa (ex.: 02). Só cria um novo se todos estiverem em uso. Um usuário = um caixa.</p>
         <a class="pdv-login-back" href="../login.html" id="pdvLinkLoginRetaguarda">← Login retaguarda</a>
     </div>
+    </div><!-- /#pdvLoginNormalPanel -->
     <div id="pdvConfirmCadastroOverlay" class="pdv-confirm-overlay" aria-hidden="true">
         <div class="pdv-confirm-dialog" role="dialog" aria-labelledby="pdvConfirmCadastroTitle">
             <div class="pdv-confirm-icon" aria-hidden="true">
@@ -146,23 +160,55 @@
     <script>
     (function () {
         var API = 'http://localhost:8080/api';
+        function getEmpresaIdFromUrl() {
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                var raw = params.get('empresaId');
+                if (!raw) return null;
+                var parsed = parseInt(raw, 10);
+                if (isNaN(parsed) || parsed < 1) return null;
+                return parsed;
+            } catch (e) {
+                return null;
+            }
+        }
 
-        // Só entrar direto no PDV se o JWT ainda for válido (evita loop: index → 401 → login → index)
-        (function tryAutoEnterPdv() {
-            var tid = localStorage.getItem('pdvTerminalId');
-            var tok = localStorage.getItem('authToken');
-            if (!tid || !tok) return;
-            fetch(API + '/auth/me', { headers: { Authorization: 'Bearer ' + tok } })
+        function showPdvBlocked() {
+            var bp = document.getElementById('pdvLoginBlockedPanel');
+            var np = document.getElementById('pdvLoginNormalPanel');
+            if (bp) bp.style.display = 'block';
+            if (np) np.style.display = 'none';
+            var ep = typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number' ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+            var adm = document.getElementById('pdvBlockedLinkRetaguardaAdmin');
+            if (adm) adm.href = '../login.html?empresaId=' + encodeURIComponent(String(ep));
+        }
+
+        var empresaIdFromUrl = getEmpresaIdFromUrl();
+
+        // Sem ?empresaId=: bloqueia PDV (operadores devem usar link da empresa). Exceção: sessão PDV já válida (JWT + terminal).
+        if (!empresaIdFromUrl) {
+            var tid0 = localStorage.getItem('pdvTerminalId');
+            var tok0 = localStorage.getItem('authToken');
+            if (!tid0 || !tok0) {
+                showPdvBlocked();
+                return;
+            }
+            fetch(API + '/auth/me', { headers: { Authorization: 'Bearer ' + tok0 } })
                 .then(function (r) {
                     if (!r.ok) {
                         localStorage.removeItem('pdvTerminalId');
                         localStorage.removeItem('pdvTerminalCodigo');
+                        showPdvBlocked();
                         return null;
                     }
                     return r.json();
                 })
                 .then(function (me) {
-                    if (!me || me.id == null) return;
+                    if (!me) return;
+                    if (me.id == null) {
+                        showPdvBlocked();
+                        return;
+                    }
                     if (me.mustChangePassword === true) {
                         try {
                             var eAuto = me.empresaId != null && me.empresaId >= 1 ? me.empresaId : parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
@@ -176,9 +222,15 @@
                 .catch(function () {
                     localStorage.removeItem('pdvTerminalId');
                     localStorage.removeItem('pdvTerminalCodigo');
+                    showPdvBlocked();
                 });
-        })();
+            return;
+        }
+
         var linkRet = document.getElementById('pdvLinkLoginRetaguarda');
+        if (empresaIdFromUrl && linkRet) {
+            linkRet.href = '../login.html?empresaId=' + encodeURIComponent(empresaIdFromUrl);
+        }
         if (linkRet) {
             linkRet.addEventListener('click', function () {
                 try { sessionStorage.setItem('skipAutoRedirectLoginRetaguarda', '1'); } catch (e) {}
@@ -330,7 +382,11 @@
         var EP = typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number' ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
         var inpEmpresa = document.getElementById('empresaIdPdv');
         var saved = localStorage.getItem('selectedEmpresaId');
-        var initialEid = (saved && parseInt(saved, 10) >= 1) ? parseInt(saved, 10) : EP;
+        var initialEid = empresaIdFromUrl || ((saved && parseInt(saved, 10) >= 1) ? parseInt(saved, 10) : EP);
+        if (empresaIdFromUrl) {
+            localStorage.setItem('selectedEmpresaId', String(empresaIdFromUrl));
+            localStorage.setItem('selectedClienteId', String(empresaIdFromUrl));
+        }
         inpEmpresa.value = String(initialEid);
         var debounceT = null;
         function scheduleBrandingPdv() {
@@ -361,7 +417,12 @@
                     (mensagem || '').trim() || 'Não foi possível acessar o PDV. Use o login inicial da retaguarda.');
                 sessionStorage.setItem('skipAutoRedirectLoginRetaguarda', '1');
             } catch (e) {}
-            window.location.replace('../login.html');
+            var eidRet = parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+            if (eidRet >= 1) {
+                window.location.replace('../login.html?empresaId=' + encodeURIComponent(String(eidRet)));
+            } else {
+                window.location.replace('../login.html');
+            }
         }
 
         var _pdvConfirmCadastroResolve = null;
@@ -403,10 +464,37 @@
             });
         })();
 
+        /** Inicia contador regressivo para mensagem de rate limit. */
+        function startPdvRateLimitCountdown(errorElement, messageTemplate, totalSeconds) {
+            var intervalId = null;
+            var remaining = totalSeconds;
+            // Extrair o padrão base da mensagem (substituir apenas o número de segundos)
+            var baseText = messageTemplate.replace(/\d+\s+segundos?/i, '{SEGUNDOS}');
+            function update() {
+                if (remaining <= 0) {
+                    if (intervalId) clearInterval(intervalId);
+                    errorElement.classList.remove('show');
+                    return;
+                }
+                var msg = baseText.replace('{SEGUNDOS}', remaining + (remaining === 1 ? ' segundo' : ' segundos'));
+                errorElement.textContent = msg;
+                errorElement.classList.add('show');
+                remaining--;
+            }
+            update();
+            intervalId = setInterval(update, 1000);
+            return intervalId;
+        }
+
         document.getElementById('pdvLoginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             var err = document.getElementById('err');
             err.classList.remove('show');
+            // Parar contador anterior se existir
+            if (window._pdvRateLimitInterval) {
+                clearInterval(window._pdvRateLimitInterval);
+                window._pdvRateLimitInterval = null;
+            }
             var empresaLogin = parseInt(document.getElementById('empresaIdPdv').value, 10);
             if (!empresaLogin || empresaLogin < 1) {
                 err.textContent = 'Informe o ID da empresa (número ≥ 1).';
@@ -421,8 +509,24 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password })
                 });
+                // Verificar rate limit (429) antes de parse JSON
+                if (lr.status === 429) {
+                    var rateLimitData = await lr.json().catch(function() { return { message: 'Muitas tentativas. Aguarde um momento.' }; });
+                    var msg = (rateLimitData.message || '').toString();
+                    // Extrair número de segundos da mensagem
+                    var match = msg.match(/(\d+)\s+segundos?/i);
+                    var segundos = match ? parseInt(match[1], 10) : 60;
+                    window._pdvRateLimitInterval = startPdvRateLimitCountdown(err, msg, segundos);
+                    return;
+                }
                 var data = await lr.json().catch(function () { return {}; });
                 var roleNormEarly = normRole(data.role);
+                if (data.token) {
+                    try {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                    } catch (eClr) {}
+                }
                 if (data.token && data.mustChangePassword === true) {
                     try { sessionStorage.setItem('redefinirSenhaEmpresaId', String(empresaLogin)); } catch (e0) {}
                     localStorage.setItem('authToken', data.token);
@@ -446,7 +550,7 @@
                                 sessionStorage.setItem('cadastroEmpresaIdPdv', String(empresaLogin));
                             } catch (e2) {}
                             try { sessionStorage.setItem('skipAutoRedirectLoginRetaguarda', '1'); } catch (e2) {}
-                            window.location.replace('../login.html');
+                            window.location.replace('../login.html?empresaId=' + encodeURIComponent(String(empresaLogin)));
                         } else {
                             err.textContent = 'Usuário não cadastrado.';
                             err.classList.add('show');
@@ -505,5 +609,6 @@
         });
     })();
     </script>
+    <script src="../pwa-register.js?v=20260320-1"></script>
 </body>
 </html>

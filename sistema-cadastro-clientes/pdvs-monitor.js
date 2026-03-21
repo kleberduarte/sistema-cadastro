@@ -9,10 +9,25 @@
     /** Contexto da empresa; se vazio, usa o mesmo ID do Restaurar em Parâmetros (um único padrão). */
     function getActiveEmpresaId() {
         var EP = idEmpresaPadrao();
+        try {
+            var cu = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            if (cu && normalizeUserRole(cu.role) === 'ADMIN_EMPRESA' && cu.empresaId != null && cu.empresaId >= 1) {
+                return cu.empresaId;
+            }
+        } catch (x) {}
         var id = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId');
         var n = id ? parseInt(id, 10) : NaN;
         if (!isNaN(n) && n >= 1) return n;
         return EP;
+    }
+
+    function normalizeUserRole(role) {
+        if (role == null || role === '') return '';
+        if (typeof role === 'string') return role.trim().toUpperCase();
+        if (typeof role === 'object' && role !== null && typeof role.name === 'string') {
+            return role.name.trim().toUpperCase();
+        }
+        return String(role).trim().toUpperCase();
     }
 
     function getContextEmpresaNome() {
@@ -260,7 +275,20 @@
                     fetch(API + '/admin/pdv-terminais/' + id, {
                         method: 'DELETE',
                         headers: { Authorization: 'Bearer ' + token() }
-                    }).then(function () {
+                    }).then(async function (res) {
+                        if (!res.ok) {
+                            var msg = 'Não foi possível excluir o PDV.';
+                            try {
+                                var j = await res.json();
+                                if (j && j.message) msg = j.message;
+                            } catch (e) {}
+                            if (typeof window.showSystemAlert === 'function') {
+                                window.showSystemAlert(msg, 'error');
+                            } else {
+                                alert(msg);
+                            }
+                            return;
+                        }
                         refresh();
                     });
                 });
@@ -361,6 +389,21 @@
     document.addEventListener('DOMContentLoaded', async function () {
         if (typeof checkAuth === 'function' && !checkAuth()) return;
         if (typeof checkPermission === 'function' && !checkPermission('adm')) return;
+        if (typeof syncCurrentUserFromApi === 'function') {
+            var me = await syncCurrentUserFromApi();
+            if (
+                me &&
+                normalizeUserRole(me.role) === 'ADMIN_EMPRESA' &&
+                me.empresaId != null &&
+                me.empresaId >= 1
+            ) {
+                localStorage.setItem('selectedEmpresaId', String(me.empresaId));
+                localStorage.setItem('selectedClienteId', String(me.empresaId));
+                var block = document.getElementById('pdvQuickEmpresaBlock');
+                if (block) block.style.display = 'none';
+                await usarEmpresaPorId(String(me.empresaId));
+            }
+        }
         if (typeof displayUserName === 'function') displayUserName();
         if (typeof setupMenuByRole === 'function') setupMenuByRole();
         if (typeof fillNavUser === 'function') fillNavUser();

@@ -14,6 +14,8 @@ import java.util.List;
 public class VendaResponse {
     
     private Long id;
+    /** Empresa (tenant) da venda. */
+    private Long empresaId;
     private String nomeOperador;
     private List<VendaItemResponse> itens;
     private BigDecimal subtotal;
