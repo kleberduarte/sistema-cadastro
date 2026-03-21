@@ -13,7 +13,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-@Table(name = "produtos")
+@Table(
+        name = "produtos",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_produto_empresa_codigo",
+                columnNames = {"empresa_id", "codigo_produto"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,6 +26,10 @@ public class Produto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** Empresa dona do cadastro (multi-tenant). */
+    @Column(name = "empresa_id", nullable = false)
+    private Long empresaId;
 
     @Column(nullable = false, length = 200)
     private String nome;
@@ -67,7 +75,7 @@ public class Produto {
     @Column(length = 50)
     private String categoria;
 
-    @Column(name = "codigo_produto", length = 50, unique = true)
+    @Column(name = "codigo_produto", length = 50, nullable = false)
     private String codigoProduto;
 
     @Column(length = 20)

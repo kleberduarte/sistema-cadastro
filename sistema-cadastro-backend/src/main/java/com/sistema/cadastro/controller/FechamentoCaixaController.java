@@ -43,8 +43,16 @@ public class FechamentoCaixaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADM')")
-    public ResponseEntity<List<FechamentoCaixaResponse>> historico(@RequestParam Long empresaId) {
+    @PreAuthorize("hasAnyRole('ADM', 'ADMIN_EMPRESA')")
+    public ResponseEntity<List<FechamentoCaixaResponse>> historico(@RequestParam Long empresaId, Authentication authentication) {
+        if (!(authentication.getPrincipal() instanceof Usuario usuario)) {
+            return ResponseEntity.status(401).build();
+        }
+        if (usuario.getRole() == com.sistema.cadastro.model.Role.ADMIN_EMPRESA) {
+            if (usuario.getEmpresaId() == null || !usuario.getEmpresaId().equals(empresaId)) {
+                return ResponseEntity.status(403).build();
+            }
+        }
         return ResponseEntity.ok(fechamentoCaixaService.listarHistoricoEmpresa(empresaId));
     }
 }

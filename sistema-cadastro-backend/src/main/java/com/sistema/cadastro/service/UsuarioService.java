@@ -112,6 +112,12 @@ public class UsuarioService {
     /** Cadastro pelo administrador (retaguarda), sem código de convite. Senha vazia = aleatória + obrigar troca. */
     @Transactional
     public AdminCreateUserResponse createByAdmin(AdminCreateUserRequest request) {
+        return createByAdmin(request, null);
+    }
+
+    /** Cadastro com escopo do solicitante (ADM = global, ADMIN_EMPRESA = apenas empresa própria). */
+    @Transactional
+    public AdminCreateUserResponse createByAdmin(AdminCreateUserRequest request, Usuario requester) {
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Usuário já existe");
         }
@@ -130,8 +136,22 @@ public class UsuarioService {
         Usuario u = new Usuario();
         u.setUsername(request.getUsername().trim());
         u.setPassword(passwordEncoder.encode(plain));
-        u.setRole(request.getRole() != null ? request.getRole() : Role.VENDEDOR);
-        u.setEmpresaId(request.getEmpresaId() != null && request.getEmpresaId() >= 1 ? request.getEmpresaId() : null);
+        Role roleReq = request.getRole() != null ? request.getRole() : Role.VENDEDOR;
+        Long empresaReq = request.getEmpresaId() != null && request.getEmpresaId() >= 1 ? request.getEmpresaId() : null;
+
+        if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA) {
+            if (requester.getEmpresaId() == null || requester.getEmpresaId() < 1) {
+                throw new IllegalArgumentException("Administrador da empresa sem empresa vinculada.");
+            }
+            if (roleReq == Role.ADM) {
+                throw new IllegalArgumentException("Sem permissão para criar perfil ADM.");
+            }
+            // ADMIN_EMPRESA só cria usuários da própria empresa
+            empresaReq = requester.getEmpresaId();
+        }
+
+        u.setRole(roleReq);
+        u.setEmpresaId(empresaReq);
         u.setMustChangePassword(gerada);
         if (request.getTelefone() != null) {
             String t = request.getTelefone().trim();
@@ -182,6 +202,13 @@ public class UsuarioService {
                 .collect(Collectors.toList());
     }
 
+    public List<Usuario> findAllByEmpresa(Long empresaId) {
+        if (empresaId == null) return List.of();
+        return usuarioRepository.findByEmpresaId(empresaId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     public Optional<Usuario> findById(Long id) {
         return usuarioRepository.findById(id);
     }
@@ -192,9 +219,26 @@ public class UsuarioService {
 
     @Transactional
     public void delete(Long id) {
+        delete(id, null);
+    }
+
+    @Transactional
+    public void delete(Long id, Usuario requester) {
         if (!usuarioRepository.existsById(id)) {
             throw new IllegalArgumentException("Usuário não encontrado");
         }
+        Usuario target = usuarioRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+
+        if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA) {
+            if (requester.getEmpresaId() == null || !requester.getEmpresaId().equals(target.getEmpresaId())) {
+                throw new IllegalStateException("Sem permissão para excluir usuário de outra empresa.");
+            }
+            if (target.getRole() == Role.ADM) {
+                throw new IllegalStateException("Sem permissão para excluir perfil ADM.");
+            }
+        }
+
         if (usuarioRepository.count() <= 1) {
             throw new IllegalStateException("Não é possível excluir o único usuário do sistema.");
         }
@@ -211,6 +255,10 @@ public class UsuarioService {
     }
 
     public Usuario update(Long id, UpdateUserRequest request) {
+        return update(id, request, null);
+    }
+
+    public Usuario update(Long id, UpdateUserRequest request, Usuario requester) {
         Optional<Usuario> userOpt = usuarioRepository.findById(id);
         
         if (userOpt.isEmpty()) {
@@ -218,6 +266,18 @@ public class UsuarioService {
         }
         
         Usuario user = userOpt.get();
+
+        if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA) {
+            if (requester.getEmpresaId() == null || !requester.getEmpresaId().equals(user.getEmpresaId())) {
+                throw new IllegalStateException("Sem permissão para atualizar usuário de outra empresa.");
+            }
+            if (request.getRole() == Role.ADM) {
+                throw new IllegalStateException("Sem permissão para promover usuário para ADM.");
+            }
+            // trava empresa no escopo do admin da empresa
+            request.setEmpresaIdPdv(requester.getEmpresaId());
+            request.setAplicarEmpresaPdv(true);
+        }
         
         // Atualizar username
         user.setUsername(request.getUsername());

@@ -131,6 +131,14 @@ public class ParametroEmpresaService {
                 .collect(Collectors.toList());
     }
 
+    public List<ParametroEmpresaDTO> listarPorEmpresaId(Long empresaId) {
+        if (empresaId == null) return List.of();
+        return repository.findByEmpresaId(empresaId)
+                .map(this::toDTO)
+                .map(List::of)
+                .orElse(List.of());
+    }
+
     private ParametroEmpresaDTO toDTO(ParametroEmpresa entity) {
         ParametroEmpresaDTO dto = new ParametroEmpresaDTO();
         dto.setId(entity.getId());

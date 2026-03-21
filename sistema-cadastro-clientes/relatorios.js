@@ -10,6 +10,12 @@ let filteredSales = [];
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     displayUserName();
+    // Alinha localStorage com /auth/me (evita nome/perfil desatualizado após trocar de usuário)
+    try {
+        if (typeof syncCurrentUserFromApi === 'function') {
+            await syncCurrentUserFromApi();
+        }
+    } catch (_) { /* ignore */ }
     // Garante que as cores do tema (empresaId vigente) já estejam aplicadas
     try {
         if (typeof loadClientParams === 'function') {
@@ -116,7 +122,8 @@ function renderDailyChart() {
 // Carregar vendas da API
 async function loadSales() {
     try {
-        const response = await fetch('http://localhost:8080/api/vendas', {
+        const base = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+        const response = await fetch(appendEmpresaIdToApiUrl(base + '/vendas'), {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -141,6 +148,9 @@ async function loadSales() {
                 total: parseFloat(venda.total)
             }));
             console.log('Vendas carregadas da API:', sales);
+        } else if (response.status === 401 && typeof logout === 'function') {
+            logout();
+            return;
         } else {
             console.error('Erro ao carregar vendas da API');
             // Fallback para localStorage
@@ -176,6 +186,23 @@ function initializeFilters() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('filterDay').value = today;
     document.getElementById('filterMonth').value = today.substring(0, 7);
+
+    // Bind defensivo: garante funcionamento mesmo se handlers inline falharem
+    const filterTypeEl = document.getElementById('filterType');
+    if (filterTypeEl && filterTypeEl.dataset.bound !== '1') {
+        filterTypeEl.dataset.bound = '1';
+        filterTypeEl.addEventListener('change', toggleFilterFields);
+    }
+    const filterBtn = document.querySelector('.filter-actions .btn.btn-primary');
+    if (filterBtn && filterBtn.dataset.bound !== '1') {
+        filterBtn.dataset.bound = '1';
+        filterBtn.addEventListener('click', applyFilter);
+    }
+    const clearBtn = document.querySelector('.filter-actions .btn.btn-secondary');
+    if (clearBtn && clearBtn.dataset.bound !== '1') {
+        clearBtn.dataset.bound = '1';
+        clearBtn.addEventListener('click', clearFilter);
+    }
 }
 
 // Alternar campos de filtro
@@ -514,6 +541,15 @@ document.getElementById('saleDetailModal').addEventListener('click', function(e)
         closeSaleDetailModal();
     }
 });
+
+// Garante acesso global para handlers declarados no HTML
+window.toggleFilterFields = toggleFilterFields;
+window.applyFilter = applyFilter;
+window.clearFilter = clearFilter;
+window.viewSaleDetails = viewSaleDetails;
+window.closeSaleDetailModal = closeSaleDetailModal;
+window.printSaleDetails = printSaleDetails;
+window.exportToCSV = exportToCSV;
 
 // Exportar para CSV
 function exportToCSV() {

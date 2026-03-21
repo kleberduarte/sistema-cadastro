@@ -7,6 +7,7 @@ import com.sistema.cadastro.dto.TrocarSenhaPrimeiroAcessoRequest;
 import com.sistema.cadastro.dto.LoginResponse;
 import com.sistema.cadastro.dto.RegisterRequest;
 import com.sistema.cadastro.dto.UpdateUserRequest;
+import com.sistema.cadastro.model.Role;
 import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class AuthController {
     private final UsuarioService usuarioService;
 
     @GetMapping("/pdv-empresa-padrao")
-    @PreAuthorize("hasRole('ADM')")
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
     public Map<String, Long> pdvEmpresaPadrao() {
         return Map.of("empresaId", usuarioService.getEmpresaPadraoPdvId());
     }
@@ -53,11 +54,14 @@ public class AuthController {
     }
 
     @PostMapping("/users")
-    @PreAuthorize("hasRole('ADM')")
-    public ResponseEntity<?> createUserAdmin(@Valid @RequestBody AdminCreateUserRequest request) {
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<?> createUserAdmin(@Valid @RequestBody AdminCreateUserRequest request, Authentication auth) {
         try {
-            AdminCreateUserResponse body = usuarioService.createByAdmin(request);
+            Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
+            AdminCreateUserResponse body = usuarioService.createByAdmin(request, requester);
             return ResponseEntity.status(HttpStatus.CREATED).body(body);
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
         }
@@ -92,33 +96,43 @@ public class AuthController {
     }
 
     @GetMapping("/users")
-    @PreAuthorize("hasRole('ADM')")
-    public ResponseEntity<List<Usuario>> getAllUsers() {
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<List<Usuario>> getAllUsers(Authentication auth) {
+        Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
+        if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA) {
+            return ResponseEntity.ok(usuarioService.findAllByEmpresa(requester.getEmpresaId()));
+        }
         return ResponseEntity.ok(usuarioService.findAll());
     }
 
     @DeleteMapping("/users/{id}")
-    @PreAuthorize("hasRole('ADM')")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id, Authentication auth) {
         try {
-            usuarioService.delete(id);
+            Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
+            usuarioService.delete(id, requester);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
         }
     }
 
     @PutMapping("/users/{id}")
-    @PreAuthorize("hasRole('ADM')")
-    public ResponseEntity<Usuario> updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
-        Usuario updatedUser = usuarioService.update(id, request);
-        if (updatedUser == null) {
-            return ResponseEntity.notFound().build();
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request, Authentication auth) {
+        try {
+            Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
+            Usuario updatedUser = usuarioService.update(id, request, requester);
+            if (updatedUser == null) {
+                return ResponseEntity.notFound().build();
+            }
+            updatedUser.setPassword(null);
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
         }
-        updatedUser.setPassword(null);
-        return ResponseEntity.ok(updatedUser);
     }
 
     @GetMapping("/me")

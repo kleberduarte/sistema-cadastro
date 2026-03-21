@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
     <title>Sistema de Cadastro de Clientes</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
@@ -78,8 +80,21 @@
 
                     <div class="form-group">
                         <label for="address">Endereço:</label>
-                        <input type="text" id="address" name="address" required placeholder="Rua, número, bairro, cidade">
+                        <input type="text" id="address" name="address" required placeholder="Rua, bairro, cidade">
                         <span class="error-message" id="addressError"></span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="addressNumber">Número:</label>
+                            <input type="text" id="addressNumber" name="addressNumber" required placeholder="Ex.: 123">
+                            <span class="error-message" id="addressNumberError"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="addressComplement">Complemento:</label>
+                            <input type="text" id="addressComplement" name="addressComplement" placeholder="Ex.: Apto 12, Bloco B">
+                            <span class="error-message" id="addressComplementError"></span>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -99,6 +114,14 @@
             <section class="search-section">
                 <h2>🔍 Buscar Clientes</h2>
                 <div class="search-box">
+                    <select id="searchField" style="max-width: 220px;">
+                        <option value="all">Todos os campos</option>
+                        <option value="nome">Nome</option>
+                        <option value="email">E-mail</option>
+                        <option value="cpf">CPF</option>
+                        <option value="telefone">Telefone</option>
+                        <option value="endereco">Endereço</option>
+                    </select>
                     <input type="text" id="searchInput" placeholder="Buscar por nome, email ou CPF...">
                     <button type="button" id="searchBtn" class="btn btn-search">Buscar</button>
                 </div>
@@ -110,11 +133,11 @@
                     <table id="clientTable">
                         <thead>
                             <tr>
-                                <th>Nome</th>
-                                <th>E-mail</th>
-                                <th>Telefone</th>
-                                <th>Endereço</th>
-                                <th>CPF</th>
+                                <th class="sortable-col" data-sort="nome">Nome <span class="sort-indicator"></span></th>
+                                <th class="sortable-col" data-sort="email">E-mail <span class="sort-indicator"></span></th>
+                                <th class="sortable-col" data-sort="telefone">Telefone <span class="sort-indicator"></span></th>
+                                <th class="sortable-col" data-sort="endereco">Endereço <span class="sort-indicator"></span></th>
+                                <th class="sortable-col" data-sort="cpf">CPF <span class="sort-indicator"></span></th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -126,6 +149,7 @@
                 <div id="noClientsMessage" class="no-data">
                     Nenhum cliente cadastrado ainda.
                 </div>
+                <div id="clientCardsList" class="client-cards-list" style="display:none;"></div>
             </section>
             </main>
 
@@ -153,6 +177,7 @@
     <script src="config.js"></script>
     <script src="nav.js"></script>
     <script src="script.js"></script>
+    <script src="pwa-register.js?v=20260320-1"></script>
     <script>
         // Verificar se é admin para acessar esta página
         document.addEventListener('DOMContentLoaded', function() {

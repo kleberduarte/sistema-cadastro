@@ -38,19 +38,40 @@ function setActiveNavLink() {
   });
 }
 
+function navRoleSuffix(roleNorm) {
+  var r = (roleNorm || '').toString().toUpperCase();
+  if (r === 'ADM') return ' (Super Admin)';
+  if (r === 'ADMIN_EMPRESA') return ' (Admin Empresa)';
+  return ' (Vendedor)';
+}
+
 function fillNavUser() {
-  try {
-    const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-    const name = user && user.username ? user.username : 'Usuário';
-    const el1 = document.getElementById('userDisplay');
-    if (el1) el1.textContent = 'Olá, ' + name;
-    const el2 = document.getElementById('userName');
-    if (el2) el2.textContent = 'Olá, ' + name;
-    const el3 = document.getElementById('navUserName');
-    if (el3) el3.textContent = name;
-  } catch (_) {
-    // ignore
+  var el1 = document.getElementById('userDisplay');
+  var el2 = document.getElementById('userName');
+  var el3 = document.getElementById('navUserName');
+  if (el1) el1.textContent = 'Olá, …';
+  if (el2) el2.textContent = 'Olá, …';
+  if (el3) el3.textContent = '…';
+
+  if (typeof window.syncCurrentUserFromApi !== 'function') {
+    try {
+      var user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+      var name = user && user.username ? user.username : 'Usuário';
+      var line = 'Olá, ' + name + navRoleSuffix(user && user.role);
+      if (el1) el1.textContent = line;
+      if (el2) el2.textContent = line;
+      if (el3) el3.textContent = name;
+    } catch (_) {}
+    return Promise.resolve();
   }
+
+  return window.syncCurrentUserFromApi().then(function (me) {
+    if (!me || !me.username) return;
+    var line = 'Olá, ' + me.username + navRoleSuffix(me.role);
+    if (el1) el1.textContent = line;
+    if (el2) el2.textContent = line;
+    if (el3) el3.textContent = me.username;
+  });
 }
 
 function applyNavPermissions() {
@@ -76,8 +97,15 @@ document.addEventListener('DOMContentLoaded', function () {
   if (sidebar) {
     document.body.classList.add('has-nav-sidebar');
   }
-  fillNavUser();
-  applyNavPermissions();
-  setActiveNavLink();
+  var p = fillNavUser();
+  var done = function () {
+    applyNavPermissions();
+    setActiveNavLink();
+  };
+  if (p && typeof p.then === 'function') {
+    p.then(done).catch(done);
+  } else {
+    done();
+  }
 });
 

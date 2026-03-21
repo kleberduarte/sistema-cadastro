@@ -196,6 +196,17 @@
         }
 
         var empresaBranding = resolveEmpresaId();
+        function buildLoginTarget() {
+            var base = fromPdv ? 'pdv/login.html' : 'login.html';
+            if (empresaBranding >= 1) {
+                return base + '?empresaId=' + encodeURIComponent(empresaBranding);
+            }
+            if (!fromPdv) {
+                var ep = (typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number') ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+                return 'login.html?empresaId=' + encodeURIComponent(String(ep));
+            }
+            return base;
+        }
         if (empresaBranding >= 1) {
             fetch(API + '/parametros-cliente/branding/' + empresaBranding)
                 .then(function (r) { return r.ok ? r.json() : null; })
@@ -209,11 +220,11 @@
         }
 
         if (!token) {
-            window.location.replace(fromPdv ? 'pdv/login.html' : 'login.html');
+            window.location.replace(buildLoginTarget());
             return;
         }
 
-        document.getElementById('linkSair').href = fromPdv ? 'pdv/login.html' : 'login.html';
+        document.getElementById('linkSair').href = buildLoginTarget();
         document.getElementById('linkSair').addEventListener('click', function () {
             try {
                 localStorage.removeItem('authToken');
@@ -263,7 +274,7 @@
                 try {
                     sessionStorage.setItem('msgPosLogin', 'Senha alterada com sucesso. Entre novamente com a nova senha.');
                 } catch (x) {}
-                window.location.replace(fromPdv ? 'pdv/login.html' : 'login.html');
+                window.location.replace(buildLoginTarget());
             } catch (ex) {
                 err.textContent = 'Erro de conexão. Tente novamente.';
                 err.classList.add('show');

@@ -3,14 +3,22 @@ package com.sistema.cadastro.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
+    private final Environment environment;
+
+    public JwtUtil(Environment environment) {
+        this.environment = environment;
+    }
 
     @Value("${jwt.secret}")
     private String secret;
@@ -19,7 +27,27 @@ public class JwtUtil {
     private Long expiration;
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        String normalizedSecret = secret == null ? "" : secret.trim();
+        byte[] keyBytes = normalizedSecret.getBytes(StandardCharsets.UTF_8);
+
+        // RFC 7518 exige >= 256 bits para HS256.
+        // Em producao, exigimos explicitamente >= 32 bytes.
+        if (keyBytes.length < 32 && environment.acceptsProfiles(Profiles.of("prod"))) {
+            throw new IllegalStateException("JWT_SECRET invalido em producao: minimo de 32 bytes para HS256.");
+        }
+
+        // Fora de producao, se o secret configurado for curto, derivamos uma chave SHA-256
+        // para manter compatibilidade local/homologacao legada.
+        if (keyBytes.length >= 32) {
+            return Keys.hmacShaKeyFor(keyBytes);
+        }
+
+        try {
+            byte[] derivedKey = MessageDigest.getInstance("SHA-256").digest(keyBytes);
+            return Keys.hmacShaKeyFor(derivedKey);
+        } catch (Exception e) {
+            throw new IllegalStateException("Falha ao derivar chave JWT segura (>= 256 bits).", e);
+        }
     }
 
     public String generateToken(String username, String role) {

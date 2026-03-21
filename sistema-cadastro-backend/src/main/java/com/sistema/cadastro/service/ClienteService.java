@@ -5,11 +5,15 @@ import com.sistema.cadastro.dto.ClienteResponse;
 import com.sistema.cadastro.dto.CodigoConviteResponse;
 import com.sistema.cadastro.model.Cliente;
 import com.sistema.cadastro.model.PdvConvitePorEmpresa;
+import com.sistema.cadastro.model.Role;
+import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.repository.ClienteRepository;
 import com.sistema.cadastro.repository.PdvConvitePorEmpresaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.util.List;
@@ -23,59 +27,105 @@ public class ClienteService {
     private final ClienteRepository clienteRepository;
     private final PdvConvitePorEmpresaRepository pdvConvitePorEmpresaRepository;
     private final CodigoConvitePdvCryptoService codigoConvitePdvCryptoService;
+    private final EmpresaScopeService empresaScopeService;
 
     @Transactional
-    public ClienteResponse create(ClienteRequest request) {
+    public ClienteResponse create(ClienteRequest request, Usuario u, Long empresaIdParam) {
+        long empresaId = empresaScopeService.resolveForWrite(u, empresaIdParam);
+        if (clienteRepository.existsByEmpresaIdAndEmail(empresaId, request.getEmail())) {
+            throw new RuntimeException("E-mail já cadastrado para esta empresa");
+        }
+        if (clienteRepository.existsByEmpresaIdAndCpf(empresaId, request.getCpf())) {
+            throw new RuntimeException("CPF já cadastrado para esta empresa");
+        }
+
         Cliente cliente = new Cliente();
+        cliente.setEmpresaId(empresaId);
         cliente.setNome(request.getNome());
         cliente.setEmail(request.getEmail());
         cliente.setTelefone(request.getTelefone());
         cliente.setEndereco(request.getEndereco());
         cliente.setCpf(request.getCpf());
-        
+
         Cliente saved = clienteRepository.save(cliente);
         return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
-    public List<ClienteResponse> findAll() {
-        return clienteRepository.findAll().stream()
+    public List<ClienteResponse> findAll(Usuario u, Long empresaIdParam) {
+        Optional<Long> scope = empresaScopeService.resolveForList(u, empresaIdParam);
+        if (scope.isEmpty()) {
+            return clienteRepository.findAll().stream()
+                    .map(this::toResponse)
+                    .collect(Collectors.toList());
+        }
+        return clienteRepository.findByEmpresaId(scope.get()).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public ClienteResponse findById(Long id) {
-        return clienteRepository.findById(id)
-                .map(this::toResponse)
+    public ClienteResponse findById(Long id, Usuario u, Long empresaIdParam) {
+        Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+        assertClienteReadable(u, cliente, empresaIdParam);
+        return toResponse(cliente);
     }
 
     @Transactional
-    public ClienteResponse update(Long id, ClienteRequest request) {
+    public ClienteResponse update(Long id, ClienteRequest request, Usuario u, Long empresaIdParam) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
-        
+        assertClienteReadable(u, cliente, empresaIdParam);
+        long empresaId = cliente.getEmpresaId();
+
+        if (!cliente.getEmail().equalsIgnoreCase(request.getEmail())
+                && clienteRepository.existsByEmpresaIdAndEmail(empresaId, request.getEmail())) {
+            throw new RuntimeException("E-mail já cadastrado para esta empresa");
+        }
+        if (!cliente.getCpf().equals(request.getCpf())
+                && clienteRepository.existsByEmpresaIdAndCpf(empresaId, request.getCpf())) {
+            throw new RuntimeException("CPF já cadastrado para esta empresa");
+        }
+
         cliente.setNome(request.getNome());
         cliente.setEmail(request.getEmail());
         cliente.setTelefone(request.getTelefone());
         cliente.setEndereco(request.getEndereco());
         cliente.setCpf(request.getCpf());
-        
+
         Cliente updated = clienteRepository.save(cliente);
         return toResponse(updated);
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, Usuario u, Long empresaIdParam) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+        assertClienteReadable(u, cliente, empresaIdParam);
         clienteRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
-    public List<ClienteResponse> search(String term) {
-        return clienteRepository.search(term).stream()
+    public List<ClienteResponse> search(String term, Usuario u, Long empresaIdParam) {
+        Optional<Long> scope = empresaScopeService.resolveForList(u, empresaIdParam);
+        Long eid = scope.orElse(null);
+        return clienteRepository.search(term, eid).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    private void assertClienteReadable(Usuario u, Cliente c, Long empresaIdParam) {
+        Optional<Long> scope = empresaScopeService.resolveForList(u, empresaIdParam);
+        if (scope.isEmpty()) {
+            if (u.getRole() == Role.ADM) {
+                return;
+            }
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        if (!c.getEmpresaId().equals(scope.get())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cliente de outra empresa.");
+        }
     }
 
     @Transactional
@@ -90,7 +140,7 @@ public class ClienteService {
             Cliente c = opt.get();
             c.setCodigoConvitePdv(codeEncrypted);
             clienteRepository.save(c);
-            pdvConvitePorEmpresaRepository.deleteById(empresaId); // garante que não exista em tabela auxiliar
+            pdvConvitePorEmpresaRepository.deleteById(empresaId);
             return new CodigoConviteResponse(empresaId, c.getNome(), codePlain);
         }
         String label = "Empresa padrão / ID " + empresaId + " (sem cadastro de cliente)";
@@ -122,7 +172,6 @@ public class ClienteService {
                 .orElse(null);
     }
 
-    /** Nome para exibição no convite (cliente ou rótulo por ID). */
     public String nomeExibicaoEmpresaConvite(Long empresaId) {
         if (empresaId == null || empresaId < 1) {
             return "";
@@ -155,10 +204,6 @@ public class ClienteService {
                 .orElse(false);
     }
 
-    /**
-     * Consome (remove) o convite ativo para a empresa.
-     * Chamado no cadastro público (usuário validou o código com sucesso).
-     */
     @Transactional
     public void consumirCodigoConvitePdv(Long empresaId) {
         if (empresaId == null || empresaId < 1) return;
@@ -171,7 +216,6 @@ public class ClienteService {
             return;
         }
 
-        // Caso sem registro em "clientes", o convite fica na tabela auxiliar
         pdvConvitePorEmpresaRepository.findById(empresaId)
                 .ifPresent(p -> pdvConvitePorEmpresaRepository.deleteById(empresaId));
     }
@@ -189,6 +233,7 @@ public class ClienteService {
     private ClienteResponse toResponse(Cliente cliente) {
         ClienteResponse response = new ClienteResponse();
         response.setId(cliente.getId());
+        response.setEmpresaId(cliente.getEmpresaId());
         response.setNome(cliente.getNome());
         response.setEmail(cliente.getEmail());
         response.setTelefone(cliente.getTelefone());
@@ -201,4 +246,3 @@ public class ClienteService {
         return response;
     }
 }
-

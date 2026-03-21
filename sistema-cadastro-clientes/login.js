@@ -16,13 +16,30 @@ function normalizeRole(role) {
     return String(role).trim().toUpperCase();
 }
 
-function redirectAfterLogin(roleNorm) {
-    if (roleNorm === 'ADM') {
+/**
+ * PDV exige ?empresaId= na URL (exceto sessão já válida no próprio PDV).
+ * @param {number|null|undefined} empresaIdUsuario — empresa real do usuário (/auth/me). Prioridade sobre o tenant da URL de login (ex.: ?empresaId=1 do super ADM).
+ */
+function buildPdvLoginUrlComTenant(empresaIdUsuario) {
+    var resolved = parseInt(empresaIdUsuario, 10);
+    if (!isNaN(resolved) && resolved >= 1) {
+        return 'pdv/login.html?empresaId=' + encodeURIComponent(String(resolved));
+    }
+    var eid = parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+    if (eid >= 1) {
+        return 'pdv/login.html?empresaId=' + encodeURIComponent(String(eid));
+    }
+    var ep = (typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number') ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+    return 'pdv/login.html?empresaId=' + encodeURIComponent(String(ep));
+}
+
+function redirectAfterLogin(roleNorm, empresaIdUsuario) {
+    if (roleNorm === 'ADM' || roleNorm === 'ADMIN_EMPRESA') {
         window.location.href = 'relatorios.html';
     } else if (localStorage.getItem('pdvTerminalId')) {
         window.location.href = 'pdv/';
     } else {
-        window.location.href = 'pdv/login.html';
+        window.location.href = buildPdvLoginUrlComTenant(empresaIdUsuario);
     }
 }
 
@@ -49,9 +66,25 @@ function openConfirmCadastroModal(username) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    var empresaPadrao = (typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number') ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+    var bloqueado = false;
+    try {
+        bloqueado = !!window.__LOGIN_RETAGUARDA_BLOQUEADO_SEM_TENANT;
+    } catch (_) {}
+    if (bloqueado) {
+        var bp = document.getElementById('loginBlockedPanel');
+        var np = document.getElementById('loginNormalPanel');
+        if (bp) bp.style.display = 'block';
+        if (np) np.style.display = 'none';
+        var la = document.getElementById('loginLinkAdminPadrao');
+        if (la) {
+            la.href = 'login.html?empresaId=' + encodeURIComponent(String(empresaPadrao));
+        }
+    }
+
     // Foco inicial no campo de usuário para agilizar o login
     var usernameInput = document.getElementById('username');
-    if (usernameInput) {
+    if (usernameInput && !bloqueado) {
         try {
             usernameInput.focus();
             usernameInput.select();
@@ -161,11 +194,17 @@ function initBannerSessaoValida() {
             var roleNorm = normalizeRole(me.role);
             if (userEl) userEl.textContent = (me.username || '') + ' (' + roleNorm + ')';
             banner.classList.add('show');
+            var eidSess = null;
+            try {
+                if (me.empresaId != null && me.empresaId !== '' && Number(me.empresaId) >= 1) {
+                    eidSess = Number(me.empresaId);
+                }
+            } catch (_) {}
             var ir = document.getElementById('sessaoIrSistema');
             var sair = document.getElementById('sessaoSairConta');
             if (ir) {
                 ir.onclick = function () {
-                    redirectAfterLogin(roleNorm);
+                    redirectAfterLogin(roleNorm, eidSess);
                 };
             }
             if (sair) {
@@ -232,16 +271,41 @@ function closeRegisterModal() {
     document.getElementById('registerError').classList.remove('show');
 }
 
-// Event listener para o formulário de login
-document.getElementById('loginForm').addEventListener('submit', async function(e) {
+/** Inicia contador regressivo para mensagem de rate limit. */
+function startRateLimitCountdown(errorElement, messageTemplate, totalSeconds) {
+    var intervalId = null;
+    var remaining = totalSeconds;
+    // Extrair o padrão base da mensagem (substituir apenas o número de segundos)
+    var baseText = messageTemplate.replace(/\d+\s+segundos?/i, '{SEGUNDOS}');
+    function update() {
+        if (remaining <= 0) {
+            if (intervalId) clearInterval(intervalId);
+            errorElement.classList.remove('show');
+            return;
+        }
+        var msg = baseText.replace('{SEGUNDOS}', remaining + (remaining === 1 ? ' segundo' : ' segundos'));
+        errorElement.textContent = msg;
+        errorElement.classList.add('show');
+        remaining--;
+    }
+    update();
+    intervalId = setInterval(update, 1000);
+    return intervalId;
+}
+
+async function handleLoginSubmit(e) {
     e.preventDefault();
     
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     const loginError = document.getElementById('loginError');
     
-    // Limpar erro anterior
+    // Limpar erro anterior e parar contador anterior se existir
     loginError.classList.remove('show');
+    if (window._loginRateLimitInterval) {
+        clearInterval(window._loginRateLimitInterval);
+        window._loginRateLimitInterval = null;
+    }
     
     try {
         const response = await fetch(`${API_URL}/auth/login`, {
@@ -252,19 +316,32 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             body: JSON.stringify({ username, password })
         });
         
+        // Verificar rate limit (429) antes de parse JSON
+        if (response.status === 429) {
+            var rateLimitData = await response.json().catch(function() { return { message: 'Muitas tentativas. Aguarde um momento.' }; });
+            var msg = (rateLimitData.message || '').toString();
+            // Extrair número de segundos da mensagem (ex: "60 segundos" ou "Tente novamente em 60 segundos")
+            var match = msg.match(/(\d+)\s+segundos?/i);
+            var segundos = match ? parseInt(match[1], 10) : 60;
+            window._loginRateLimitInterval = startRateLimitCountdown(loginError, msg, segundos);
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.token) {
+            // Evita misturar token/usuário antigo com o novo login (ex.: troca de conta)
+            limparSessaoArmazenada();
             if (data.mustChangePassword === true) {
                 localStorage.setItem(TOKEN_KEY, data.token);
                 let id0 = data.id;
                 let user0 = data.username;
                 let role0 = normalizeRole(data.role);
-                localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
-                    id: id0,
-                    username: user0,
-                    role: role0
-                }));
+                var u0 = { id: id0, username: user0, role: role0 };
+                if (data.empresaId != null && data.empresaId !== '' && Number(data.empresaId) >= 1) {
+                    u0.empresaId = Number(data.empresaId);
+                }
+                localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(u0));
                 try {
                     var eLogin = data.empresaId != null && data.empresaId >= 1 ? data.empresaId : parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
                     if (eLogin >= 1) sessionStorage.setItem('redefinirSenhaEmpresaId', String(eLogin));
@@ -274,8 +351,9 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             }
             localStorage.setItem(TOKEN_KEY, data.token);
             let id = data.id;
-            let username = data.username;
+            let usernameResolved = data.username;
             let roleNorm = normalizeRole(data.role);
+            var empresaIdResolved = null;
             try {
                 const meRes = await fetch(`${API_URL}/auth/me`, {
                     headers: { 'Authorization': 'Bearer ' + data.token }
@@ -284,19 +362,36 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
                     const me = await meRes.json();
                     if (me && typeof me === 'object' && me.id != null) {
                         id = me.id;
-                        if (me.username) username = me.username;
+                        if (me.username) usernameResolved = me.username;
                         roleNorm = normalizeRole(me.role);
+                        if (me.empresaId != null && me.empresaId !== '') {
+                            empresaIdResolved = Number(me.empresaId);
+                        }
                     }
                 }
             } catch (e) {
                 console.warn('Não foi possível confirmar perfil em /auth/me, usando resposta do login.', e);
             }
-            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
+            if (empresaIdResolved == null && data.empresaId != null && data.empresaId !== '') {
+                empresaIdResolved = Number(data.empresaId);
+            }
+            var userPayload = {
                 id: id,
-                username: username,
+                username: usernameResolved,
                 role: roleNorm
-            }));
-            redirectAfterLogin(roleNorm);
+            };
+            if (empresaIdResolved != null && !isNaN(empresaIdResolved) && empresaIdResolved >= 1) {
+                userPayload.empresaId = empresaIdResolved;
+                // Alinha tenant ao usuário real (evita PDV com empresaId=1 na URL enquanto o vendedor é da empresa 2).
+                try {
+                    localStorage.setItem('selectedEmpresaId', String(empresaIdResolved));
+                    localStorage.setItem('selectedClienteId', String(empresaIdResolved));
+                    localStorage.removeItem('empresaParams');
+                    localStorage.removeItem('clientParams');
+                } catch (_) {}
+            }
+            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userPayload));
+            redirectAfterLogin(roleNorm, empresaIdResolved);
         } else {
             var fail = (data.message || '').toString();
             var low = fail.toLowerCase();
@@ -323,10 +418,24 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         loginError.textContent = 'Erro de conexão. Tente novamente.';
         loginError.classList.add('show');
     }
-});
+}
+window.handleLoginSubmit = handleLoginSubmit;
+
+function bindLoginFormHandler() {
+    var form = document.getElementById('loginForm');
+    if (!form) return;
+    if (form.dataset.loginBound === '1') return;
+    form.dataset.loginBound = '1';
+    form.addEventListener('submit', handleLoginSubmit);
+}
+
+// Event listener para o formulário de login
+bindLoginFormHandler();
+window.addEventListener('load', bindLoginFormHandler);
 
 // Event listener para o formulário de cadastro
-document.getElementById('registerForm').addEventListener('submit', async function(e) {
+var registerFormEl = document.getElementById('registerForm');
+if (registerFormEl) registerFormEl.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const newUsername = document.getElementById('newUsername').value.trim();
@@ -374,7 +483,10 @@ document.getElementById('registerForm').addEventListener('submit', async functio
                 sessionStorage.setItem('pdvPrefillUsername', newUsername);
                 sessionStorage.setItem('pdvPosCadastroMsg', 'Cadastro realizado! Informe a senha e o ID da empresa para entrar no PDV.');
             } catch (e) {}
-            window.location.href = 'pdv/login.html';
+            var empCad = obterEmpresaParaCadastro();
+            window.location.href = empCad >= 1
+                ? ('pdv/login.html?empresaId=' + encodeURIComponent(String(empCad)))
+                : buildPdvLoginUrlComTenant();
         } else {
             registerError.textContent = data.message || 'Erro ao cadastrar usuário';
             registerError.classList.add('show');
@@ -387,16 +499,63 @@ document.getElementById('registerForm').addEventListener('submit', async functio
 });
 
 // Fechar modal ao clicar fora
-document.getElementById('registerModal').addEventListener('click', function(e) {
+var registerModalEl = document.getElementById('registerModal');
+if (registerModalEl) registerModalEl.addEventListener('click', function(e) {
     if (e.target === this) {
         closeRegisterModal();
     }
 });
 
 // Função de logout (para ser chamada desde o sistema principal)
-function logout() {
+async function logout() {
+    var loginTarget = 'login.html';
+    var token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+        try {
+            var res = await fetch(API_URL + '/auth/me', {
+                headers: { Authorization: 'Bearer ' + token },
+                cache: 'no-store'
+            });
+            if (res.ok) {
+                var me = await res.json();
+                var roleNorm = normalizeRole(me.role);
+                if (roleNorm === 'ADM') {
+                    var epAdm = (typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number') ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+                    loginTarget = 'login.html?empresaId=' + encodeURIComponent(String(epAdm));
+                } else {
+                    var eid = me.empresaId != null && me.empresaId !== '' ? parseInt(me.empresaId, 10) : NaN;
+                    if (isNaN(eid) || eid < 1) {
+                        eid = parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+                    }
+                    if (eid >= 1) {
+                        loginTarget = 'login.html?empresaId=' + encodeURIComponent(String(eid));
+                    }
+                }
+            }
+        } catch (_) {}
+    }
+    if (loginTarget === 'login.html') {
+        try {
+            var raw = localStorage.getItem(CURRENT_USER_KEY);
+            if (raw) {
+                var u = JSON.parse(raw);
+                var role = normalizeRole(u && u.role);
+                if (role === 'ADM') {
+                    var epAdm2 = (typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number') ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+                    loginTarget = 'login.html?empresaId=' + encodeURIComponent(String(epAdm2));
+                } else if (u && u.empresaId != null && u.empresaId !== '' && parseInt(u.empresaId, 10) >= 1) {
+                    loginTarget = 'login.html?empresaId=' + encodeURIComponent(String(u.empresaId));
+                } else {
+                    var sel = parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+                    if (sel >= 1 && role && role !== 'ADM') {
+                        loginTarget = 'login.html?empresaId=' + encodeURIComponent(String(sel));
+                    }
+                }
+            }
+        } catch (_) {}
+    }
     localStorage.removeItem(CURRENT_USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
-    window.location.href = 'login.html';
+    window.location.href = loginTarget;
 }
 

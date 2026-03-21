@@ -14,7 +14,16 @@ document.addEventListener('DOMContentLoaded', function() {
     displayUserName();
     loadProducts();
     setupEventListeners();
+    updatePromoToggleVisual();
 });
+
+function updatePromoToggleVisual() {
+    var card = document.querySelector('.promo-toggle-card');
+    var checkbox = document.getElementById('promoEnabled');
+    if (!card || !checkbox) return;
+    if (checkbox.checked) card.classList.add('is-active');
+    else card.classList.remove('is-active');
+}
 
 // Configurar event listeners
 function setupEventListeners() {
@@ -92,6 +101,12 @@ function setupEventListeners() {
             e.target.value = 0;
         }
     });
+
+    // Estado visual do toggle de promoção
+    const promoEnabledInput = document.getElementById('promoEnabled');
+    if (promoEnabledInput) {
+        promoEnabledInput.addEventListener('change', updatePromoToggleVisual);
+    }
 }
 
 // Normalizar código de barras (remove espaços/hífens)
@@ -133,7 +148,7 @@ async function handleProductBarcodeFill() {
 // Carregar produtos da API
 async function loadProducts() {
     try {
-        const response = await fetch('http://localhost:8080/api/produtos', {
+        const response = await fetch(appendEmpresaIdToApiUrl('http://localhost:8080/api/produtos'), {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -182,7 +197,7 @@ async function validateProductCodeUniqueness(codigoInformado) {
 
     // 2) validação backend (fonte da verdade)
     try {
-        const response = await fetch(`http://localhost:8080/api/produtos/codigo/${encodeURIComponent(codigo)}`, {
+        const response = await fetch(appendEmpresaIdToApiUrl(`http://localhost:8080/api/produtos/codigo/${encodeURIComponent(codigo)}`), {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -413,7 +428,7 @@ async function handleSubmit(e) {
     try {
         if (editingProductId) {
             // Atualizar produto existente
-            const response = await fetch(`http://localhost:8080/api/produtos/${editingProductId}`, {
+            const response = await fetch(appendEmpresaIdToApiUrl(`http://localhost:8080/api/produtos/${editingProductId}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -433,7 +448,7 @@ async function handleSubmit(e) {
             }
         } else {
             // Criar novo produto
-            const response = await fetch('http://localhost:8080/api/produtos', {
+            const response = await fetch(appendEmpresaIdToApiUrl('http://localhost:8080/api/produtos'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -573,7 +588,7 @@ function deleteProduct(id) {
 async function confirmDelete() {
     if (productIdToDelete) {
         try {
-            const response = await fetch(`http://localhost:8080/api/produtos/${productIdToDelete}`, {
+            const response = await fetch(appendEmpresaIdToApiUrl(`http://localhost:8080/api/produtos/${productIdToDelete}`), {
                 method: 'DELETE',
                 headers: {
                     'Authorization': 'Bearer ' + getToken()
@@ -665,6 +680,8 @@ function editProduct(id) {
         const promoEndEl = document.getElementById('promoEnd');
         if (promoEndEl) promoEndEl.value = product.promocaoFim || '';
 
+        updatePromoToggleVisual();
+
         // Promo por quantidade
         const qtdLevarEl = document.getElementById('promoQtdLevar');
         if (qtdLevarEl) qtdLevarEl.value = product.promoQtdLevar != null ? product.promoQtdLevar : '';
@@ -700,6 +717,7 @@ function cancelEdit() {
     
     // Limpar erros
     clearErrors();
+    updatePromoToggleVisual();
 }
 
 // Resetar formulário

@@ -126,7 +126,7 @@
                 </div>
 
                 <button class="btn btn-primary" onclick="salvarParametros()">💾 Salvar Parâmetros</button>
-                <button class="btn btn-secondary" onclick="resetarParametros()">↩️ Restaurar</button>
+                <button type="button" class="btn btn-secondary" id="btnRestaurarParametros" onclick="resetarParametros()">↩️ Restaurar</button>
                 <button type="button" class="btn btn-danger admin-only" id="btnExcluirEmpresa" onclick="excluirCadastroEmpresa()" disabled title="Remove o cadastro de parâmetros desta empresa">🗑️ Excluir cadastro desta empresa</button>
                 <p class="admin-only" style="margin-top:10px;color:#666;font-size:0.9em;"><small><strong>Excluir cadastro:</strong> apaga nome, cores, PIX e demais parâmetros deste ID no banco. <strong>PDVs</strong> já registrados no monitor continuam até serem excluídos na tela de PDVs.</small></p>
             </section>
@@ -164,10 +164,29 @@
             btn.disabled = !eid || !parametroId;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        /** ADMIN_EMPRESA não vê "Restaurar" (ação global de padrão do sistema). */
+        function aplicarVisibilidadeRestaurar() {
+            var btn = document.getElementById('btnRestaurarParametros');
+            if (!btn) return;
+            var u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            var role = u && typeof normalizeUserRole === 'function' ? normalizeUserRole(u.role) : '';
+            if (role === 'ADMIN_EMPRESA') {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
             if (!checkAuth()) return;
             if (!checkPermission('adm')) return;
             displayUserName();
+            try {
+                if (typeof syncCurrentUserFromApi === 'function') {
+                    await syncCurrentUserFromApi();
+                }
+            } catch (_) {}
+            aplicarVisibilidadeRestaurar();
             setupPreviewListeners();
             carregarEmpresas(); // Carregar lista + aplicar contexto de empresa ao iniciar
         });

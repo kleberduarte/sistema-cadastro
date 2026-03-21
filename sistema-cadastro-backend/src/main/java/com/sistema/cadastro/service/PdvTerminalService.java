@@ -4,6 +4,7 @@ import com.sistema.cadastro.dto.*;
 import com.sistema.cadastro.model.PdvCaixaStatus;
 import com.sistema.cadastro.model.PdvTerminal;
 import com.sistema.cadastro.model.Usuario;
+import com.sistema.cadastro.repository.FechamentoCaixaRepository;
 import com.sistema.cadastro.repository.PdvTerminalRepository;
 import com.sistema.cadastro.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,9 @@ public class PdvTerminalService {
 
     private final PdvTerminalRepository pdvTerminalRepository;
     private final ParametroEmpresaService parametroEmpresaService;
+    private final EmpresaScopeService empresaScopeService;
     private final UsuarioRepository usuarioRepository;
+    private final FechamentoCaixaRepository fechamentoCaixaRepository;
 
     @Value("${app.pdv.empresa-padrao-id:1}")
     private long empresaPadraoPdvId;
@@ -37,6 +40,34 @@ public class PdvTerminalService {
         return pdvTerminalRepository.findByEmpresaIdOrderByCodigoAsc(empresaId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /** Retaguarda: ADM pode listar por {@code empresaId}; ADMIN_EMPRESA só da própria empresa. */
+    public List<PdvTerminalResponse> listarParaAdmin(Usuario requester, Long empresaIdParam) {
+        long eid = empresaScopeService.resolveForWrite(requester, empresaIdParam);
+        return listarPorEmpresa(eid);
+    }
+
+    @Transactional
+    public PdvTerminalResponse criarParaAdmin(PdvTerminalCreateRequest req, Usuario requester) {
+        long eid = empresaScopeService.resolveForWrite(requester, req.getEmpresaId());
+        req.setEmpresaId(eid);
+        return criar(req);
+    }
+
+    @Transactional
+    public PdvTerminalResponse atualizarTerminalParaAdmin(
+            Long id, Long empresaIdParam, PdvTerminalUpdateRequest req, Usuario requester) {
+        long eid = empresaScopeService.resolveForWrite(requester, empresaIdParam);
+        return atualizarTerminal(id, eid, req);
+    }
+
+    @Transactional
+    public void excluirParaAdmin(Long id, Usuario requester) {
+        PdvTerminal t = pdvTerminalRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Terminal não encontrado"));
+        empresaScopeService.assertEmpresaAllowed(requester, t.getEmpresaId());
+        excluir(id);
     }
 
     @Transactional
@@ -67,6 +98,8 @@ public class PdvTerminalService {
             user.setPdvTerminalId(null);
             usuarioRepository.save(user);
         });
+        // Mantém histórico de fechamento mesmo após excluir o PDV.
+        fechamentoCaixaRepository.desvincularTerminal(id);
         pdvTerminalRepository.delete(t);
     }
 

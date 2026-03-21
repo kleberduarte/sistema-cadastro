@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
     <title>Login - Sistema de Cadastro de Clientes</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <style>
@@ -221,14 +223,28 @@
         .sessao-ativa-btns button { flex: 1; min-width: 120px; padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
         #sessaoIrSistema { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
         #sessaoSairConta { background: #f1f3f5; color: #495057; border: 2px solid #e9ecef; }
+        .login-blocked-panel {
+            display: none;
+            text-align: left;
+        }
+        .login-blocked-panel h1 { font-size: 1.35rem; margin-bottom: 12px; color: #c0392b; }
+        .login-blocked-panel p { color: #555; line-height: 1.55; font-size: 0.95rem; margin: 0 0 12px; }
+        .login-blocked-panel a.btn-admin {
+            display: inline-block; margin-top: 16px; padding: 12px 18px; border-radius: 10px;
+            font-weight: 700; text-decoration: none;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-box">
-            <div class="login-header">
-                <h1>🏢 Sistema de Clientes</h1>
-                <p>Acesse sua conta para continuar</p>
+            <div id="loginBlockedPanel" class="login-blocked-panel" role="alert">
+                <h1>🔒 Acesso restrito</h1>
+                <p>O endereço genérico de login não está disponível para operadores de empresas cadastradas.</p>
+                <p><strong>Utilize o link enviado pelo administrador</strong>, com o parâmetro <code>?empresaId=</code> da sua empresa.</p>
+                <p class="login-blocked-msg-admin"><strong>Administrador do sistema (super ADM):</strong> acesse com o ID da empresa padrão do sistema.</p>
+                <a href="login.html?empresaId=1" id="loginLinkAdminPadrao" class="btn-admin">Entrar como administrador do sistema</a>
             </div>
 
             <div id="pdvAvisoRetaguarda" class="pdv-aviso-retaguarda" style="display:none;" role="status"></div>
@@ -240,8 +256,14 @@
                     <button type="button" id="sessaoSairConta">Sair desta conta</button>
                 </div>
             </div>
+
+            <div id="loginNormalPanel">
+            <div class="login-header">
+                <h1>🏢 Sistema de Clientes</h1>
+                <p>Acesse sua conta para continuar</p>
+            </div>
             
-            <form class="login-form" id="loginForm">
+            <form class="login-form" id="loginForm" onsubmit="if (window.handleLoginSubmit) { window.handleLoginSubmit(event); } return false;">
                 <div class="form-group">
                     <label for="username">Usuário:</label>
                     <input type="text" id="username" name="username" required placeholder="Digite seu usuário">
@@ -262,6 +284,7 @@
             <div class="register-link">
                 <p>Primeiro acesso? <a href="#" onclick="showRegister()">Cadastre-se</a></p>
             </div>
+            </div><!-- /#loginNormalPanel -->
         </div>
 
         <div id="confirmCadastroModal" class="modal confirm-cadastro-modal-wrap" role="dialog" aria-labelledby="confirmCadastroTitle" aria-modal="true">
@@ -315,8 +338,9 @@
         </div>
     </div>
 
-    <script src="login.js"></script>
+    <script src="login.js?v=20260320-2"></script>
     <script src="theme-defaults.js"></script>
     <script src="config.js"></script>
+    <script src="pwa-register.js?v=20260320-1"></script>
 </body>
 </html>
