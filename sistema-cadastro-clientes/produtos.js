@@ -7,12 +7,19 @@ let products = [];
 let productIdToDelete = null;
 let editingProductId = null;
 let isProductCodeDuplicate = false;
+let importPreviewPayload = null;
+let currentPage = 0;
+const pageSize = 25;
+let totalPages = 0;
+let totalElements = 0;
+let currentSearchTerm = '';
+let bulkDeletePending = false;
 
 // Carregar produtos ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
     if (!checkPermission('adm')) return;
     displayUserName();
-    loadProducts();
+    loadProducts(0);
     setupEventListeners();
     updatePromoToggleVisual();
 });
@@ -27,6 +34,19 @@ function updatePromoToggleVisual() {
 
 // Configurar event listeners
 function setupEventListeners() {
+    // Remove dica antiga de importação (compatibilidade com HTML/cache legado)
+    (function removeLegacyImportHint() {
+        var wrap = document.getElementById('importCsvFile');
+        if (!wrap || !wrap.parentElement) return;
+        var hints = wrap.parentElement.querySelectorAll('small');
+        hints.forEach(function (el) {
+            var txt = (el.textContent || '').toLowerCase();
+            if (txt.indexOf('colunas mínimas') >= 0 || txt.indexOf('arquivo de exemplo') >= 0) {
+                el.remove();
+            }
+        });
+    })();
+
     // Formulário de cadastro
     const form = document.getElementById('productForm');
     form.addEventListener('submit', handleSubmit);
@@ -52,11 +72,33 @@ function setupEventListeners() {
 
     // Campo de busca
     const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', searchProducts);
+    searchInput.addEventListener('input', function () {
+        currentSearchTerm = (searchInput.value || '').trim();
+        loadProducts(0);
+    });
     
     // Botão de busca
     const searchBtn = document.getElementById('searchBtn');
-    searchBtn.addEventListener('click', searchProducts);
+    searchBtn.addEventListener('click', function () {
+        currentSearchTerm = (searchInput.value || '').trim();
+        loadProducts(0);
+    });
+
+    const prevBtn = document.getElementById('productsPrevPage');
+    const nextBtn = document.getElementById('productsNextPage');
+    const prevBtnTop = document.getElementById('productsPrevPageTop');
+    const nextBtnTop = document.getElementById('productsNextPageTop');
+    if (prevBtn) prevBtn.addEventListener('click', function () { if (currentPage > 0) loadProducts(currentPage - 1); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { if (currentPage + 1 < totalPages) loadProducts(currentPage + 1); });
+    if (prevBtnTop) prevBtnTop.addEventListener('click', function () { if (currentPage > 0) loadProducts(currentPage - 1); });
+    if (nextBtnTop) nextBtnTop.addEventListener('click', function () { if (currentPage + 1 < totalPages) loadProducts(currentPage + 1); });
+
+    const importPreviewBtn = document.getElementById('importPreviewBtn');
+    if (importPreviewBtn) importPreviewBtn.addEventListener('click', handleImportPreview);
+    const importConfirmBtn = document.getElementById('importConfirmBtn');
+    if (importConfirmBtn) importConfirmBtn.addEventListener('click', handleImportConfirm);
+    const deleteAllBtn = document.getElementById('deleteAllProductsBtn');
+    if (deleteAllBtn) deleteAllBtn.addEventListener('click', deleteAllProducts);
     
     // Máscara para preço (formato monetário brasileiro)
     const priceInput = document.getElementById('price');
@@ -109,6 +151,371 @@ function setupEventListeners() {
     }
 }
 
+function getApiBase() {
+    return (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function')
+        ? window.getApiBaseUrl()
+        : 'http://localhost:8080/api';
+}
+
+function normalizeCategoryValue(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+async function syncCategoryOptions() {
+    var categorySelect = document.getElementById('category');
+    if (!categorySelect) return;
+    try {
+        var response = await fetch(appendEmpresaIdToApiUrl(getApiBase() + '/produtos/categorias'), {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        if (!response.ok) return;
+        var categories = await response.json().catch(function () { return []; });
+        if (!Array.isArray(categories)) return;
+
+        var existingValues = new Set();
+        Array.from(categorySelect.options).forEach(function (opt) {
+            existingValues.add(normalizeCategoryValue(opt.value));
+        });
+
+        var selectedBefore = categorySelect.value;
+        categories.forEach(function (cat) {
+            var txt = String(cat || '').trim();
+            if (!txt) return;
+            var key = normalizeCategoryValue(txt);
+            if (existingValues.has(key)) return;
+            var option = document.createElement('option');
+            option.value = txt;
+            option.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
+            categorySelect.appendChild(option);
+            existingValues.add(key);
+        });
+        categorySelect.value = selectedBefore;
+    } catch (e) {
+        console.warn('Não foi possível sincronizar categorias:', e);
+    }
+}
+
+function setImportLoading(loading) {
+    var p = document.getElementById('importPreviewBtn');
+    var c = document.getElementById('importConfirmBtn');
+    if (p) p.disabled = !!loading;
+    if (c) c.disabled = !!loading || !importPreviewPayload;
+}
+
+/** Extrai mensagem legível de respostas de erro JSON do Spring / API. */
+function messageFromApiErrorBody(body) {
+    if (body == null) return '';
+    if (typeof body === 'string') return body;
+    if (typeof body === 'object') {
+        var m = body.message || body.detail || body.error;
+        if (m != null && String(m).trim()) return String(m).trim();
+    }
+    return '';
+}
+
+var importConfirmCreepTimer = null;
+
+/**
+ * Nome e ID da empresa (tenant) para personalizar o modal de importação — alinhado ao localStorage / getClienteId.
+ */
+function getImportProgressEmpresaContext() {
+    var empresaId = 1;
+    try {
+        if (typeof getClienteId === 'function') {
+            var g = parseInt(getClienteId(), 10);
+            if (!isNaN(g) && g >= 1) empresaId = g;
+        } else {
+            var raw = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '1';
+            var p = parseInt(raw, 10);
+            if (!isNaN(p) && p >= 1) empresaId = p;
+        }
+    } catch (e) {}
+    var nomeEmpresa = '';
+    try {
+        var stored = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
+        if (stored) {
+            var par = JSON.parse(stored);
+            if (par && par.nomeEmpresa != null) {
+                nomeEmpresa = String(par.nomeEmpresa).trim();
+            }
+        }
+    } catch (e2) {}
+    return { empresaId: empresaId, nomeEmpresa: nomeEmpresa };
+}
+
+function applyImportProgressModalBranding() {
+    var ctx = getImportProgressEmpresaContext();
+    var titleEl = document.getElementById('importProgressTitle');
+    var lineEl = document.getElementById('importProgressEmpresaLine');
+    if (titleEl) {
+        if (ctx.nomeEmpresa) {
+            titleEl.textContent = '📥 Importando produtos — ' + ctx.nomeEmpresa;
+        } else {
+            titleEl.textContent = '📥 Importando produtos — Empresa ID ' + ctx.empresaId;
+        }
+    }
+    if (lineEl) {
+        if (ctx.nomeEmpresa) {
+            lineEl.textContent = 'ID da empresa: ' + ctx.empresaId;
+            lineEl.style.display = 'block';
+        } else {
+            lineEl.textContent = '';
+            lineEl.style.display = 'none';
+        }
+    }
+}
+
+function stopImportConfirmCreep() {
+    if (importConfirmCreepTimer) {
+        clearInterval(importConfirmCreepTimer);
+        importConfirmCreepTimer = null;
+    }
+}
+
+function updateImportProgressUI(percent, statusText) {
+    var fill = document.getElementById('importProgressFill');
+    var label = document.getElementById('importProgressPercent');
+    var statusEl = document.getElementById('importProgressStatus');
+    var track = document.getElementById('importProgressTrack');
+    var p = Math.min(100, Math.max(0, Math.round(Number(percent) || 0)));
+    if (fill) fill.style.width = p + '%';
+    if (label) label.textContent = p + '%';
+    if (track) {
+        track.setAttribute('aria-valuenow', String(p));
+    }
+    if (statusEl && statusText != null) {
+        statusEl.textContent = statusText;
+    }
+}
+
+function showImportProgressModal(initialStatus) {
+    var modal = document.getElementById('importProgressModal');
+    if (!modal) return;
+    stopImportConfirmCreep();
+    applyImportProgressModalBranding();
+    updateImportProgressUI(0, initialStatus || 'Enviando arquivo…');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function hideImportProgressModal() {
+    var modal = document.getElementById('importProgressModal');
+    if (!modal) return;
+    stopImportConfirmCreep();
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+/**
+ * Envia o CSV de confirmação com barra de progresso: upload (parcialmente mensurável) + processamento no servidor (estimado).
+ */
+function postImportConfirmWithProgress(url, formData, onProgress) {
+    return new Promise(function (resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        var lastUploadPct = 3;
+
+        function startCreep(fromPct) {
+            stopImportConfirmCreep();
+            var cur = Math.max(fromPct, 35);
+            importConfirmCreepTimer = setInterval(function () {
+                if (cur < 94) {
+                    cur += cur < 75 ? 1.8 : 0.45;
+                    if (cur > 94) cur = 94;
+                    onProgress(cur, 'Processando no servidor…');
+                }
+            }, 130);
+        }
+
+        xhr.upload.addEventListener('progress', function (e) {
+            if (e.lengthComputable && e.total > 0) {
+                lastUploadPct = Math.max(3, Math.round(52 * e.loaded / e.total));
+                onProgress(lastUploadPct, 'Enviando arquivo…');
+            }
+        });
+        xhr.upload.addEventListener('load', function () {
+            startCreep(lastUploadPct);
+        });
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) return;
+            stopImportConfirmCreep();
+            if (xhr.status >= 200 && xhr.status < 300) {
+                onProgress(100, 'Concluindo importação…');
+                try {
+                    resolve(JSON.parse(xhr.responseText || '{}'));
+                } catch (err) {
+                    resolve({});
+                }
+            } else {
+                try {
+                    reject(JSON.parse(xhr.responseText || '{}'));
+                } catch (err2) {
+                    reject({ message: xhr.statusText || 'Falha ao confirmar importação.' });
+                }
+            }
+        };
+        xhr.onerror = function () {
+            stopImportConfirmCreep();
+            reject({ message: 'Erro de rede ao confirmar importação.' });
+        };
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + getToken());
+        xhr.send(formData);
+        onProgress(2, 'Conectando…');
+    });
+}
+
+function renderImportSummary(payload, confirmed) {
+    var box = document.getElementById('importSummary');
+    if (!box) return;
+    var text;
+    if (confirmed) {
+        text = 'Importação concluída — Criados: ' + (payload.criados || 0) +
+            ', Atualizados: ' + (payload.atualizados || 0) +
+            ', Erros: ' + (payload.erros || 0) + '.';
+    } else {
+        text = 'Prévia — Linhas: ' + (payload.totalLinhas || 0) +
+            ', Válidas: ' + (payload.validas || 0) +
+            ', Inválidas: ' + (payload.invalidas || 0) +
+            ', Criar: ' + (payload.criar || 0) +
+            ', Atualizar: ' + (payload.atualizar || 0) + '.';
+    }
+    box.textContent = text;
+    box.style.display = 'block';
+}
+
+/**
+ * @param {Array} items linhas da prévia / detalhes
+ * @param {number} [maxRows=2] quantidade máxima de linhas na tabela
+ * @param {{ skipTruncationNote?: boolean }} [opts]
+ */
+function renderImportTable(items, maxRows, opts) {
+    var body = document.getElementById('importPreviewList');
+    var wrap = document.getElementById('importTableWrap');
+    var summary = document.getElementById('importSummary');
+    if (!body || !wrap) return;
+    opts = opts || {};
+    body.innerHTML = '';
+    if (!items || !items.length) {
+        wrap.style.display = 'none';
+        return;
+    }
+    var limit = typeof maxRows === 'number' && maxRows > 0 ? maxRows : 2;
+    var visibleItems = items.slice(0, limit);
+    wrap.style.display = 'block';
+    visibleItems.forEach(function (it) {
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+            '<td>' + escapeHtml(String(it.linha || '')) + '</td>' +
+            '<td>' + escapeHtml(it.codigoProduto || '-') + '</td>' +
+            '<td>' + escapeHtml(it.nome || '-') + '</td>' +
+            '<td>' + escapeHtml(it.acao || '-') + '</td>' +
+            '<td>' + escapeHtml(it.motivo || '-') + '</td>';
+        body.appendChild(tr);
+    });
+    if (!opts.skipTruncationNote && items.length > limit && summary) {
+        summary.textContent += ' Exibindo apenas ' + limit + ' itens para facilitar a visualização.';
+    }
+}
+
+async function buildImportFormData() {
+    var fileInput = document.getElementById('importCsvFile');
+    var file = fileInput && fileInput.files ? fileInput.files[0] : null;
+    if (!file) {
+        showAlert('Selecione um arquivo CSV para importar.', 'info');
+        return null;
+    }
+    var fd = new FormData();
+    fd.append('file', file);
+    return fd;
+}
+
+async function handleImportPreview() {
+    var fd = await buildImportFormData();
+    if (!fd) return;
+    setImportLoading(true);
+    try {
+        var url = appendEmpresaIdToApiUrl(getApiBase() + '/produtos/importacao/preview');
+        var resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + getToken() },
+            body: fd
+        });
+        var data = await resp.json().catch(function () { return {}; });
+        if (!resp.ok) {
+            var prevErr = messageFromApiErrorBody(data) || 'Falha ao processar prévia do CSV.';
+            showAlert(prevErr, 'error');
+            return;
+        }
+        importPreviewPayload = data;
+        renderImportSummary(data, false);
+        renderImportTable(data.itens || []);
+        var c = document.getElementById('importConfirmBtn');
+        if (c) c.disabled = false;
+        showAlert('Pré-visualização gerada com sucesso.', 'success');
+    } catch (e) {
+        console.error(e);
+        showAlert('Erro de conexão ao gerar pré-visualização.', 'error');
+    } finally {
+        setImportLoading(false);
+    }
+}
+
+async function handleImportConfirm() {
+    var fd = await buildImportFormData();
+    if (!fd) return;
+    if (!importPreviewPayload) {
+        showAlert('Execute a pré-visualização antes de confirmar.', 'info');
+        return;
+    }
+    setImportLoading(true);
+    showImportProgressModal('Iniciando…');
+    try {
+        var url = appendEmpresaIdToApiUrl(getApiBase() + '/produtos/importacao/confirmar');
+        var data = await postImportConfirmWithProgress(url, fd, function (pct, msg) {
+            updateImportProgressUI(pct, msg);
+        });
+        renderImportSummary(data, true);
+        importPreviewPayload = null;
+        var c = document.getElementById('importConfirmBtn');
+        if (c) c.disabled = true;
+        var erros = data.erros || 0;
+        var invalidRows = (data.detalhes || []).filter(function (it) {
+            return String(it.acao || '').toUpperCase() === 'INVALID';
+        });
+        var s = document.getElementById('importSummary');
+        if (erros > 0) {
+            renderImportTable(invalidRows, 12, { skipTruncationNote: false });
+            if (s) s.style.display = 'block';
+        } else {
+            renderImportTable([]);
+            if (s) s.style.display = 'none';
+        }
+        updateImportProgressUI(100, 'Atualizando lista de produtos…');
+        await refreshProductsAfterImport();
+        if (erros > 0) {
+            var amostra = invalidRows.slice(0, 5).map(function (x) {
+                return 'Linha ' + x.linha + ': ' + (x.motivo || '—');
+            }).join(' ');
+            showAlert(
+                'Importação concluída com ' + erros + ' linha(s) com problema. ' + (amostra ? amostra : ''),
+                'warning'
+            );
+        } else {
+            showAlert('Importação finalizada com sucesso.', 'success');
+        }
+    } catch (err) {
+        console.error(err);
+        var msg = messageFromApiErrorBody(err);
+        if (!msg && err && err.message) msg = String(err.message);
+        if (!msg) msg = 'Falha ao confirmar importação.';
+        showAlert(msg, 'error');
+    } finally {
+        hideImportProgressModal();
+        setImportLoading(false);
+    }
+}
+
 // Normalizar código de barras (remove espaços/hífens)
 function normalizeBarcode(value) {
     return String(value || '').replace(/\s+/g, '').replace(/-/g, '').trim();
@@ -146,17 +553,64 @@ async function handleProductBarcodeFill() {
 }
 
 // Carregar produtos da API
-async function loadProducts() {
+function updatePaginationControls() {
+    var wrap = document.getElementById('productsPagination');
+    var wrapTop = document.getElementById('productsPaginationTop');
+    var info = document.getElementById('productsPageInfo');
+    var infoTop = document.getElementById('productsPageInfoTop');
+    var prev = document.getElementById('productsPrevPage');
+    var next = document.getElementById('productsNextPage');
+    var prevTop = document.getElementById('productsPrevPageTop');
+    var nextTop = document.getElementById('productsNextPageTop');
+    if (!wrap || !info || !prev || !next) return;
+    wrap.style.display = 'flex';
+    if (wrapTop) wrapTop.style.display = 'flex';
+    var pages = totalPages > 0 ? totalPages : 1;
+    info.textContent = 'Página ' + (currentPage + 1) + ' de ' + pages;
+    if (infoTop) infoTop.textContent = info.textContent;
+    prev.disabled = currentPage <= 0;
+    next.disabled = currentPage + 1 >= pages;
+    if (prevTop) prevTop.disabled = prev.disabled;
+    if (nextTop) nextTop.disabled = next.disabled;
+}
+
+async function refreshProductsAfterImport() {
+    currentSearchTerm = '';
+    var searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+    await loadProducts(0);
+    await syncCategoryOptions();
+    var listSection = document.querySelector('.list-section');
+    if (listSection) {
+        listSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+async function refreshProductsListAndHighlight() {
+    await refreshProductsAfterImport();
+}
+
+async function loadProducts(page) {
+    if (typeof page !== 'number' || page < 0) page = 0;
     try {
-        const response = await fetch(appendEmpresaIdToApiUrl('http://localhost:8080/api/produtos'), {
+        const params = new URLSearchParams();
+        params.set('page', String(page));
+        params.set('size', String(pageSize));
+        if (currentSearchTerm) params.set('q', currentSearchTerm);
+        const base = getApiBase() + '/produtos/paginado?' + params.toString();
+        const response = await fetch(appendEmpresaIdToApiUrl(base), {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
         });
         
         if (response.ok) {
-            products = await response.json();
-            console.log('Produtos carregados:', products);
+            const payload = await response.json();
+            products = payload.content || [];
+            currentPage = payload.number || 0;
+            totalPages = payload.totalPages || 0;
+            totalElements = payload.totalElements || 0;
+            console.log('Produtos carregados (paginado):', products.length, 'pagina', currentPage + 1, '/', totalPages);
         } else {
             console.error('Erro ao carregar produtos');
             showAlert('Erro ao carregar produtos', 'error');
@@ -166,6 +620,8 @@ async function loadProducts() {
         showAlert('Erro de conexão', 'error');
     }
     renderProducts();
+    updatePaginationControls();
+    await syncCategoryOptions();
 }
 
 // Validar código duplicado localmente e no backend
@@ -197,7 +653,7 @@ async function validateProductCodeUniqueness(codigoInformado) {
 
     // 2) validação backend (fonte da verdade)
     try {
-        const response = await fetch(appendEmpresaIdToApiUrl(`http://localhost:8080/api/produtos/codigo/${encodeURIComponent(codigo)}`), {
+        const response = await fetch(appendEmpresaIdToApiUrl((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + `/produtos/codigo/${encodeURIComponent(codigo)}`), {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -428,7 +884,7 @@ async function handleSubmit(e) {
     try {
         if (editingProductId) {
             // Atualizar produto existente
-            const response = await fetch(appendEmpresaIdToApiUrl(`http://localhost:8080/api/produtos/${editingProductId}`), {
+            const response = await fetch(appendEmpresaIdToApiUrl((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + `/produtos/${editingProductId}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -438,7 +894,7 @@ async function handleSubmit(e) {
             });
             
             if (response.ok) {
-                await loadProducts();
+                await loadProducts(currentPage);
                 cancelEdit();
                 showAlert('Produto atualizado com sucesso!', 'success');
                 logAction('PRODUCT_UPDATE_SUCCESS', { id: editingProductId, nome: formData.nome });
@@ -448,7 +904,7 @@ async function handleSubmit(e) {
             }
         } else {
             // Criar novo produto
-            const response = await fetch(appendEmpresaIdToApiUrl('http://localhost:8080/api/produtos'), {
+            const response = await fetch(appendEmpresaIdToApiUrl((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + '/produtos'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -458,7 +914,7 @@ async function handleSubmit(e) {
             });
             
             if (response.ok) {
-                await loadProducts();
+                await loadProducts(0);
                 form.reset();
                 showAlert('Produto cadastrado com sucesso!', 'success');
                 logAction('PRODUCT_CREATE_SUCCESS', { nome: formData.nome, codigo: formData.codigoProduto });
@@ -480,7 +936,7 @@ function renderProducts(productList = products) {
     const productCount = document.getElementById('productCount');
     
     // Atualizar contador
-    productCount.textContent = `(${productList.length})`;
+    productCount.textContent = `(${totalElements})`;
     
     // Limpar lista
     productListElement.innerHTML = '';
@@ -520,8 +976,8 @@ function renderProducts(productList = products) {
         const stockIcon = product.quantidadeEstoque <= min ? '⚠️ ' : '';
         
         row.innerHTML = `
-            <td>${escapeHtml(product.nome)}</td>
             <td>${escapeHtml(product.codigoProduto || '-')}</td>
+            <td>${escapeHtml(product.nome)}</td>
             <td>${escapeHtml((product.descricao || '').substring(0, 50))}${(product.descricao || '').length > 50 ? '...' : ''}</td>
             <td>
                 ${formattedPrice}${promoBadgeHtml}
@@ -531,12 +987,14 @@ function renderProducts(productList = products) {
             <td class="${stockClass}">${stockIcon}${product.quantidadeEstoque}</td>
             <td>${escapeHtml(product.categoria || 'Sem categoria')}</td>
             <td>
-                <button class="btn btn-edit btn-small" onclick="editProduct(${product.id})">
-                    ✏️ Editar
-                </button>
-                <button class="btn btn-danger btn-small" onclick="deleteProduct(${product.id})">
-                    🗑️ Excluir
-                </button>
+                <div class="product-actions">
+                    <button class="btn btn-edit btn-small" onclick="editProduct(${product.id})">
+                        ✏️ Editar
+                    </button>
+                    <button class="btn btn-danger btn-small" onclick="deleteProduct(${product.id})">
+                        🗑️ Excluir
+                    </button>
+                </div>
             </td>
         `;
         productListElement.appendChild(row);
@@ -550,28 +1008,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Buscar produtos
-function searchProducts() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-    
-    if (!searchTerm) {
-        renderProducts(products);
-        return;
-    }
-    
-    const filteredProducts = products.filter(product => {
-        const nome = product.nome || '';
-        const descricao = product.descricao || '';
-        const categoria = product.categoria || '';
-        const codigoProduto = product.codigoProduto || '';
-        return nome.toLowerCase().includes(searchTerm) ||
-               descricao.toLowerCase().includes(searchTerm) ||
-               categoria.toLowerCase().includes(searchTerm) ||
-               codigoProduto.toLowerCase().includes(searchTerm);
-    });
-    
-    renderProducts(filteredProducts);
-}
+// Busca agora é server-side (loadProducts com q/page).
 
 // Excluir produto
 function deleteProduct(id) {
@@ -588,7 +1025,7 @@ function deleteProduct(id) {
 async function confirmDelete() {
     if (productIdToDelete) {
         try {
-            const response = await fetch(appendEmpresaIdToApiUrl(`http://localhost:8080/api/produtos/${productIdToDelete}`), {
+            const response = await fetch(appendEmpresaIdToApiUrl((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + `/produtos/${productIdToDelete}`), {
                 method: 'DELETE',
                 headers: {
                     'Authorization': 'Bearer ' + getToken()
@@ -596,8 +1033,7 @@ async function confirmDelete() {
             });
             
             if (response.ok) {
-                products = products.filter(p => p.id !== productIdToDelete);
-                renderProducts();
+                await loadProducts(currentPage);
                 closeModal();
                 showAlert('Produto excluído com sucesso!', 'success');
                 logAction('PRODUCT_DELETE_SUCCESS', { id: productIdToDelete });
@@ -608,6 +1044,54 @@ async function confirmDelete() {
             console.error('Erro ao excluir produto:', error);
             showAlert('Erro de conexão', 'error');
         }
+    }
+}
+
+async function deleteAllProducts() {
+    if (!totalElements || totalElements <= 0) {
+        showAlert('Não há produtos para excluir.', 'info');
+        return;
+    }
+    var modal = document.getElementById('bulkDeleteModal');
+    var text = document.getElementById('bulkDeleteCountText');
+    if (!modal || !text) return;
+    text.textContent = 'Total atual: ' + totalElements + ' produto(s).';
+    bulkDeletePending = true;
+    modal.classList.add('show');
+}
+
+function closeBulkDeleteModal() {
+    var modal = document.getElementById('bulkDeleteModal');
+    if (modal) modal.classList.remove('show');
+    bulkDeletePending = false;
+}
+
+async function confirmDeleteAllProducts() {
+    if (!bulkDeletePending) return;
+    bulkDeletePending = false;
+    closeBulkDeleteModal();
+
+    try {
+        var response = await fetch(appendEmpresaIdToApiUrl(getApiBase() + '/produtos'), {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + getToken()
+            }
+        });
+
+        var data = await response.json().catch(function () { return {}; });
+        if (!response.ok) {
+            showAlert(data.message || 'Erro ao excluir todos os produtos.', 'error');
+            return;
+        }
+
+        await refreshProductsListAndHighlight();
+        var removed = data && typeof data.removed === 'number' ? data.removed : 0;
+        showAlert('Exclusão em lote concluída. Removidos: ' + removed + '. Lista atualizada com sucesso.', 'success');
+        logAction('PRODUCT_DELETE_ALL_SUCCESS', { removed: removed });
+    } catch (error) {
+        console.error('Erro ao excluir todos os produtos:', error);
+        showAlert('Erro de conexão ao excluir todos os produtos.', 'error');
     }
 }
 
@@ -644,6 +1128,15 @@ document.getElementById('confirmModal').addEventListener('click', function(e) {
         closeModal();
     }
 });
+
+var bulkDeleteModalEl = document.getElementById('bulkDeleteModal');
+if (bulkDeleteModalEl) {
+    bulkDeleteModalEl.addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeBulkDeleteModal();
+        }
+    });
+}
 
 // Editar produto - carregar dados no formulário
 function editProduct(id) {

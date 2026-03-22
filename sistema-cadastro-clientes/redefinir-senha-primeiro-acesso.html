@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redefinir senha — 1º acesso</title>
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <script src="api-config.js"></script>
     <script src="theme-defaults.js"></script>
     <script src="config.js"></script>
     <style id="redefinir-base">
@@ -78,7 +79,7 @@
     </div>
     <script>
     (function () {
-        var API = (typeof API_URL !== 'undefined' && API_URL) ? String(API_URL).replace(/\/$/, '') : 'http://localhost:8080/api';
+        var API = (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : ((typeof API_URL !== 'undefined' && API_URL) ? String(API_URL).replace(/\/$/, '') : 'http://localhost:8080/api'));
         var token = localStorage.getItem('authToken');
         var params = new URLSearchParams(window.location.search || '');
         var fromPdv = params.get('from') === 'pdv';

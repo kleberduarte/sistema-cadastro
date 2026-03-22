@@ -28,7 +28,7 @@ public class FechamentoCaixa {
     private Long terminalId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id", nullable = false)
+    @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
     @Column(name = "nome_operador", nullable = false, length = 100)

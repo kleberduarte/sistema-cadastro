@@ -186,6 +186,33 @@
                 </form>
             </section>
 
+            <section class="form-section">
+                <h2>📥 Importar Produtos (CSV)</h2>
+                <div class="form-group">
+                    <label for="importCsvFile">Arquivo CSV:</label>
+                    <input type="file" id="importCsvFile" accept=".csv,text/csv">
+                </div>
+                <div class="product-form-actions">
+                    <button type="button" id="importPreviewBtn" class="btn btn-secondary">👀 Pré-visualizar</button>
+                    <button type="button" id="importConfirmBtn" class="btn btn-primary" disabled>✅ Confirmar Importação</button>
+                </div>
+                <div id="importSummary" class="no-data" style="display:none;margin-top:10px;"></div>
+                <div class="table-container" id="importTableWrap" style="display:none;margin-top:10px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Linha</th>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Ação</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="importPreviewList"></tbody>
+                    </table>
+                </div>
+            </section>
+
             <section class="search-section">
                 <h2>🔍 Buscar Produtos</h2>
                 <div class="search-box">
@@ -196,12 +223,20 @@
 
             <section class="list-section">
                 <h2>📋 Produtos Cadastrados <span id="productCount">(0)</span></h2>
+                <div class="product-form-actions" style="justify-content:flex-end;">
+                    <button type="button" id="deleteAllProductsBtn" class="btn btn-danger">🗑️ Excluir Todos os Produtos</button>
+                </div>
+                <div id="productsPaginationTop" class="product-form-actions" style="justify-content:space-between;align-items:center;display:none;margin-bottom:10px;">
+                    <button type="button" id="productsPrevPageTop" class="btn btn-secondary">⬅️ Anterior</button>
+                    <span id="productsPageInfoTop" style="font-weight:600;color:#555;">Página 1 de 1</span>
+                    <button type="button" id="productsNextPageTop" class="btn btn-secondary">Próxima ➡️</button>
+                </div>
                 <div class="table-container">
                     <table id="productTable">
                         <thead>
                             <tr>
-                                <th>Nome</th>
                                 <th>Código</th>
+                                <th>Nome</th>
                                 <th>Descrição</th>
                                 <th>Preço</th>
                                 <th>Estoque</th>
@@ -217,12 +252,30 @@
                 <div id="noProductsMessage" class="no-data">
                     Nenhum produto cadastrado ainda.
                 </div>
+                <div id="productsPagination" class="product-form-actions" style="justify-content:space-between;align-items:center;display:none;">
+                    <button type="button" id="productsPrevPage" class="btn btn-secondary">⬅️ Anterior</button>
+                    <span id="productsPageInfo" style="font-weight:600;color:#555;">Página 1 de 1</span>
+                    <button type="button" id="productsNextPage" class="btn btn-secondary">Próxima ➡️</button>
+                </div>
             </section>
             </main>
 
             <footer>
                 <p>© 2024 Sistema de Cadastro de Produtos</p>
             </footer>
+        </div>
+    </div>
+
+    <!-- Barra de progresso da importação CSV (confirmar) -->
+    <div id="importProgressModal" class="modal" aria-hidden="true">
+        <div class="modal-content import-progress-modal-content">
+            <h3 id="importProgressTitle">📥 Importando produtos</h3>
+            <p id="importProgressEmpresaLine" class="import-progress-empresa" aria-live="polite"></p>
+            <p id="importProgressStatus" class="import-progress-status">Preparando envio…</p>
+            <div class="import-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="importProgressTrack">
+                <div id="importProgressFill" class="import-progress-fill"></div>
+            </div>
+            <p id="importProgressPercent" class="import-progress-percent">0%</p>
         </div>
     </div>
 
@@ -239,6 +292,20 @@
         </div>
     </div>
 
+    <div id="bulkDeleteModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Confirmar Exclusão em Lote</h3>
+            <p>Você está prestes a excluir todos os produtos desta empresa.</p>
+            <p class="product-name" id="bulkDeleteCountText"></p>
+            <p>Esta ação não pode ser desfeita.</p>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" onclick="confirmDeleteAllProducts()">Sim, Excluir Tudo</button>
+                <button class="btn btn-secondary" onclick="closeBulkDeleteModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="api-config.js"></script>
     <script src="auth.js"></script>
     <script src="theme-defaults.js"></script>
     <script src="config.js"></script>

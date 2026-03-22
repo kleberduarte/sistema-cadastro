@@ -157,9 +157,10 @@
             </div>
         </div>
     </div>
+    <script src="../api-config.js"></script>
     <script>
     (function () {
-        var API = 'http://localhost:8080/api';
+        var API = (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api');
         function getEmpresaIdFromUrl() {
             try {
                 var params = new URLSearchParams(window.location.search || '');

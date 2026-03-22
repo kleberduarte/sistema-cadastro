@@ -8,6 +8,7 @@ import com.sistema.cadastro.dto.RegisterRequest;
 import com.sistema.cadastro.dto.UpdateUserRequest;
 import com.sistema.cadastro.model.Role;
 import com.sistema.cadastro.model.Usuario;
+import com.sistema.cadastro.repository.FechamentoCaixaRepository;
 import com.sistema.cadastro.repository.UsuarioRepository;
 import com.sistema.cadastro.repository.VendaRepository;
 import com.sistema.cadastro.security.JwtUtil;
@@ -32,6 +33,7 @@ public class UsuarioService {
     private final JwtUtil jwtUtil;
     private final ClienteService clienteService;
     private final VendaRepository vendaRepository;
+    private final FechamentoCaixaRepository fechamentoCaixaRepository;
 
     @Value("${app.pdv.empresa-padrao-id:1}")
     private long empresaPadraoPdvId;
@@ -251,6 +253,7 @@ public class UsuarioService {
                     .orElseThrow(() -> new IllegalStateException("Nenhum outro usuário para manter o histórico de vendas."));
             vendaRepository.reatribuirVendasAoUsuario(id, outro.getId());
         }
+        fechamentoCaixaRepository.desvincularUsuario(id);
         usuarioRepository.deleteById(id);
     }
 

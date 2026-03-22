@@ -185,7 +185,7 @@ function logAction(acao, detalhes = {}) {
     console.groupEnd();
 
     // Envio assíncrono para o backend
-    fetch('http://localhost:8080/api/logs', {
+    fetch((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + '/logs', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -245,9 +245,10 @@ async function loadClientParams() {
     try {
         // Sem token (tela de login), usa endpoint público de branding.
         // Com token, usa endpoint completo de parâmetros da empresa.
+        const apiBase = typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api';
         const endpoint = token
-            ? `http://localhost:8080/api/parametros-empresa/empresa/${CLIENTE_ID}`
-            : `http://localhost:8080/api/parametros-cliente/branding/${CLIENTE_ID}`;
+            ? `${apiBase}/parametros-empresa/empresa/${CLIENTE_ID}`
+            : `${apiBase}/parametros-cliente/branding/${CLIENTE_ID}`;
         const response = await fetch(endpoint, {
             headers: token ? {
                 'Authorization': 'Bearer ' + token
@@ -400,6 +401,37 @@ function applyClientStyles(params) {
             background: ${corBotaoFinal} !important;
             color: ${corBotaoTexto} !important;
             border: none !important;
+        }
+
+        /* Importação CSV: botão de arquivo acompanha identidade da empresa */
+        #importCsvFile {
+            border-color: ${corPrimaria}55 !important;
+        }
+        #importCsvFile::file-selector-button {
+            background: linear-gradient(135deg, ${corBotaoFinal} 0%, ${corSecundaria} 100%) !important;
+            color: ${corBotaoTexto} !important;
+        }
+        #importCsvFile::file-selector-button:hover {
+            background: linear-gradient(135deg, ${corSecundaria} 0%, ${corBotaoFinal} 100%) !important;
+        }
+
+        /* Modal de progresso da importação CSV — cores da empresa (todos os IDs) */
+        #importProgressModal .import-progress-fill {
+            background: linear-gradient(90deg, ${corPrimaria} 0%, ${corSecundaria} 100%) !important;
+        }
+        #importProgressModal .import-progress-percent {
+            color: ${corPrimaria} !important;
+        }
+        #importProgressModal #importProgressTitle {
+            color: ${corTexto} !important;
+        }
+        #importProgressModal .import-progress-empresa {
+            color: ${corTexto} !important;
+            opacity: 0.82;
+        }
+        #importProgressModal .import-progress-status {
+            color: ${corTexto} !important;
+            opacity: 0.9;
         }
         
         section h2 {
@@ -658,7 +690,8 @@ function applyDefaultStyles() {
 // Função para salvar parâmetros (para uso futuro via admin)
 async function saveClientParams(params) {
     try {
-        const response = await fetch('http://localhost:8080/api/parametros-empresa', {
+        const apiBase = typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api';
+        const response = await fetch(apiBase + '/parametros-empresa', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

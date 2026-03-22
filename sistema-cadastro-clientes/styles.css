@@ -295,6 +295,36 @@ section h2 {
     border-color: #e74c3c;
 }
 
+/* Upload CSV (produtos): botão "Escolher arquivo" mais moderno */
+#importCsvFile {
+    padding: 10px;
+    background: #fff;
+    border: 2px dashed #cfd8ea;
+}
+
+#importCsvFile:hover {
+    border-color: #aebde7;
+    background: #fbfcff;
+}
+
+#importCsvFile::file-selector-button {
+    margin-right: 12px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+#importCsvFile::file-selector-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.32);
+    filter: brightness(1.03);
+}
+
 .error-message {
     color: #e74c3c;
     font-size: 0.85rem;
@@ -377,6 +407,53 @@ section h2 {
     padding: 6px 12px;
     font-size: 0.85rem;
     margin: 0 3px;
+}
+
+.product-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+    padding: 2px 0;
+}
+
+.product-actions .btn {
+    width: 108px;
+    margin: 0;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.product-actions .btn-small {
+    padding: 7px 10px;
+    font-size: 0.82rem;
+    border-radius: 10px;
+    min-width: 108px;
+    line-height: 1;
+}
+
+.product-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.product-actions .btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+    filter: saturate(0.95);
+}
+
+#productTable th:last-child,
+#productTable td:last-child {
+    text-align: center;
+    vertical-align: middle;
+    width: 250px;
 }
 
 /* Seção de Busca */
@@ -598,6 +675,49 @@ tbody tr:last-child td {
 
 .modal-buttons {
     margin-top: 20px;
+}
+
+/* Barra de progresso — importação CSV (confirmar) */
+.import-progress-modal-content {
+    max-width: 420px;
+}
+
+.import-progress-empresa {
+    font-size: 0.88rem;
+    color: #666;
+    margin: -4px 0 10px;
+    font-weight: 600;
+}
+
+.import-progress-status {
+    font-size: 0.95rem;
+    color: #555;
+    margin: 0 0 12px;
+}
+
+.import-progress-track {
+    height: 14px;
+    background: #e8eaf6;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 0 0 10px;
+}
+
+.import-progress-fill {
+    height: 100%;
+    width: 0%;
+    min-width: 0;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 999px;
+    transition: width 0.12s ease-out;
+}
+
+.import-progress-percent {
+    font-weight: 800;
+    font-size: 1.35rem;
+    color: #5a67d8;
+    margin: 0;
+    letter-spacing: 0.02em;
 }
 
 /* Footer */

@@ -207,7 +207,7 @@ function sortClientList(list) {
 // Carregar clientes da API
 async function loadClients() {
     try {
-        const response = await fetch(appendEmpresaIdToApiUrl('http://localhost:8080/api/clientes'), {
+        const response = await fetch(appendEmpresaIdToApiUrl((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + '/clientes'), {
             headers: {
                 'Authorization': 'Bearer ' + getToken()
             }
@@ -431,7 +431,7 @@ async function handleSubmit(e) {
     try {
         if (editingClientId) {
             // Atualizar cliente existente via API
-            const response = await fetch(appendEmpresaIdToApiUrl(`http://localhost:8080/api/clientes/${editingClientId}`), {
+            const response = await fetch(appendEmpresaIdToApiUrl((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + `/clientes/${editingClientId}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -456,7 +456,7 @@ async function handleSubmit(e) {
             }
         } else {
             // Criar novo cliente via API
-            const response = await fetch(appendEmpresaIdToApiUrl('http://localhost:8080/api/clientes'), {
+            const response = await fetch(appendEmpresaIdToApiUrl((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + '/clientes'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -635,7 +635,7 @@ function deleteClient(id) {
 async function confirmDelete() {
     if (clientIdToDelete) {
         try {
-            const response = await fetch(appendEmpresaIdToApiUrl(`http://localhost:8080/api/clientes/${clientIdToDelete}`), {
+            const response = await fetch(appendEmpresaIdToApiUrl((typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api') + `/clientes/${clientIdToDelete}`), {
                 method: 'DELETE',
                 headers: {
                     'Authorization': 'Bearer ' + getToken()
