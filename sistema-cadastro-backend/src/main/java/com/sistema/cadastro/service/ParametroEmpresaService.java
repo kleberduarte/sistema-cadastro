@@ -17,6 +17,9 @@ public class ParametroEmpresaService {
     @Autowired
     private ParametroEmpresaRepository repository;
 
+    @Autowired
+    private EmpresaTenantExclusaoService empresaTenantExclusaoService;
+
     @Transactional
     public ParametroEmpresaDTO salvar(ParametroEmpresaDTO dto) {
         ParametroEmpresa parametro;
@@ -117,8 +120,12 @@ public class ParametroEmpresaService {
 
     @Transactional
     public boolean excluirPorEmpresaId(Long empresaId) {
+        if (empresaId != null && empresaId <= 1L) {
+            return false;
+        }
         return repository.findByEmpresaId(empresaId)
                 .map(p -> {
+                    empresaTenantExclusaoService.excluirTodosDadosDoTenant(empresaId);
                     repository.delete(p);
                     return true;
                 })

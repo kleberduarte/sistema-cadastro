@@ -11,6 +11,8 @@ import java.util.List;
 public interface FechamentoCaixaRepository extends JpaRepository<FechamentoCaixa, Long> {
     List<FechamentoCaixa> findTop100ByEmpresaIdOrderByDataFechamentoDesc(Long empresaId);
 
+    List<FechamentoCaixa> findByEmpresaId(Long empresaId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE FechamentoCaixa f SET f.terminalId = null WHERE f.terminalId = :terminalId")
     int desvincularTerminal(@Param("terminalId") Long terminalId);

@@ -195,6 +195,29 @@ function aplicarRestricoesPorPerfilLogado() {
             ? allOptions.filter(function (o) { return o.value !== 'ADM'; })
             : allOptions;
 
+        var hAdm = document.getElementById('hintEmpresaPdvAdm');
+        var hEmp = document.getElementById('hintEmpresaPdvEmpresa');
+        if (hAdm && hEmp) {
+            if (isAdminEmpresa) {
+                hAdm.style.display = 'none';
+                hEmp.style.display = '';
+            } else {
+                hAdm.style.display = '';
+                hEmp.style.display = 'none';
+            }
+        }
+        var hnAdm = document.getElementById('hintNewUserEmpresaAdm');
+        var hnEmp = document.getElementById('hintNewUserEmpresaEmpresa');
+        if (hnAdm && hnEmp) {
+            if (isAdminEmpresa) {
+                hnAdm.style.display = 'none';
+                hnEmp.style.display = '';
+            } else {
+                hnAdm.style.display = '';
+                hnEmp.style.display = 'none';
+            }
+        }
+
         ['newUserRole', 'editUserRole'].forEach(function (id) {
             const sel = document.getElementById(id);
             if (!sel) return;

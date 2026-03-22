@@ -35,7 +35,10 @@
         <div class="container">
             <header>
                 <div class="header-content">
-                    <h1>👥 Gerenciar Usuários</h1>
+                    <div class="header-left">
+                        <h1>👥 Gerenciar Usuários</h1>
+                        <p id="welcomeMessage" class="header-welcome" hidden data-welcome-default=""></p>
+                    </div>
                     <div class="nav-right">
                         <button class="nav-burger" type="button" aria-label="Abrir menu" onclick="toggleSidebar()">☰</button>
                         <span id="userDisplay" class="nav-user">Olá, Usuário</span>
@@ -97,7 +100,10 @@
                             <input type="tel" id="newUserTelefone" maxlength="25" placeholder="ex: 11999998888">
                         </div>
                         <div class="form-group">
-                            <label for="newUserEmpresaPdv">ID empresa (PDV) <small style="font-weight:400">— preenchido com a empresa atual; vazio + ADM = sem empresa</small></label>
+                            <label for="newUserEmpresaPdv">ID empresa (PDV)
+                                <small id="hintNewUserEmpresaAdm" style="font-weight:400">— preenchido com a empresa atual; vazio + ADM = sem empresa</small>
+                                <small id="hintNewUserEmpresaEmpresa" style="font-weight:400;display:none">— preenchido com a empresa atual da retaguarda</small>
+                            </label>
                             <input type="number" id="newUserEmpresaPdv" min="1" placeholder="ex: 770">
                         </div>
                     </div>
@@ -214,7 +220,10 @@
                     <input type="tel" id="editTelefone" maxlength="25" placeholder="ex: 11999998888">
                 </div>
                 <div class="form-group">
-                    <label for="editEmpresaPdv">ID empresa (PDV) <small style="font-weight:400">— vazio = padrão sistema</small></label>
+                    <label for="editEmpresaPdv">ID empresa (PDV)
+                        <small id="hintEmpresaPdvAdm" style="font-weight:400">— vazio = padrão sistema</small>
+                        <small id="hintEmpresaPdvEmpresa" style="font-weight:400;display:none">— em branco, usa a empresa em contexto (Parâmetros)</small>
+                    </label>
                     <input type="number" id="editEmpresaPdv" min="1" placeholder="ex: 770">
                 </div>
                 <div class="form-group">

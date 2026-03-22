@@ -30,6 +30,15 @@
         return String(role).trim().toUpperCase();
     }
 
+    function isAdminEmpresaProfile() {
+        try {
+            var cu = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            return cu && normalizeUserRole(cu.role) === 'ADMIN_EMPRESA';
+        } catch (x) {
+            return false;
+        }
+    }
+
     function getContextEmpresaNome() {
         var eid = getActiveEmpresaId();
         if (!eid) return '';
@@ -50,7 +59,7 @@
         if (!el) return;
         var nome = getContextEmpresaNome();
         var semNomeSalvo = !nome && eid === EP;
-        if (eid === EP && (semNomeSalvo || nome === 'Sistema de Cadastro')) {
+        if (!isAdminEmpresaProfile() && eid === EP && (semNomeSalvo || nome === 'Sistema de Cadastro')) {
             el.innerHTML = '<strong>ID ' + eid + '</strong> — <em>parâmetros padrão</em> (mesmo ID após <strong>Restaurar</strong> em Parâmetros). <span style="opacity:.85">PDVs só desta empresa.</span>';
         } else {
             el.innerHTML = '<strong>ID ' + eid + '</strong>' + (nome ? ' — ' + escapeHtml(nome) : '') + ' <span style="opacity:.85">(só PDVs desta empresa)</span>';
@@ -372,7 +381,9 @@
         var legend = document.querySelector('.pdv-legend');
         grid.innerHTML = '';
         empty.style.display = 'block';
-        empty.innerHTML = 'Nenhuma empresa em contexto. Em <strong>Parâmetros</strong>, selecione a empresa no combo e <strong>carregue</strong> os dados (ou <strong>salve</strong>). Se usar <strong>Restaurar padrões</strong>, o contexto some e os PDVs deixam de aparecer até você carregar uma empresa de novo.';
+        empty.innerHTML = isAdminEmpresaProfile()
+            ? 'Nenhuma empresa em contexto. Em <strong>Parâmetros</strong>, selecione a empresa no combo e <strong>carregue</strong> os dados (ou <strong>salve</strong>).'
+            : 'Nenhuma empresa em contexto. Em <strong>Parâmetros</strong>, selecione a empresa no combo e <strong>carregue</strong> os dados (ou <strong>salve</strong>). Se usar <strong>Restaurar padrões</strong>, o contexto some e os PDVs deixam de aparecer até você carregar uma empresa de novo.';
         if (legend) legend.style.display = 'none';
     }
 
