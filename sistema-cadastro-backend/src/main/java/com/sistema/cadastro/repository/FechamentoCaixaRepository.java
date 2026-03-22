@@ -14,5 +14,9 @@ public interface FechamentoCaixaRepository extends JpaRepository<FechamentoCaixa
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE FechamentoCaixa f SET f.terminalId = null WHERE f.terminalId = :terminalId")
     int desvincularTerminal(@Param("terminalId") Long terminalId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE fechamentos_caixa SET usuario_id = NULL WHERE usuario_id = :usuarioId", nativeQuery = true)
+    int desvincularUsuario(@Param("usuarioId") Long usuarioId);
 }
 

@@ -270,7 +270,7 @@ function setupKeyboardShortcuts() {
                 if (typeof novaVenda === 'function') novaVenda();
                 break;
             case 'F7':
-                if (typeof openSaleSearchModal === 'function') openSaleSearchModal();
+                if (typeof openSaleSearchModal === 'function') void openSaleSearchModal();
                 break;
             case 'F8':
                 if (typeof openProductSearchModal === 'function') openProductSearchModal();
@@ -796,7 +796,7 @@ function confirmarQuantidadeChange() {
 }
 
 // --- Indicar Cliente (F12) ---
-const API_BASE = 'http://localhost:8080/api';
+var API_BASE = (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api');
 
 function updateClienteIndicadoDisplay() {
     const block = document.getElementById('pdv-cliente-indicado');
@@ -988,8 +988,11 @@ function selectProductFromSearch(productId) {
 }
 
 // --- Modal de Pesquisa de Venda (F7) ---
-function openSaleSearchModal() {
-    document.getElementById('saleSearchInput').value = '';
+async function openSaleSearchModal() {
+    // Sempre busca vendas atualizadas no servidor (última venda aparece sem F5 na página)
+    await loadAllSales();
+    var inp = document.getElementById('saleSearchInput');
+    if (inp) inp.value = '';
     renderSaleSearchResults();
     openModal('saleSearchModal');
 }
@@ -999,8 +1002,8 @@ function renderSaleSearchResults() {
     const resultsBody = document.getElementById('sale-search-results-body');
     resultsBody.innerHTML = '';
 
-    // Ordena as vendas da mais recente para a mais antiga
-    const sortedSales = sales.sort((a, b) => new Date(b.dataVenda) - new Date(a.dataVenda));
+    // Ordena as vendas da mais recente para a mais antiga (sem mutar o array global)
+    const sortedSales = [...sales].sort((a, b) => new Date(b.dataVenda) - new Date(a.dataVenda));
 
     const filtered = sortedSales.filter(s => 
         String(s.id).includes(searchTerm) || 
@@ -1521,6 +1524,7 @@ async function processPayment() {
                 printLastSale(); // Mostra o comprovante e abre a janela de impressão
                 novaVenda();
                 loadProducts();
+                loadAllSales(); // Atualiza lista do F7 / pesquisa de vendas
             }, 1500);
         } else {
             let msg = response.statusText;

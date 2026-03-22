@@ -3,6 +3,7 @@ package com.sistema.cadastro.config;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,8 +19,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class RateLimitFilter implements Filter {
 
-    // Configurações de rate limiting
-    private static final int MAX_REQUESTS_PER_MINUTE = 60; // Máximo de requisições por janela
+    /** Máximo de requisições por janela (por IP). SPA + várias abas pode estourar 60/min facilmente. */
+    @Value("${app.rate-limit.max-requests-per-minute:180}")
+    private int maxRequestsPerMinute;
+
+    /** Em dev, localhost costuma disparar muitas chamadas (Live Server, preview, logs). */
+    @Value("${app.rate-limit.skip-localhost:true}")
+    private boolean skipLocalhost;
     /** Janela do rate limit geral (mesmo valor usado na mensagem de espera). */
     private static final long GENERAL_RATE_LIMIT_WINDOW_MS = 60_000L;
     /** Máximo de tentativas de login por janela ({@link #LOGIN_BLOCK_TIME}). */
@@ -41,9 +47,10 @@ public class RateLimitFilter implements Filter {
 
         String clientIp = getClientIP(httpRequest);
         String endpoint = httpRequest.getRequestURI();
+        boolean relaxForLocal = skipLocalhost && isLoopbackOrLocal(clientIp);
 
         // Verifica se é uma tentativa de login
-        if (endpoint.contains("/api/auth/login")) {
+        if (endpoint.contains("/api/auth/login") && !relaxForLocal) {
             if (isLoginBlocked(clientIp)) {
                 int segundos = (int) (LOGIN_BLOCK_TIME / 1000L);
                 writeRateLimitJson(httpResponse, String.format(Locale.ROOT,
@@ -54,14 +61,16 @@ public class RateLimitFilter implements Filter {
         }
 
         // Rate limiting geral
-        if (isRateLimited(clientIp)) {
+        if (!relaxForLocal && isRateLimited(clientIp)) {
             int segundos = (int) (GENERAL_RATE_LIMIT_WINDOW_MS / 1000L);
             writeRateLimitJson(httpResponse, String.format(Locale.ROOT,
                     "Muitas requisições. Tente novamente em %d segundos.", segundos));
             return;
         }
 
-        recordRequest(clientIp);
+        if (!relaxForLocal) {
+            recordRequest(clientIp);
+        }
         chain.doFilter(request, response);
     }
 
@@ -80,6 +89,22 @@ public class RateLimitFilter implements Filter {
             return xForwardedFor.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    /** IPv4/IPv6 loopback — típico em desenvolvimento (evita 429 ao usar Live Server + várias abas). */
+    private static boolean isLoopbackOrLocal(String clientIp) {
+        if (clientIp == null || clientIp.isEmpty()) {
+            return false;
+        }
+        String ip = clientIp.trim();
+        if ("127.0.0.1".equals(ip) || "::1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip)) {
+            return true;
+        }
+        // IPv4-mapped IPv6 (::ffff:127.0.0.1)
+        if (ip.contains("::ffff:127.0.0.1")) {
+            return true;
+        }
+        return "localhost".equalsIgnoreCase(ip);
     }
 
     private void recordRequest(String clientIp) {
@@ -106,7 +131,7 @@ public class RateLimitFilter implements Filter {
             return false;
         }
         
-        return data.count.get() >= MAX_REQUESTS_PER_MINUTE;
+        return data.count.get() >= maxRequestsPerMinute;
     }
 
     private void recordLoginAttempt(String clientIp) {

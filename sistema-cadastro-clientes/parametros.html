@@ -146,6 +146,7 @@
         </div>
     </div>
 
+    <script src="api-config.js"></script>
     <script src="auth.js"></script>
     <script src="theme-defaults.js"></script>
     <script src="config.js"></script>
@@ -155,6 +156,11 @@
         // Variável global para armazenar o ID do parâmetro
         let parametroId = null;
         const DEFAULT_PIX_KEY = 'pix@lojapdv.com';
+        function apiRoot() {
+            return (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function')
+                ? window.getApiBaseUrl()
+                : 'http://localhost:8080/api';
+        }
 
         // Inicializar
         function atualizarBotaoExcluirEmpresa() {
@@ -194,7 +200,7 @@
         // Carregar lista de empresas cadastradas
         async function carregarEmpresas() {
             try {
-                const response = await fetch('http://localhost:8080/api/parametros-empresa', {
+                const response = await fetch(apiRoot() + '/parametros-empresa', {
                     headers: {
                         'Authorization': 'Bearer ' + getToken()
                     }
@@ -244,7 +250,7 @@
             }
 
             try {
-                const response = await fetch('http://localhost:8080/api/parametros-empresa/empresa/' + empresaId, {
+                const response = await fetch(apiRoot() + '/parametros-empresa/empresa/' + empresaId, {
                     headers: {
                         'Authorization': 'Bearer ' + getToken()
                     }
@@ -355,7 +361,7 @@
             const params = obterParametrosFormulario();
             
             try {
-                const response = await fetch('http://localhost:8080/api/parametros-empresa', {
+                const response = await fetch(apiRoot() + '/parametros-empresa', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -448,7 +454,7 @@
 
             try {
                 // Remove o cadastro salvo do ID padrão (se existir) e volta para o tema global padrão
-                await fetch('http://localhost:8080/api/parametros-empresa/empresa/' + encodeURIComponent(EP) + '/cadastro', {
+                await fetch(apiRoot() + '/parametros-empresa/empresa/' + encodeURIComponent(EP) + '/cadastro', {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + getToken() }
                 }).catch(function () {});
@@ -515,7 +521,7 @@
                 if (!ok) return;
             }
             try {
-                var res = await fetch('http://localhost:8080/api/parametros-empresa/empresa/' + encodeURIComponent(eid) + '/cadastro', {
+                var res = await fetch(apiRoot() + '/parametros-empresa/empresa/' + encodeURIComponent(eid) + '/cadastro', {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + getToken() }
                 });

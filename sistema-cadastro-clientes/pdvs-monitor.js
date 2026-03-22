@@ -114,6 +114,9 @@
         var btnTxt = (b.corBotaoTexto && b.corBotaoTexto.trim()) || P0.corBotaoTexto;
         var nome = (b.nomeEmpresa && b.nomeEmpresa.trim()) || ('Empresa #' + b.empresaId);
 
+        /** Gradiente dos botões (cor primária da marca → cor secundária), como nos parâmetros da empresa */
+        var gradBtn = 'linear-gradient(90deg, ' + btn + ' 0%, ' + sec + ' 100%)';
+
         var st = document.getElementById('pdv-monitor-empresa-theme');
         if (!st) {
             st = document.createElement('style');
@@ -134,16 +137,45 @@
             'body.page-pdvs-monitor .pdv-card { border-color: ' + prim + '40 !important; background: linear-gradient(180deg, ' + prim + '12 0%, #fff 100%) !important; box-shadow: 0 4px 16px ' + prim + '18 !important; }' +
             'body.page-pdvs-monitor .pdv-card__title { color: ' + prim + ' !important; }' +
             'body.page-pdvs-monitor .pdv-card__sub, body.page-pdvs-monitor .pdv-card__op { color: ' + texto + ' !important; opacity: 0.75; }' +
-            'body.page-pdvs-monitor .btn.btn-primary:not(:disabled) { background: linear-gradient(135deg, ' + btn + ', ' + sec + ') !important; color: ' + btnTxt + ' !important; border: none !important; }' +
+            'body.page-pdvs-monitor .pdv-monitor-toolbar-actions .btn.btn-primary:not(:disabled),' +
+            'body.page-pdvs-monitor .pdv-card .btn.btn-primary:not(:disabled),' +
+            'body.page-pdvs-monitor .modal-pdv .btn.btn-primary:not(:disabled) {' +
+            '  background: ' + gradBtn + ' !important;' +
+            '  color: ' + btnTxt + ' !important;' +
+            '  border: none !important;' +
+            '  border-radius: 12px !important;' +
+            '  font-weight: 700 !important;' +
+            '  box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 2px 8px ' + prim + '40 !important;' +
+            '}' +
+            'body.page-pdvs-monitor .btn.btn-primary.btn-small:not(:disabled) {' +
+            '  padding: 10px 18px !important;' +
+            '  font-size: 0.92rem !important;' +
+            '}' +
+            'body.page-pdvs-monitor .pdv-monitor-toolbar-actions .btn.btn-primary:not(:disabled) {' +
+            '  padding: 12px 22px !important;' +
+            '  font-size: 1rem !important;' +
+            '}' +
+            'body.page-pdvs-monitor .pdv-card__actions .btn { margin-top: 0 !important; }' +
             'body.page-pdvs-monitor .btn.btn-primary:disabled { opacity: 0.45 !important; cursor: not-allowed !important; }' +
-            'body.page-pdvs-monitor .btn.btn-primary:hover:not(:disabled) { filter: brightness(1.05); }' +
-            'body.page-pdvs-monitor .btn.btn-secondary { background: rgba(0,0,0,0.08) !important; color: ' + texto + ' !important; border: 2px solid ' + prim + '44 !important; }' +
-            'body.page-pdvs-monitor .btn.btn-secondary:hover { background: ' + prim + '18 !important; }' +
-            'body.page-pdvs-monitor #modalPdvBox { border-top: 4px solid ' + prim + ' !important; background: ' + fundo + ' !important; color: ' + texto + ' !important; }' +
+            'body.page-pdvs-monitor .btn.btn-primary:hover:not(:disabled) {' +
+            '  filter: brightness(1.06) saturate(1.05) !important;' +
+            '  transform: translateY(-1px) !important;' +
+            '  box-shadow: 0 6px 18px rgba(0,0,0,0.15), 0 3px 10px ' + prim + '55 !important;' +
+            '}' +
+            'body.page-pdvs-monitor .btn.btn-primary:active:not(:disabled) { transform: translateY(0) !important; }' +
+            'body.page-pdvs-monitor .pdv-monitor-main .btn.btn-secondary,' +
+            'body.page-pdvs-monitor .modal-pdv .btn.btn-secondary {' +
+            '  background: rgba(0,0,0,0.08) !important; color: ' + texto + ' !important; border: 2px solid ' + prim + '44 !important; border-radius: 10px !important;' +
+            '}' +
+            'body.page-pdvs-monitor .pdv-monitor-main .btn.btn-secondary:hover,' +
+            'body.page-pdvs-monitor .modal-pdv .btn.btn-secondary:hover { background: ' + prim + '18 !important; }' +
+            'body.page-pdvs-monitor #modalPdvBox { border-top: 4px solid ' + prim + ' !important; background: ' + fundo + ' !important; color: ' + texto + ' !important; border-radius: 16px !important; }' +
             'body.page-pdvs-monitor #modalPdvTitle { color: ' + prim + ' !important; }' +
+            'body.page-pdvs-monitor #modalEditPdv .modal-pdv__box { border-top: 4px solid ' + prim + ' !important; background: ' + fundo + ' !important; color: ' + texto + ' !important; border-radius: 16px !important; }' +
+            'body.page-pdvs-monitor #modalEditPdv .modal-pdv__box h3 { color: ' + prim + ' !important; }' +
             'body.page-pdvs-monitor .modal-pdv-label { color: ' + texto + ' !important; font-weight: 600; display: block; margin-bottom: 6px; }' +
-            'body.page-pdvs-monitor #modalPdvBox input { border-color: #e0e0e0 !important; color: ' + texto + ' !important; }' +
-            'body.page-pdvs-monitor #modalPdvBox input:focus { border-color: ' + prim + ' !important; }' +
+            'body.page-pdvs-monitor #modalPdvBox input, body.page-pdvs-monitor #modalEditPdv .modal-pdv__box input { border-color: #e0e0e0 !important; color: ' + texto + ' !important; }' +
+            'body.page-pdvs-monitor #modalPdvBox input:focus, body.page-pdvs-monitor #modalEditPdv .modal-pdv__box input:focus { border-color: ' + prim + ' !important; }' +
             'body.page-pdvs-monitor .nav-sidebar { background: linear-gradient(180deg, ' + prim + ' 0%, ' + sec + ' 38%, #0d0d12 92%, #08080b 100%) !important; border-right: 4px solid ' + prim + ' !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06) !important; }' +
             'body.page-pdvs-monitor .nav-sidebar__header { background: rgba(0,0,0,0.22) !important; border-bottom-color: rgba(255,255,255,0.14) !important; }' +
             'body.page-pdvs-monitor .nav-sidebar__title { color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35) !important; }' +
@@ -153,7 +185,8 @@
             'body.page-pdvs-monitor .nav-links a:hover { background: rgba(255,255,255,0.14) !important; }' +
             'body.page-pdvs-monitor .nav-links a.is-active { background: rgba(0,0,0,0.35) !important; border-left: 4px solid ' + prim + ' !important; }' +
             'body.page-pdvs-monitor .nav-sidebar__footer { border-top-color: rgba(255,255,255,0.14) !important; background: rgba(0,0,0,0.18) !important; }' +
-            'body.page-pdvs-monitor .nav-sidebar__footer .btn { background: ' + btn + ' !important; color: ' + btnTxt + ' !important; }' +
+            'body.page-pdvs-monitor .nav-sidebar__footer .btn.btn-secondary { background: rgba(255,255,255,0.12) !important; color: #fff !important; border: 2px solid rgba(255,255,255,0.35) !important; border-radius: 10px !important; }' +
+            'body.page-pdvs-monitor .nav-sidebar__footer .btn.btn-secondary:hover { background: rgba(255,255,255,0.2) !important; }' +
             'body.page-pdvs-monitor .nav-burger { border-color: rgba(255,255,255,0.35) !important; background: rgba(255,255,255,0.12) !important; color: #fff !important; }' +
             'body.page-pdvs-monitor .pdv-quick-empresa { border-top-color: ' + prim + '35 !important; }' +
             'body.page-pdvs-monitor .pdv-quick-empresa label { color: ' + texto + ' !important; }' +
@@ -177,24 +210,54 @@
         }
     }
 
+    function mapParametroDtoToBranding(data, empresaIdFallback) {
+        if (!data) return null;
+        return {
+            empresaId: data.empresaId != null ? data.empresaId : empresaIdFallback,
+            nomeEmpresa: data.nomeEmpresa,
+            corPrimaria: data.corPrimaria,
+            corSecundaria: data.corSecundaria,
+            corFundo: data.corFundo,
+            corTexto: data.corTexto,
+            corBotao: data.corBotao,
+            corBotaoTexto: data.corBotaoTexto,
+            logoUrl: data.logoUrl
+        };
+    }
+
     function syncBrandingForEmpresa(empresaId) {
         var id = parseInt(empresaId, 10);
         if (!id || id < 1) {
             applyDefaultPdvMonitorTheme();
             return;
         }
-        fetch(API + '/parametros-cliente/branding/' + id)
+        var tok = token();
+        var fetchAuth = tok
+            ? fetch(API + '/parametros-empresa/empresa/' + id, { headers: { Authorization: 'Bearer ' + tok } })
+            : Promise.resolve({ ok: false });
+        fetchAuth
             .then(function (r) {
-                if (!r.ok) {
+                if (r && r.ok) return r.json();
+                return fetch(API + '/parametros-cliente/branding/' + id).then(function (r2) {
+                    return r2.ok ? r2.json() : null;
+                });
+            })
+            .then(function (data) {
+                if (!data) {
                     applyDefaultPdvMonitorTheme();
-                    return null;
+                    return;
                 }
-                return r.json();
+                applyPdvMonitorBranding(mapParametroDtoToBranding(data, id));
             })
-            .then(function (b) {
-                if (b) applyPdvMonitorBranding(b);
-            })
-            .catch(function () { applyDefaultPdvMonitorTheme(); });
+            .catch(function () {
+                fetch(API + '/parametros-cliente/branding/' + id)
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (data) {
+                        if (data) applyPdvMonitorBranding(mapParametroDtoToBranding(data, id));
+                        else applyDefaultPdvMonitorTheme();
+                    })
+                    .catch(function () { applyDefaultPdvMonitorTheme(); });
+            });
     }
 
     function token() {

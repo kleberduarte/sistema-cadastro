@@ -4,10 +4,13 @@
 // Autor: Sistema de Cadastro
 // Data: 2024
 
-// Constantes de configuração
+// Constantes de configuração (API: api-config.js deve carregar antes deste script)
 const CURRENT_USER_KEY = 'currentUser';
 const TOKEN_KEY = 'authToken';
-const API_URL = 'http://localhost:8080/api';
+var API_URL =
+    typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function'
+        ? window.getApiBaseUrl()
+        : 'http://localhost:8080/api';
 
 // Lista de tokens invalidados (simple blacklist em memória)
 let invalidatedTokens = new Set();
