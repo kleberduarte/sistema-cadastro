@@ -40,6 +40,24 @@ header {
     margin: 0 auto;
 }
 
+.header-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.header-welcome {
+    margin: 0.35rem 0 0 0;
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.35;
+    max-width: 42rem;
+    opacity: 0.95;
+}
+
+header .header-welcome {
+    color: rgba(255, 255, 255, 0.95);
+}
+
 header h1 {
     font-size: 2rem;
     font-weight: 600;

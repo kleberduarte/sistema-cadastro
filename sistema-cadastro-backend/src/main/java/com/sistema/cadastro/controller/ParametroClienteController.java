@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
 /**
  * Endpoints públicos para o PDV e telas sem autenticação (apenas identidade visual).
  */
@@ -22,11 +20,15 @@ public class ParametroClienteController {
 
     @GetMapping("/branding/{empresaId}")
     public ResponseEntity<EmpresaBrandingDTO> brandingPorEmpresa(@PathVariable Long empresaId) {
-        Optional<ParametroEmpresaDTO> opt = parametroEmpresaService.buscarPorEmpresaIdComInativos(empresaId);
-        if (opt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+        if (empresaId == null || empresaId < 1) {
+            return ResponseEntity.badRequest().build();
         }
-        ParametroEmpresaDTO p = opt.get();
+        ParametroEmpresaDTO p = parametroEmpresaService.buscarPorEmpresaIdComInativos(empresaId)
+                .orElseGet(() -> {
+                    ParametroEmpresaDTO d = parametroEmpresaService.getParametrosDefault();
+                    d.setEmpresaId(empresaId);
+                    return d;
+                });
         EmpresaBrandingDTO b = EmpresaBrandingDTO.builder()
                 .empresaId(p.getEmpresaId())
                 .nomeEmpresa(p.getNomeEmpresa())
@@ -37,6 +39,7 @@ public class ParametroClienteController {
                 .corTexto(p.getCorTexto())
                 .corBotao(p.getCorBotao())
                 .corBotaoTexto(p.getCorBotaoTexto())
+                .mensagemBoasVindas(p.getMensagemBoasVindas())
                 .build();
         return ResponseEntity.ok(b);
     }

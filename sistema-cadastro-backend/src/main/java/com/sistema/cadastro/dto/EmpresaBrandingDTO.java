@@ -20,4 +20,6 @@ public class EmpresaBrandingDTO {
     private String corTexto;
     private String corBotao;
     private String corBotaoTexto;
+    /** Texto de boas-vindas (login / cabeçalho) — público, sem dados sensíveis. */
+    private String mensagemBoasVindas;
 }

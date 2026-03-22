@@ -223,28 +223,26 @@ async function loadClientParams() {
         CLIENTE_ID = parseInt(selectedClienteId);
     }
     
+    let hadStored = false;
     if (storedParams) {
         try {
             clientParams = JSON.parse(storedParams);
             applyClientStyles(clientParams);
+            hadStored = true;
             console.log('Parâmetros carregados do localStorage:', clientParams);
-            return;
         } catch (e) {
             console.log('Erro ao analisar localStorage, buscando do servidor');
         }
     }
 
-    // Aplicar estilos padrão imediatamente para garantir que a tela funcione
-    // mesmo se a busca do servidor falhar ou demorar
-    applyDefaultStyles();
+    // Sem cache válido: tema padrão até a API responder
+    if (!hadStored) {
+        applyDefaultStyles();
+    }
 
-    // Verificar se há um token (usuário logado)
+    // Sempre buscar no servidor quando possível (cache antigo não tinha mensagemBoasVindas etc.)
     const token = localStorage.getItem('token');
-    
-    // Se não tem token, ainda tenta carregar do servidor usando o empresaId do localStorage
     try {
-        // Sem token (tela de login), usa endpoint público de branding.
-        // Com token, usa endpoint completo de parâmetros da empresa.
         const apiBase = typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api';
         const endpoint = token
             ? `${apiBase}/parametros-empresa/empresa/${CLIENTE_ID}`
@@ -254,21 +252,19 @@ async function loadClientParams() {
                 'Authorization': 'Bearer ' + token
             } : {}
         }).catch(function (err) {
-            // Erro de rede (API offline) - já aplicamos padrão, apenas retornar
             return null;
         });
 
         if (response && response.ok) {
-            clientParams = await response.json();
-            // Salvar no localStorage para próximas cargas
+            const fresh = await response.json();
+            // Merge: branding retorna só parte dos campos; não apagar chavePix etc. do cache
+            clientParams = Object.assign({}, clientParams || {}, fresh);
             localStorage.setItem('empresaParams', JSON.stringify(clientParams));
-            // Aplicar estilos personalizados (sobrescreve o padrão)
             applyClientStyles(clientParams);
             console.log('Parâmetros do cliente carregados:', clientParams);
         }
-        // 404 ou outros erros: já aplicamos estilos padrão acima, não precisa fazer nada
     } catch (error) {
-        // Erro inesperado: já aplicamos estilos padrão acima, não precisa fazer nada
+        // Mantém o que já foi aplicado (cache ou padrão)
     }
 }
 
@@ -620,11 +616,22 @@ function applyClientStyles(params) {
         }
     }
 
-    // Aplicar mensagem de boas-vindas
-    if (params.mensagemBoasVindas) {
-        const welcomeElement = document.getElementById('welcomeMessage');
-        if (welcomeElement) {
-            welcomeElement.textContent = params.mensagemBoasVindas;
+    // Mensagem de boas-vindas (login + cabeçalhos com #welcomeMessage)
+    const welcomeElement = document.getElementById('welcomeMessage');
+    if (welcomeElement) {
+        const msg = (params.mensagemBoasVindas && String(params.mensagemBoasVindas).trim()) || '';
+        const hasExplicitDefault = welcomeElement.hasAttribute('data-welcome-default');
+        const defaultText = hasExplicitDefault ? (welcomeElement.getAttribute('data-welcome-default') || '') : 'Acesse sua conta para continuar';
+        if (msg) {
+            welcomeElement.textContent = msg;
+            welcomeElement.removeAttribute('hidden');
+        } else {
+            welcomeElement.textContent = defaultText;
+            if (defaultText === '') {
+                welcomeElement.setAttribute('hidden', '');
+            } else {
+                welcomeElement.removeAttribute('hidden');
+            }
         }
     }
 

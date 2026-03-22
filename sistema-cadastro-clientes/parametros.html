@@ -34,7 +34,10 @@
         <div class="container">
             <header>
                 <div class="header-content">
-                    <h1>Parâmetros da Empresa</h1>
+                    <div class="header-left">
+                        <h1>Parâmetros da Empresa</h1>
+                        <p id="welcomeMessage" class="header-welcome" hidden data-welcome-default=""></p>
+                    </div>
                     <div class="nav-right">
                         <button class="nav-burger" type="button" aria-label="Abrir menu" onclick="toggleSidebar()">☰</button>
                         <span id="userName" class="nav-user">Olá, Usuário</span>
@@ -62,7 +65,9 @@
 
                 <div class="form-group">
                     <label for="nomeEmpresa">Nome da Empresa</label>
-                    <input type="text" id="nomeEmpresa" placeholder="Nome da empresa que aparecerá no sistema">
+                    <input type="text" id="nomeEmpresa" placeholder="Nome da empresa que aparecerá no sistema" autocomplete="organization">
+                    <small id="hintNomeEmpresaAdm" style="display:block;margin-top:6px;color:#666;font-size:0.88rem;line-height:1.45;">Ao entrar, carregamos a <strong>empresa padrão</strong> (ID do sistema). Limpe o nome para iniciar um <strong>novo cadastro</strong> — será gerado um <strong>novo ID</strong>, sem alterar o cadastro do ID padrão.</small>
+                    <small id="hintNomeEmpresaEmpresa" style="display:none;margin-top:6px;color:#666;font-size:0.88rem;line-height:1.45;">Ajuste o nome, cores e demais dados que aparecem no sistema e no PDV para <strong>a sua empresa</strong>.</small>
                 </div>
 
                 <div class="form-group">
@@ -155,7 +160,16 @@
     <script>
         // Variável global para armazenar o ID do parâmetro
         let parametroId = null;
+        /** True quando o usuário limpou o nome (novo cadastro) ou digita nome sem linha no combo. */
+        var parametrosModoNovoCadastro = false;
         const DEFAULT_PIX_KEY = 'pix@lojapdv.com';
+
+        function empresaPadraoId() {
+            return typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number'
+                ? window.EMPRESA_ID_PADRAO_SISTEMA
+                : (window.EMPRESA_ID_PADRAO_SISTEMA != null ? parseInt(String(window.EMPRESA_ID_PADRAO_SISTEMA), 10) : 1) || 1;
+        }
+
         function apiRoot() {
             return (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function')
                 ? window.getApiBaseUrl()
@@ -170,16 +184,33 @@
             btn.disabled = !eid || !parametroId;
         }
 
+        function isPerfilAdminEmpresa() {
+            var u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            return u && typeof normalizeUserRole === 'function' && normalizeUserRole(u.role) === 'ADMIN_EMPRESA';
+        }
+
         /** ADMIN_EMPRESA não vê "Restaurar" (ação global de padrão do sistema). */
         function aplicarVisibilidadeRestaurar() {
             var btn = document.getElementById('btnRestaurarParametros');
             if (!btn) return;
-            var u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
-            var role = u && typeof normalizeUserRole === 'function' ? normalizeUserRole(u.role) : '';
-            if (role === 'ADMIN_EMPRESA') {
+            if (isPerfilAdminEmpresa()) {
                 btn.style.display = 'none';
             } else {
                 btn.style.display = '';
+            }
+        }
+
+        /** Textos de ajuda: ADM vê fluxo de ID padrão / novo cadastro; ADMIN_EMPRESA só orientação da própria empresa. */
+        function aplicarTextoAjudaNomeEmpresa() {
+            var adm = document.getElementById('hintNomeEmpresaAdm');
+            var emp = document.getElementById('hintNomeEmpresaEmpresa');
+            if (!adm || !emp) return;
+            if (isPerfilAdminEmpresa()) {
+                adm.style.display = 'none';
+                emp.style.display = 'block';
+            } else {
+                adm.style.display = 'block';
+                emp.style.display = 'none';
             }
         }
 
@@ -193,13 +224,35 @@
                 }
             } catch (_) {}
             aplicarVisibilidadeRestaurar();
+            aplicarTextoAjudaNomeEmpresa();
             setupPreviewListeners();
             carregarEmpresas(); // Carregar lista + aplicar contexto de empresa ao iniciar
         });
 
-        // Carregar lista de empresas cadastradas
-        async function carregarEmpresas() {
+        /**
+         * @param {object} [opts]
+         * @param {string|number} [opts.preferredEmpresaIdAfterLoad] — força a seleção após montar o combo (ex.: após Salvar / Restaurar)
+         */
+        async function carregarEmpresas(opts) {
+            opts = opts || {};
             try {
+                const select = document.getElementById('empresaSelect');
+                var previous = select ? String(select.value || '').trim() : '';
+                if (!previous) {
+                    try {
+                        var s = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId');
+                        if (s) {
+                            var n = parseInt(String(s).trim(), 10);
+                            if (!isNaN(n) && n >= 1) {
+                                previous = String(n);
+                            }
+                        }
+                    } catch (e0) {}
+                }
+                if (opts.preferredEmpresaIdAfterLoad != null && String(opts.preferredEmpresaIdAfterLoad).trim() !== '') {
+                    previous = String(opts.preferredEmpresaIdAfterLoad).trim();
+                }
+
                 const response = await fetch(apiRoot() + '/parametros-empresa', {
                     headers: {
                         'Authorization': 'Bearer ' + getToken()
@@ -207,10 +260,8 @@
                 });
 
                 const parametros = response.ok ? await response.json() : [];
-                const select = document.getElementById('empresaSelect');
                 select.innerHTML = '<option value="">-- Selecione uma empresa --</option>';
 
-                // Lista apenas empresas que já têm parâmetros cadastrados (sem buscar /clientes)
                 parametros
                     .slice()
                     .sort(function (a, b) { return (a.empresaId || 0) - (b.empresaId || 0); })
@@ -222,17 +273,40 @@
                         select.appendChild(option);
                     });
 
-                // Se já existir empresa em contexto, pré-seleciona
-                try {
-                    const saved = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId');
-                    const n = saved ? parseInt(saved, 10) : NaN;
-                    if (!isNaN(n) && n >= 1) {
-                        select.value = String(n);
-                        document.getElementById('empresaId').value = String(n);
-                        atualizarBotaoExcluirEmpresa();
-                        await selecionarEmpresa(true);
+                var EP = empresaPadraoId();
+                /** Só ADM precisa da linha sintética do ID padrão global; ADMIN_EMPRESA não vê esse ID (evita confusão). */
+                if (!isPerfilAdminEmpresa() && !Array.from(select.options).some(function (o) { return String(o.value) === String(EP); })) {
+                    var optPadrao = document.createElement('option');
+                    optPadrao.value = String(EP);
+                    optPadrao.textContent = 'ID: ' + EP + ' — (padrão do sistema)';
+                    select.insertBefore(optPadrao, select.options[1] || null);
+                }
+
+                var validIds = [];
+                Array.from(select.options).forEach(function (o) {
+                    if (o.value !== '') validIds.push(String(o.value));
+                });
+                var target = previous;
+                if (!target || validIds.indexOf(target) === -1) {
+                    if (isPerfilAdminEmpresa()) {
+                        var uEmp = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+                        var eu = uEmp && uEmp.empresaId != null ? String(uEmp.empresaId) : '';
+                        if (eu && validIds.indexOf(eu) >= 0) {
+                            target = eu;
+                        } else if (validIds.length > 0) {
+                            target = validIds[0];
+                        } else {
+                            target = '';
+                        }
+                    } else {
+                        target = String(EP);
                     }
-                } catch (e) {}
+                }
+                select.value = target;
+                document.getElementById('empresaId').value = target;
+                parametrosModoNovoCadastro = false;
+                atualizarBotaoExcluirEmpresa();
+                await selecionarEmpresa(true);
             } catch (error) {
                 console.error('Erro ao carregar empresas:', error);
             }
@@ -243,6 +317,7 @@
             const empresaId = document.getElementById('empresaSelect').value;
             document.getElementById('empresaId').value = empresaId;
             parametroId = null;
+            parametrosModoNovoCadastro = false;
             atualizarBotaoExcluirEmpresa();
 
             if (!empresaId) {
@@ -270,16 +345,70 @@
                         showAlert('Parâmetros da empresa "' + (params.nomeEmpresa || empresaId) + '" carregados e aplicados!', 'success');
                     }
                 } else if (response.status === 404) {
-                    if (!silent) {
-                        showAlert('Empresa selecionada não tem parâmetros cadastrados.', 'info');
+                    var epNum = empresaPadraoId();
+                    if (String(empresaId) === String(epNum)) {
+                        preencherFormularioTemaPadraoLocal(epNum);
+                        atualizarBotaoExcluirEmpresa();
+                        if (!silent) {
+                            showAlert(
+                                isPerfilAdminEmpresa()
+                                    ? ('Ainda não há cadastro salvo para o ID ' + epNum + '. Preencha os dados e salve.')
+                                    : ('Ainda não há cadastro salvo para o ID ' + epNum + '. Preencha e salve ou use Restaurar.'),
+                                'info'
+                            );
+                        }
+                    } else {
+                        if (!silent) {
+                            showAlert('Empresa selecionada não tem parâmetros cadastrados.', 'info');
+                        }
+                        atualizarBotaoExcluirEmpresa();
                     }
-                    atualizarBotaoExcluirEmpresa();
                 } else {
                     showAlert('Erro ao carregar parâmetros da empresa', 'error');
                 }
             } catch (error) {
                 console.error('Erro ao selecionar empresa:', error);
                 showAlert('Erro de conexão', 'error');
+            }
+        }
+
+        /** Quando o ID padrão ainda não tem linha no banco: formulário a partir do tema global. */
+        function preencherFormularioTemaPadraoLocal(empresaIdNum) {
+            var P = window.SISTEMA_THEME_PADRAO || {};
+            preencherFormulario({
+                id: null,
+                empresaId: empresaIdNum,
+                nomeEmpresa: P.nomeEmpresa || 'Sistema de Cadastro',
+                logoUrl: '',
+                corPrimaria: P.corPrimaria || '#667eea',
+                corSecundaria: P.corSecundaria || '#764ba2',
+                corFundo: P.corFundo || '#ffffff',
+                corTexto: P.corTexto || '#333333',
+                corBotao: P.corBotao || '#667eea',
+                corBotaoTexto: P.corBotaoTexto || '#ffffff',
+                mensagemBoasVindas: '',
+                chavePix: DEFAULT_PIX_KEY,
+                ativo: true
+            });
+        }
+
+        /** Limpar o nome = modo novo cadastro (desvincula do ID selecionado; próximo salvar gera novo empresaId). */
+        function onNomeEmpresaInteligencia() {
+            var el = document.getElementById('nomeEmpresa');
+            if (!el) return;
+            var nome = (el.value || '').trim();
+            var sel = document.getElementById('empresaSelect');
+            if (nome === '') {
+                if (sel) sel.value = '';
+                document.getElementById('empresaId').value = '';
+                parametroId = null;
+                parametrosModoNovoCadastro = true;
+                atualizarBotaoExcluirEmpresa();
+                atualizarPreVisualizacao();
+                return;
+            }
+            if (sel && !String(sel.value || '').trim()) {
+                parametrosModoNovoCadastro = true;
             }
         }
 
@@ -293,6 +422,10 @@
                     elemento.addEventListener('input', atualizarPreVisualizacao);
                 }
             });
+            var nomeEl = document.getElementById('nomeEmpresa');
+            if (nomeEl) {
+                nomeEl.addEventListener('input', onNomeEmpresaInteligencia);
+            }
         }
 
         // Atualizar pré-visualização
@@ -319,7 +452,7 @@
 
         // Preencher formulário com os parâmetros
         function preencherFormulario(params) {
-            parametroId = params.id;
+            parametroId = params.id != null ? params.id : null;
             document.getElementById('empresaId').value = params.empresaId || '';
             document.getElementById('nomeEmpresa').value = params.nomeEmpresa || '';
             document.getElementById('logoUrl').value = params.logoUrl || '';
@@ -337,11 +470,18 @@
         }
 
         // Obter valores do formulário
+        // O ID da empresa no payload vem só da lista (combo). Ignora o campo oculto para não salvar
+        // no ID errado após "Restaurar" (que deixava hidden=1 com combo vazio) ou estados inconsistentes.
         function obterParametrosFormulario() {
-            var rawEmpresaId = (document.getElementById('empresaId').value || '').trim();
-            var empresaId = rawEmpresaId ? parseInt(rawEmpresaId, 10) : NaN;
+            var sel = document.getElementById('empresaSelect');
+            var selectedVal = sel && sel.value ? String(sel.value).trim() : '';
+            var empresaId = selectedVal ? parseInt(selectedVal, 10) : NaN;
+            var idPayload = null;
+            if (selectedVal && parametroId != null) {
+                idPayload = parametroId;
+            }
             return {
-                id: parametroId,
+                id: idPayload,
                 empresaId: (!isNaN(empresaId) && empresaId >= 1) ? empresaId : null,
                 nomeEmpresa: document.getElementById('nomeEmpresa').value,
                 logoUrl: document.getElementById('logoUrl').value,
@@ -358,6 +498,17 @@
         }
 
         async function salvarParametros() {
+            var sel = document.getElementById('empresaSelect');
+            if (!sel || !String(sel.value || '').trim()) {
+                parametroId = null;
+            }
+            var nomeTrim = (document.getElementById('nomeEmpresa') && document.getElementById('nomeEmpresa').value)
+                ? String(document.getElementById('nomeEmpresa').value).trim()
+                : '';
+            if (!String(sel.value || '').trim() && !nomeTrim) {
+                showAlert('Informe o nome da empresa para salvar. (Limpar o nome indica novo cadastro — digite o nome da nova empresa.)', 'info');
+                return;
+            }
             const params = obterParametrosFormulario();
             
             try {
@@ -372,6 +523,7 @@
 
                 if (response.ok) {
                     const savedParams = await response.json();
+                    parametrosModoNovoCadastro = false;
                     parametroId = savedParams.id;
                     atualizarBotaoExcluirEmpresa();
                     
@@ -400,7 +552,9 @@
                     
                     // Recarregar a página para aplicar em todas as telas
                     showAlert('Parâmetros salvos e aplicados com sucesso!', 'success');
-                    try { carregarEmpresas(); } catch (e3) {}
+                    try {
+                        await carregarEmpresas({ preferredEmpresaIdAfterLoad: savedParams.empresaId });
+                    } catch (e3) {}
                 } else {
                     showAlert('Erro ao salvar parâmetros', 'error');
                 }
@@ -410,78 +564,119 @@
             }
         }
 
-        // Restaurar parâmetros padrão — sempre o mesmo ID (EMPRESA_ID_PADRAO_SISTEMA), alinhado ao monitor de PDVs
+        // Restaurar parâmetros padrão da empresa do sistema (EMPRESA_ID_PADRAO_SISTEMA, ex.: 1).
+        // Grava no servidor via POST — não apaga outras empresas; não usa DELETE.
         async function resetarParametros() {
+            var EP = empresaPadraoId();
+            var sel = document.getElementById('empresaSelect');
+            var idSelecionadoAntes = sel && sel.value ? String(sel.value).trim() : '';
+
+            var textoConfirm =
+                idSelecionadoAntes && idSelecionadoAntes !== String(EP)
+                    ? 'Serão restaurados no servidor os parâmetros da empresa padrão (ID ' +
+                      EP +
+                      '). O tema visual do sistema passará a ser o padrão. As outras empresas não são removidas. Continuar?'
+                    : 'Restaurar os parâmetros padrão da empresa ID ' + EP + ' e aplicar o tema padrão no sistema?';
+
             var p =
                 typeof window.showSystemConfirm === 'function'
-                    ? window.showSystemConfirm('Restaurar os parâmetros padrão do sistema?', {
+                    ? window.showSystemConfirm(textoConfirm, {
                           title: 'Restaurar padrões',
                           confirmText: 'Restaurar',
                           cancelText: 'Cancelar',
                           type: 'warning'
                       })
-                    : new Promise(function (res) { res(confirm('Tem certeza que deseja restaurar os parâmetros padrão do sistema?')); });
+                    : new Promise(function (res) { res(confirm(textoConfirm)); });
             var ok = await p;
             if (!ok) return;
 
-            var EP = window.EMPRESA_ID_PADRAO_SISTEMA || 1;
-            document.getElementById('empresaSelect').value = '';
-            document.getElementById('empresaId').value = String(EP);
-            parametroId = null;
-
-            document.getElementById('nomeEmpresa').value = 'Sistema de Cadastro';
-            document.getElementById('logoUrl').value = '';
-            document.getElementById('corPrimaria').value = '#667eea';
-            document.getElementById('corSecundaria').value = '#764ba2';
-            document.getElementById('corFundo').value = '#ffffff';
-            document.getElementById('corTexto').value = '#333333';
-            document.getElementById('corBotao').value = '#667eea';
-            document.getElementById('corBotaoTexto').value = '#ffffff';
-            document.getElementById('mensagemBoasVindas').value = '';
-            document.getElementById('chavePix').value = DEFAULT_PIX_KEY;
-            document.getElementById('ativo').checked = true;
-
-            const styleTag = document.getElementById('custom-client-styles');
-            if (styleTag) {
-                styleTag.remove();
-            }
-
-            applyDefaultStyles();
-            atualizarPreVisualizacao();
-
-            localStorage.setItem('selectedEmpresaId', String(EP));
-            localStorage.setItem('selectedClienteId', String(EP));
-
-            try {
-                // Remove o cadastro salvo do ID padrão (se existir) e volta para o tema global padrão
-                await fetch(apiRoot() + '/parametros-empresa/empresa/' + encodeURIComponent(EP) + '/cadastro', {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + getToken() }
-                }).catch(function () {});
-            } catch (e) {
-                console.warn('reset padrão:', e);
-            }
-
-            // Tema padrão (não o último cadastro salvo)
             var P = window.SISTEMA_THEME_PADRAO || {};
-            var defaultParams = {
-                empresaId: EP,
+
+            var body = {
+                id: null,
+                empresaId: Number(EP),
                 nomeEmpresa: 'Sistema de Cadastro',
+                logoUrl: '',
                 corPrimaria: P.corPrimaria || '#667eea',
                 corSecundaria: P.corSecundaria || '#764ba2',
                 corFundo: P.corFundo || '#ffffff',
                 corTexto: P.corTexto || '#333333',
                 corBotao: P.corBotao || '#667eea',
                 corBotaoTexto: P.corBotaoTexto || '#ffffff',
+                mensagemBoasVindas: '',
                 chavePix: DEFAULT_PIX_KEY,
                 ativo: true
             };
-            try { localStorage.setItem('empresaParams', JSON.stringify(defaultParams)); } catch (e2) {}
-            try { applyClientStyles(defaultParams); } catch (e3) {}
 
-            carregarEmpresas();
-            atualizarBotaoExcluirEmpresa();
-            showAlert('Padrão restaurado. Empresa ID ' + EP + ' — sem manter o último cadastro.', 'success');
+            try {
+                var getRes = await fetch(apiRoot() + '/parametros-empresa/empresa/' + encodeURIComponent(Number(EP)), {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                if (getRes.ok) {
+                    var existing = await getRes.json();
+                    if (existing && existing.id != null) {
+                        body.id = existing.id;
+                    }
+                }
+            } catch (e1) {
+                console.warn('resetarParametros: leitura prévia', e1);
+            }
+
+            try {
+                var postRes = await fetch(apiRoot() + '/parametros-empresa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + getToken()
+                    },
+                    body: JSON.stringify(body)
+                });
+                if (!postRes.ok) {
+                    var errTxt = '';
+                    try {
+                        errTxt = await postRes.text();
+                    } catch (e4) {}
+                    console.warn('Restaurar POST', postRes.status, errTxt);
+                    showAlert(
+                        'Não foi possível gravar o padrão no servidor (HTTP ' +
+                            postRes.status +
+                            '). ' +
+                            (errTxt ? errTxt.slice(0, 200) : ''),
+                        'error'
+                    );
+                    return;
+                }
+                var savedParamsPadrao = await postRes.json();
+
+                var styleTag = document.getElementById('custom-client-styles');
+                if (styleTag) {
+                    styleTag.remove();
+                }
+
+                // Sempre recarrega o combo com a empresa padrão selecionada e aplica o tema padrão (não re-selecionar
+                // outra empresa: isso reaplicava Centauro etc. e sobrescrevia o default no localStorage / applyClientStyles).
+                await carregarEmpresas({ preferredEmpresaIdAfterLoad: String(EP) });
+
+                parametrosModoNovoCadastro = false;
+                parametroId = savedParamsPadrao.id;
+                sel.value = String(EP);
+                document.getElementById('empresaId').value = String(EP);
+                preencherFormulario(savedParamsPadrao);
+                localStorage.setItem('selectedEmpresaId', String(EP));
+                localStorage.setItem('selectedClienteId', String(EP));
+                localStorage.setItem('empresaParams', JSON.stringify(savedParamsPadrao));
+                try {
+                    setSelectedEmpresaId(EP);
+                } catch (e2) {}
+                try {
+                    applyClientStyles(savedParamsPadrao);
+                } catch (e3) {}
+                atualizarBotaoExcluirEmpresa();
+                showAlert('Parâmetros padrão restaurados (ID ' + EP + ') e tema aplicado no sistema.', 'success');
+            } catch (e) {
+                console.error(e);
+                showAlert('Erro ao restaurar padrão.', 'error');
+            }
         }
 
         async function excluirCadastroEmpresa() {

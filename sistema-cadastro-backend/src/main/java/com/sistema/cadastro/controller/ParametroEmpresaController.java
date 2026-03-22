@@ -5,10 +5,12 @@ import com.sistema.cadastro.model.Role;
 import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.service.ParametroEmpresaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -86,10 +88,13 @@ public class ParametroEmpresaController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Remove o cadastro de parâmetros desta empresa (não apaga PDVs no banco). */
+    /** Remove o cadastro da empresa e todos os dados vinculados (produtos, clientes, vendas, PDVs, usuários da empresa, etc.). */
     @DeleteMapping("/empresa/{empresaId}/cadastro")
     @PreAuthorize("hasRole('ADM')")
     public ResponseEntity<Void> excluirCadastroPorEmpresaId(@PathVariable Long empresaId) {
+        if (empresaId != null && empresaId <= 1L) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é permitido excluir a empresa padrão do sistema (ID 1).");
+        }
         if (!service.excluirPorEmpresaId(empresaId)) {
             return ResponseEntity.notFound().build();
         }
