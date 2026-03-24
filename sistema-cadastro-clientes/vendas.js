@@ -137,8 +137,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof loadClientParams === 'function') loadClientParams();
 
     updateClienteIndicadoDisplay();
-    loadProducts();
-    loadAllSales();
+    loadProducts({ quiet: true });
+    /* Vendas: carregadas sob demanda em openSaleSearchModal (F7) — evita GET /vendas pesado na abertura do PDV */
     setupEventListeners();
     setCaixaStatus('LIVRE');
     startPdvHeartbeat();
@@ -405,7 +405,11 @@ function setupKeyboardShortcuts() {
     window.addEventListener('keydown', handleShortcut, true);
 }
 
-async function loadProducts() {
+/**
+ * @param {{ quiet?: boolean }} [opts] quiet=true na abertura do PDV (sem toast de sucesso; menos trabalho na UI)
+ */
+async function loadProducts(opts) {
+    opts = opts || {};
     try {
         const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
         
@@ -415,7 +419,11 @@ async function loadProducts() {
         });
         if (response.ok) {
             products = await response.json();
-            showAlert(`${products.length} produtos carregados.`, 'success');
+            if (opts.quiet) {
+                console.log('PDV: ' + products.length + ' produtos em cache.');
+            } else {
+                showAlert(`${products.length} produtos carregados.`, 'success');
+            }
         } else {
             showAlert('Erro ao carregar produtos da API.', 'error');
         }
