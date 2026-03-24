@@ -54,7 +54,7 @@ public class EmpresaTenantExclusaoService {
         }
         pdvTerminalRepository.deleteAll(terminais);
 
-        produtoRepository.deleteByEmpresaId(empresaId);
+        produtoRepository.deleteAllDirectByEmpresaId(empresaId);
 
         clienteRepository.deleteAll(clienteRepository.findByEmpresaId(empresaId));
 
