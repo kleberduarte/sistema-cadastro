@@ -20,6 +20,23 @@ function normalizeRole(role) {
 }
 
 /**
+ * Senha provisória (1º acesso): confirma flag vinda do login ou de /auth/me.
+ * Aceita boolean, string ("true") ou número 1 (evita falha em PRD se o JSON variar).
+ */
+function mustForcarTrocaSenha(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    var v = obj.mustChangePassword;
+    if (v === true) return true;
+    if (v === false || v === null || v === undefined) return false;
+    if (typeof v === 'string') {
+        var s = v.trim().toLowerCase();
+        return s === 'true' || s === '1' || s === 'yes';
+    }
+    if (typeof v === 'number') return v === 1;
+    return false;
+}
+
+/**
  * PDV exige ?empresaId= na URL (exceto sessão já válida no próprio PDV).
  * @param {number|null|undefined} empresaIdUsuario — empresa real do usuário (/auth/me). Prioridade sobre o tenant da URL de login (ex.: ?empresaId=1 do super ADM).
  */
@@ -185,7 +202,7 @@ function initBannerSessaoValida() {
                     return;
                 }
             } catch (_) {}
-            if (me.mustChangePassword === true) {
+            if (mustForcarTrocaSenha(me)) {
                 try {
                     var eBanner = me.empresaId != null && me.empresaId >= 1 ? me.empresaId : parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
                     if (eBanner >= 1) sessionStorage.setItem('redefinirSenhaEmpresaId', String(eBanner));
@@ -335,7 +352,7 @@ async function handleLoginSubmit(e) {
         if (data.token) {
             // Evita misturar token/usuário antigo com o novo login (ex.: troca de conta)
             limparSessaoArmazenada();
-            if (data.mustChangePassword === true) {
+            if (mustForcarTrocaSenha(data)) {
                 localStorage.setItem(TOKEN_KEY, data.token);
                 let id0 = data.id;
                 let user0 = data.username;
@@ -369,6 +386,24 @@ async function handleLoginSubmit(e) {
                         roleNorm = normalizeRole(me.role);
                         if (me.empresaId != null && me.empresaId !== '') {
                             empresaIdResolved = Number(me.empresaId);
+                        }
+                        if (mustForcarTrocaSenha(me)) {
+                            var uMc = { id: id, username: usernameResolved, role: roleNorm };
+                            if (me.empresaId != null && Number(me.empresaId) >= 1) {
+                                uMc.empresaId = Number(me.empresaId);
+                                empresaIdResolved = Number(me.empresaId);
+                            } else if (empresaIdResolved != null) {
+                                uMc.empresaId = empresaIdResolved;
+                            }
+                            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(uMc));
+                            try {
+                                var eM = empresaIdResolved != null && empresaIdResolved >= 1
+                                    ? empresaIdResolved
+                                    : parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
+                                if (eM >= 1) sessionStorage.setItem('redefinirSenhaEmpresaId', String(eM));
+                            } catch (_) {}
+                            window.location.href = 'redefinir-senha-primeiro-acesso.html';
+                            return;
                         }
                     }
                 }

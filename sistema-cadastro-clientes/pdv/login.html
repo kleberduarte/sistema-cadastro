@@ -162,6 +162,18 @@
     <script>
     (function () {
         var API = (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : 'http://localhost:8080/api');
+        function mustForcarTrocaSenha(obj) {
+            if (!obj || typeof obj !== 'object') return false;
+            var v = obj.mustChangePassword;
+            if (v === true) return true;
+            if (v === false || v === null || v === undefined) return false;
+            if (typeof v === 'string') {
+                var s = v.trim().toLowerCase();
+                return s === 'true' || s === '1' || s === 'yes';
+            }
+            if (typeof v === 'number') return v === 1;
+            return false;
+        }
         function getEmpresaIdFromUrl() {
             try {
                 var params = new URLSearchParams(window.location.search || '');
@@ -532,7 +544,7 @@
                         localStorage.removeItem('currentUser');
                     } catch (eClr) {}
                 }
-                if (data.token && data.mustChangePassword === true) {
+                if (data.token && mustForcarTrocaSenha(data)) {
                     try { sessionStorage.setItem('redefinirSenhaEmpresaId', String(empresaLogin)); } catch (e0) {}
                     localStorage.setItem('authToken', data.token);
                     localStorage.setItem('currentUser', JSON.stringify({
@@ -577,6 +589,13 @@
                             id = me.id;
                             if (me.username) username = me.username;
                             roleNorm = normRole(me.role);
+                            if (mustForcarTrocaSenha(me)) {
+                                try { sessionStorage.setItem('redefinirSenhaEmpresaId', String(empresaLogin)); } catch (eMc) {}
+                                localStorage.setItem('authToken', token);
+                                localStorage.setItem('currentUser', JSON.stringify({ id: id, username: username, role: roleNorm }));
+                                window.location.replace('../redefinir-senha-primeiro-acesso.html?from=pdv');
+                                return;
+                            }
                         }
                     }
                 } catch (x) {}
