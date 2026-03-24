@@ -92,6 +92,14 @@ Use após subir o código mais recente em `main` (ex.: validação de logo, impo
 1. Reinstalar/atualizar o atalho após o deploy (ou limpar dados do site).
 2. Conferir ícone e telas principais.
 
+## Render: “Port scan timeout / no open ports”
+
+O Render exige que o processo **escute na variável `PORT`** dentro do tempo do health check. Se os logs param antes de aparecer algo como **Tomcat started on port …**:
+
+1. Confirme **`SPRING_PROFILES_ACTIVE=prod`** e que **`server.port`** usa `PORT` (já configurado nas `application*.properties`).
+2. **Memória:** em planos ~512 MB, heap muito alto pode causar OOM na subida sem log claro. O `Dockerfile` limita o heap para deixar margem ao JRE.
+3. **Plano / cold start:** primeira subida após build pode demorar; se ainda falhar, aumente o tipo de instância ou veja na documentação do Render o tempo máximo do primeiro health check.
+
 ## Referências
 
 - `RELEASE_CANDIDATE.md` — freeze e variáveis.
