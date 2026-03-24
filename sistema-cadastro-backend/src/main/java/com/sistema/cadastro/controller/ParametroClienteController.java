@@ -3,6 +3,7 @@ package com.sistema.cadastro.controller;
 import com.sistema.cadastro.dto.EmpresaBrandingDTO;
 import com.sistema.cadastro.dto.ParametroEmpresaDTO;
 import com.sistema.cadastro.service.ParametroEmpresaService;
+import com.sistema.cadastro.util.LogoUrlSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +33,7 @@ public class ParametroClienteController {
         EmpresaBrandingDTO b = EmpresaBrandingDTO.builder()
                 .empresaId(p.getEmpresaId())
                 .nomeEmpresa(p.getNomeEmpresa())
-                .logoUrl(p.getLogoUrl())
+                .logoUrl(LogoUrlSanitizer.forPublicResponse(p.getLogoUrl()))
                 .corPrimaria(p.getCorPrimaria())
                 .corSecundaria(p.getCorSecundaria())
                 .corFundo(p.getCorFundo())

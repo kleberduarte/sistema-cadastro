@@ -270,9 +270,12 @@
         function normalizeLogoUrl(logoUrl) {
             if (!logoUrl || !String(logoUrl).trim()) return '';
             var u = String(logoUrl).trim();
-            if (/^[A-Z]:/i.test(u) || u.indexOf(':\\') >= 0) {
-                u = u.split(/[/\\]/).pop();
-            }
+            var lower = u.toLowerCase();
+            if (lower.indexOf('file:') === 0) return '';
+            if (/^[a-z]:\\/i.test(u) || /^[a-z]:\//i.test(u)) return '';
+            if (u.indexOf('\\\\') === 0) return '';
+            if (u.indexOf('\\') >= 0) return '';
+            if (lower.indexOf('javascript:') === 0 || lower.indexOf('vbscript:') === 0) return '';
             return u;
         }
 

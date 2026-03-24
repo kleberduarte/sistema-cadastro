@@ -1,4 +1,4 @@
-const CACHE_NAME = "sistema-cadastro-v6";
+const CACHE_NAME = "sistema-cadastro-v7";
 const CORE_ASSETS = [
   "./",
   "./login.html",
@@ -15,6 +15,8 @@ const CORE_ASSETS = [
   "./relatorios.html",
   "./relatorios.js",
   "./parametros.html",
+  "./suporte.html",
+  "./suporte.js",
   "./pdvs-monitor.html",
   "./pdvs-monitor.js",
   "./vendas.js",

@@ -3,16 +3,22 @@ package com.sistema.cadastro.service;
 import com.sistema.cadastro.dto.ParametroEmpresaDTO;
 import com.sistema.cadastro.model.ParametroEmpresa;
 import com.sistema.cadastro.repository.ParametroEmpresaRepository;
+import com.sistema.cadastro.util.LogoUrlSanitizer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 public class ParametroEmpresaService {
+
+    private static final Pattern SUPORTE_EMAIL_SIMPLES = Pattern.compile("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
 
     @Autowired
     private ParametroEmpresaRepository repository;
@@ -22,6 +28,8 @@ public class ParametroEmpresaService {
 
     @Transactional
     public ParametroEmpresaDTO salvar(ParametroEmpresaDTO dto) {
+        validarContatosSuporte(dto);
+
         ParametroEmpresa parametro;
 
         // Se não informar empresaId (e não é update por id), gera automaticamente (novo cadastro)
@@ -44,7 +52,7 @@ public class ParametroEmpresaService {
 
         parametro.setEmpresaId(dto.getEmpresaId());
         parametro.setNomeEmpresa(dto.getNomeEmpresa());
-        parametro.setLogoUrl(dto.getLogoUrl());
+        parametro.setLogoUrl(normalizarLogoUrlOuErro(dto.getLogoUrl()));
         parametro.setCorPrimaria(dto.getCorPrimaria());
         parametro.setCorSecundaria(dto.getCorSecundaria());
         parametro.setCorFundo(dto.getCorFundo());
@@ -81,6 +89,7 @@ public class ParametroEmpresaService {
                 .filter(p -> p.getAtivo() != null && p.getAtivo())
                 .findFirst()
                 .map(this::toDTO)
+                .map(this::apenasLogoPublicavel)
                 .orElse(getParametrosDefault());
     }
 
@@ -148,6 +157,11 @@ public class ParametroEmpresaService {
                 .orElse(List.of());
     }
 
+    private ParametroEmpresaDTO apenasLogoPublicavel(ParametroEmpresaDTO dto) {
+        dto.setLogoUrl(LogoUrlSanitizer.forPublicResponse(dto.getLogoUrl()));
+        return dto;
+    }
+
     private ParametroEmpresaDTO toDTO(ParametroEmpresa entity) {
         ParametroEmpresaDTO dto = new ParametroEmpresaDTO();
         dto.setId(entity.getId());
@@ -172,6 +186,31 @@ public class ParametroEmpresaService {
         if (s == null) return null;
         String t = s.trim();
         return t.isEmpty() ? null : t;
+    }
+
+    private void validarContatosSuporte(ParametroEmpresaDTO dto) {
+        String em = dto.getSuporteEmail();
+        if (em != null && !em.trim().isEmpty()) {
+            String t = em.trim();
+            if (t.length() > 255) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail de suporte muito longo.");
+            }
+            if (!SUPORTE_EMAIL_SIMPLES.matcher(t).matches()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail de suporte inválido.");
+            }
+        }
+        String wa = dto.getSuporteWhatsapp();
+        if (wa != null && !wa.trim().isEmpty() && wa.trim().length() > 32) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "WhatsApp de suporte: máximo 32 caracteres.");
+        }
+    }
+
+    private String normalizarLogoUrlOuErro(String raw) {
+        try {
+            return LogoUrlSanitizer.normalizeForPersistence(raw);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 }
 

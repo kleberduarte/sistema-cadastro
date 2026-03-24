@@ -73,7 +73,8 @@
 
                 <div class="form-group">
                     <label for="logoUrl">URL do Logo</label>
-                    <input type="text" id="logoUrl" placeholder="https://exemplo.com/logo.png">
+                    <input type="text" id="logoUrl" placeholder="https://exemplo.com/logo.png" autocomplete="off">
+                    <small style="display:block;margin-top:6px;color:#666;line-height:1.45;">Em produção use uma URL <strong>https://</strong> pública ou caminho relativo ao site (ex.: <code>logo.png</code>). Caminhos <strong>C:\...</strong> e <strong>file://</strong> não funcionam na internet.</small>
                 </div>
 
                 <h3>Cores do Sistema</h3>
@@ -528,6 +529,28 @@
                 showAlert('Informe o nome da empresa para salvar. (Limpar o nome indica novo cadastro — digite o nome da nova empresa.)', 'info');
                 return;
             }
+            var logoEl = document.getElementById('logoUrl');
+            var logoVal = logoEl ? String(logoEl.value || '') : '';
+            if (typeof validateLogoUrlForForm === 'function') {
+                var logoErr = validateLogoUrlForForm(logoVal);
+                if (logoErr) {
+                    showAlert(logoErr, 'error');
+                    return;
+                }
+            }
+            var supEm = document.getElementById('suporteEmail');
+            if (supEm && String(supEm.value || '').trim()) {
+                var emRaw = String(supEm.value || '').trim();
+                if (!/^[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(emRaw)) {
+                    showAlert('E-mail de suporte inválido.', 'error');
+                    return;
+                }
+            }
+            var supWa = document.getElementById('suporteWhatsapp');
+            if (supWa && String(supWa.value || '').trim().length > 32) {
+                showAlert('WhatsApp de suporte: máximo 32 caracteres.', 'error');
+                return;
+            }
             const params = obterParametrosFormulario();
             
             try {
@@ -575,7 +598,27 @@
                         await carregarEmpresas({ preferredEmpresaIdAfterLoad: savedParams.empresaId });
                     } catch (e3) {}
                 } else {
-                    showAlert('Erro ao salvar parâmetros', 'error');
+                    var msgErro = 'Erro ao salvar parâmetros';
+                    try {
+                        var txt = await response.text();
+                        if (txt) {
+                            var ct = response.headers.get('Content-Type') || '';
+                            if (ct.indexOf('application/json') >= 0) {
+                                try {
+                                    var j = JSON.parse(txt);
+                                    if (j.message) msgErro = j.message;
+                                    else if (Array.isArray(j.errors) && j.errors[0] && j.errors[0].defaultMessage) {
+                                        msgErro = j.errors[0].defaultMessage;
+                                    }
+                                } catch (_) {
+                                    msgErro = txt.length > 300 ? txt.substring(0, 300) + '…' : txt;
+                                }
+                            } else {
+                                msgErro = txt.length > 300 ? txt.substring(0, 300) + '…' : txt;
+                            }
+                        }
+                    } catch (_) {}
+                    showAlert(msgErro, 'error');
                 }
             } catch (error) {
                 console.error('Erro ao salvar parâmetros:', error);

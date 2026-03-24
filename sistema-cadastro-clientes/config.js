@@ -2,6 +2,47 @@
 // Gerencia a aplicação de estilos personalizados por cliente
 // theme-defaults.js deve ser carregado antes deste arquivo (define SISTEMA_THEME_PADRAO).
 
+/**
+ * URL de logo segura para exibir no navegador (rejeita C:\\, file:, barras \\).
+ * Relativos (ex.: logo.png) e http(s):// mantidos.
+ */
+function sanitizeLogoUrlForDisplay(logoUrl) {
+    if (!logoUrl || !String(logoUrl).trim()) return '';
+    var u = String(logoUrl).trim();
+    var lower = u.toLowerCase();
+    if (lower.indexOf('file:') === 0) return '';
+    if (/^[a-z]:\\/i.test(u) || /^[a-z]:\//i.test(u)) return '';
+    if (u.indexOf('\\\\') === 0) return '';
+    if (u.indexOf('\\') >= 0) return '';
+    if (lower.indexOf('javascript:') === 0 || lower.indexOf('vbscript:') === 0) return '';
+    if (u.indexOf('\n') >= 0 || u.indexOf('\r') >= 0) return '';
+    return u;
+}
+
+/** Mensagem de erro em PT ou null se ok (para formulário Parâmetros). */
+function validateLogoUrlForForm(raw) {
+    var s = (raw == null) ? '' : String(raw).trim();
+    if (!s) return null;
+    if (s.length > 500) return 'URL do logo muito longa (máx. 500 caracteres).';
+    if (!sanitizeLogoUrlForDisplay(s)) {
+        return 'URL do logo inválida: não use caminho local (C:\\...) nem file://. Use https://... ou um arquivo no seu site (caminho relativo).';
+    }
+    var lower = s.toLowerCase();
+    if (lower.indexOf('http://') === 0 || lower.indexOf('https://') === 0) {
+        if (s.length < 12 || s.indexOf(' ') >= 0) return 'URL http(s) do logo inválida.';
+        return null;
+    }
+    if (s.indexOf('//') === 0) {
+        if (s.length < 5) return 'URL do logo inválida.';
+        return null;
+    }
+    if (lower.indexOf('data:image/') === 0) return null;
+    if (s.indexOf(':') >= 0) {
+        return 'URL do logo: use https://, //... ou caminho sem esquema (ex.: imagens/logo.png).';
+    }
+    return null;
+}
+
 function temaPadrao() {
     var p = typeof window !== 'undefined' && window.SISTEMA_THEME_PADRAO;
     return p || {
@@ -294,32 +335,13 @@ function applyClientStyles(params) {
         window.PIX_STORE_KEY = params.chavePix;
     }
 
-    // Aplicar logo - múltiplas posições
-    if (params.logoUrl) {
-        console.log('Aplicando logo (original):', params.logoUrl);
-        
-        // Verificar se é URL absoluta ou caminho relativo
-        let logoUrl = params.logoUrl.trim();
-        
-        // Limpar caminhos do Windows que podem ter sido salvos no banco
-        // Ex: "C:/Users/klebe/Desktop/sistema-cadastro-clientes/download.png" -> "download.png"
-        if (logoUrl.match(/^[A-Z]:/i) || logoUrl.includes(':\\') || logoUrl.includes(':/')) {
-            // É um caminho absoluto do Windows ou URL, extrair apenas o nome do arquivo
-            const fileName = logoUrl.split(/[/\\]/).pop();
-            logoUrl = fileName;
-            console.log('Caminho limpo para:', logoUrl);
-        }
-        
-        // Agora verificar se é URL absoluta ou caminho relativo
-        if (!logoUrl.startsWith('http') && !logoUrl.startsWith('data:')) {
-            // É um caminho relativo, usar apenas o nome do arquivo
-            console.log('Logo será carregado de:', logoUrl);
-        }
-        
-        // Container no header
-        let logoContainer = document.querySelector('.header-logo');
+    // Aplicar logo - múltiplas posições (ignora caminhos locais inúteis na nuvem)
+    var logoUrl = params.logoUrl ? sanitizeLogoUrlForDisplay(params.logoUrl) : '';
+    if (logoUrl) {
+        var esc = logoUrl.replace(/"/g, '&quot;');
+        var logoContainer = document.querySelector('.header-logo');
         if (!logoContainer) {
-            const header = document.querySelector('header .header-content');
+            var header = document.querySelector('header .header-content');
             if (header) {
                 logoContainer = document.createElement('div');
                 logoContainer.className = 'header-logo';
@@ -327,14 +349,11 @@ function applyClientStyles(params) {
             }
         }
         if (logoContainer) {
-            logoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-height: 50px; margin-right: 15px;" onerror="this.style.display='none';">`;
-            console.log('Logo adicionado ao header');
+            logoContainer.innerHTML = '<img src="' + esc + '" alt="Logo" style="max-height: 50px; margin-right: 15px;" onerror="this.style.display=\'none\';">';
         }
-
-        // Logo na tela de login
-        let loginLogoContainer = document.querySelector('.login-logo');
+        var loginLogoContainer = document.querySelector('.login-logo');
         if (!loginLogoContainer) {
-            const loginHeader = document.querySelector('.login-header');
+            var loginHeader = document.querySelector('.login-header');
             if (loginHeader) {
                 loginLogoContainer = document.createElement('div');
                 loginLogoContainer.className = 'login-logo';
@@ -342,11 +361,15 @@ function applyClientStyles(params) {
             }
         }
         if (loginLogoContainer) {
-            loginLogoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-width: 150px; margin-bottom: 20px;" onerror="this.src='https://via.placeholder.com/150x50?text=Logo+Missing';">`;
-            console.log('Logo adicionado ao login');
+            loginLogoContainer.innerHTML = '<img src="' + esc + '" alt="Logo" style="max-width: 150px; margin-bottom: 20px;" onerror="this.style.display=\'none\';">';
         }
     } else {
-        console.log('Nenhuma URL de logo definida');
+        try {
+            var h = document.querySelector('.header-logo');
+            if (h) h.innerHTML = '';
+            var lg = document.querySelector('.login-logo');
+            if (lg) lg.innerHTML = '';
+        } catch (_) {}
     }
 
 
@@ -602,13 +625,11 @@ function applyClientStyles(params) {
         cupomEmpresaNome.style.display = params.nomeEmpresa ? 'block' : 'none';
     }
     if (cupomEmpresaLogo) {
-        if (params.logoUrl) {
-            let logoUrl = params.logoUrl.trim();
-            if (logoUrl.match(/^[A-Z]:/i) || logoUrl.includes(':\\') || logoUrl.includes(':/')) {
-                const fileName = logoUrl.split(/[/\\]/).pop();
-                logoUrl = fileName;
-            }
-            cupomEmpresaLogo.innerHTML = `<img src="${logoUrl}" alt="${params.nomeEmpresa || 'Logo'}" onerror="this.style.display='none'">`;
+        var cupomLogo = params.logoUrl ? sanitizeLogoUrlForDisplay(params.logoUrl) : '';
+        if (cupomLogo) {
+            var alt = (params.nomeEmpresa || 'Logo').replace(/"/g, '&quot;');
+            var src = cupomLogo.replace(/"/g, '&quot;');
+            cupomEmpresaLogo.innerHTML = '<img src="' + src + '" alt="' + alt + '" onerror="this.style.display=\'none\'">';
             cupomEmpresaLogo.style.display = 'block';
         } else {
             cupomEmpresaLogo.innerHTML = '';
