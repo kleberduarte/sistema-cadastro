@@ -14,6 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +26,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,9 +48,28 @@ public class ProdutoService {
     private static final int IMPORT_BATCH_SIZE = 500;
     private static final int PREVIEW_MAX_ITEMS = 500;
     private static final int CONFIRM_MAX_ERROR_DETAILS = 300;
+    private static final ZoneId IMPORT_ZONE = ZoneId.of("America/Sao_Paulo");
+
+    /**
+     * INSERT em JDBC com batch (GenerationType.IDENTITY impede batch INSERT via Hibernate).
+     * Colunas alinhadas à entidade {@link Produto} / tabela {@code produtos}.
+     */
+    private static final String JDBC_INSERT_PRODUTO = """
+            INSERT INTO produtos (
+                empresa_id, nome, descricao, preco, preco_promocional, promocao_inicio, promocao_fim,
+                em_promocao, promo_qtd_levar, promo_qtd_pagar, quantidade_estoque, estoque_minimo,
+                categoria, codigo_produto, tipo, created_at, updated_at
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """;
+
+    private static final String JDBC_UPDATE_PRODUTO = """
+            UPDATE produtos SET nome=?, descricao=?, preco=?, quantidade_estoque=?, estoque_minimo=?,
+            categoria=?, tipo=?, updated_at=? WHERE id=?
+            """;
 
     private final ProdutoRepository produtoRepository;
     private final EmpresaScopeService empresaScopeService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
     public ProdutoResponse create(ProdutoRequest request, long empresaId) {
@@ -249,7 +276,8 @@ public class ProdutoService {
         List<ParsedRow> rows = parseCsv(file);
         Map<String, Produto> existentesPorCodigo = carregarExistentesPorCodigo(empresaId, rows);
         List<ProdutoImportPreviewItemDTO> detalhes = new ArrayList<>();
-        List<Produto> lotePersistencia = new ArrayList<>(IMPORT_BATCH_SIZE);
+        List<ParsedRow> novos = new ArrayList<>();
+        List<Produto> paraAtualizar = new ArrayList<>();
         int criados = 0;
         int atualizados = 0;
         int ignorados = 0;
@@ -276,34 +304,23 @@ public class ProdutoService {
                     if (row.estoqueMinimo != null) {
                         p.setEstoqueMinimo(row.estoqueMinimo);
                     }
-                    lotePersistencia.add(p);
-                    flushLoteSeNecessario(lotePersistencia);
+                    paraAtualizar.add(p);
                     atualizados++;
                 } else {
-                    Produto p = new Produto();
-                    p.setEmpresaId(empresaId);
-                    p.setCodigoProduto(row.codigoProduto);
-                    p.setNome(row.nome);
-                    p.setPreco(row.preco);
-                    p.setQuantidadeEstoque(row.estoque);
-                    p.setCategoria(row.categoria);
-                    p.setDescricao(row.descricao);
-                    p.setTipo(row.tipo);
-                    p.setEstoqueMinimo(row.estoqueMinimo != null ? row.estoqueMinimo : 0);
-                    p.setEmPromocao(false);
-                    lotePersistencia.add(p);
-                    flushLoteSeNecessario(lotePersistencia);
+                    novos.add(row);
                     criados++;
                 }
             } catch (Exception e) {
                 erros++;
                 ignorados++;
                 if (detalhes.size() < CONFIRM_MAX_ERROR_DETAILS) {
-                    detalhes.add(toPreviewItem(row, "INVALID", "Falha ao persistir: " + e.getMessage()));
+                    detalhes.add(toPreviewItem(row, "INVALID", "Falha ao preparar linha: " + e.getMessage()));
                 }
             }
         }
-        flushLoteFinal(lotePersistencia);
+
+        jdbcBatchUpdateProdutos(paraAtualizar);
+        jdbcBatchInsertProdutos(empresaId, novos);
 
         return ProdutoImportConfirmResponseDTO.builder()
                 .empresaId(empresaId)
@@ -338,17 +355,79 @@ public class ProdutoService {
         return result;
     }
 
-    private void flushLoteSeNecessario(List<Produto> lotePersistencia) {
-        if (lotePersistencia.size() >= IMPORT_BATCH_SIZE) {
-            produtoRepository.saveAll(lotePersistencia);
-            lotePersistencia.clear();
+    private void jdbcBatchInsertProdutos(long empresaId, List<ParsedRow> novos) {
+        if (novos.isEmpty()) {
+            return;
+        }
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now(IMPORT_ZONE));
+
+        for (int i = 0; i < novos.size(); i += IMPORT_BATCH_SIZE) {
+            int end = Math.min(i + IMPORT_BATCH_SIZE, novos.size());
+            List<ParsedRow> chunk = novos.subList(i, end);
+            jdbcTemplate.batchUpdate(JDBC_INSERT_PRODUTO, new BatchPreparedStatementSetter() {
+                @Override
+                public void setValues(PreparedStatement ps, int idx) throws SQLException {
+                    ParsedRow row = chunk.get(idx);
+                    ps.setLong(1, empresaId);
+                    ps.setString(2, row.nome);
+                    ps.setString(3, row.descricao);
+                    ps.setBigDecimal(4, row.preco);
+                    ps.setNull(5, Types.DECIMAL);
+                    ps.setNull(6, Types.DATE);
+                    ps.setNull(7, Types.DATE);
+                    ps.setBoolean(8, false);
+                    ps.setNull(9, Types.INTEGER);
+                    ps.setNull(10, Types.INTEGER);
+                    ps.setInt(11, row.estoque);
+                    ps.setInt(12, row.estoqueMinimo != null ? row.estoqueMinimo : 0);
+                    ps.setString(13, row.categoria);
+                    ps.setString(14, row.codigoProduto);
+                    ps.setString(15, row.tipo);
+                    ps.setTimestamp(16, now);
+                    ps.setTimestamp(17, now);
+                }
+
+                @Override
+                public int getBatchSize() {
+                    return chunk.size();
+                }
+            });
         }
     }
 
-    private void flushLoteFinal(List<Produto> lotePersistencia) {
-        if (!lotePersistencia.isEmpty()) {
-            produtoRepository.saveAll(lotePersistencia);
-            lotePersistencia.clear();
+    private void jdbcBatchUpdateProdutos(List<Produto> produtos) {
+        if (produtos.isEmpty()) {
+            return;
+        }
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now(IMPORT_ZONE));
+
+        for (int i = 0; i < produtos.size(); i += IMPORT_BATCH_SIZE) {
+            int end = Math.min(i + IMPORT_BATCH_SIZE, produtos.size());
+            List<Produto> chunk = produtos.subList(i, end);
+            jdbcTemplate.batchUpdate(JDBC_UPDATE_PRODUTO, new BatchPreparedStatementSetter() {
+                @Override
+                public void setValues(PreparedStatement ps, int idx) throws SQLException {
+                    Produto p = chunk.get(idx);
+                    ps.setString(1, p.getNome());
+                    ps.setString(2, p.getDescricao());
+                    ps.setBigDecimal(3, p.getPreco());
+                    ps.setInt(4, p.getQuantidadeEstoque());
+                    if (p.getEstoqueMinimo() != null) {
+                        ps.setInt(5, p.getEstoqueMinimo());
+                    } else {
+                        ps.setNull(5, Types.INTEGER);
+                    }
+                    ps.setString(6, p.getCategoria());
+                    ps.setString(7, p.getTipo());
+                    ps.setTimestamp(8, now);
+                    ps.setLong(9, p.getId());
+                }
+
+                @Override
+                public int getBatchSize() {
+                    return chunk.size();
+                }
+            });
         }
     }
 
