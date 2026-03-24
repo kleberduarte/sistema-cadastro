@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (e) {}
             var box2 = document.getElementById('pdvAvisoRetaguarda');
             if (box2 && box2.style.display !== 'block') {
-                box2.textContent = 'Complete o cadastro com o código de convite enviado pelo administrador. Depois: login do PDV.';
+                box2.textContent = 'Informe o código de convite PDV (e crie usuário e senha). Se o administrador já criou seu usuário, use a tela de Entrar com a senha provisória em vez deste cadastro.';
                 box2.style.display = 'block';
             }
         }

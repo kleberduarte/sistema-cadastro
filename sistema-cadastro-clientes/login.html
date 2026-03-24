@@ -281,9 +281,13 @@
                 
                 <button type="submit" class="btn btn-primary btn-login">🔐 Entrar</button>
             </form>
+
+            <p class="login-hint-admin-user" style="font-size:0.88rem;color:#444;line-height:1.5;margin:18px 0 6px;padding:12px 14px;background:rgba(102,126,234,0.08);border-radius:10px;border:1px solid rgba(102,126,234,0.2);">
+                <strong>Conta criada pelo administrador?</strong> Use <strong>Entrar</strong> com seu usuário e a <strong>senha provisória</strong> — <em>não</em> use o cadastro com convite abaixo.
+            </p>
             
             <div class="register-link">
-                <p>Primeiro acesso? <a href="#" onclick="showRegister()">Cadastre-se</a></p>
+                <p style="font-size:0.9rem;color:#555;">Tem <strong>código de convite PDV</strong> (operador novo sem usuário ainda)? <a href="#" onclick="showRegister(); return false;">Cadastrar com convite</a></p>
             </div>
             </div><!-- /#loginNormalPanel -->
         </div>
@@ -306,7 +310,8 @@
         <!-- Modal de Cadastro de Usuário -->
         <div id="registerModal" class="modal">
             <div class="modal-content">
-                <h3>📝 Novo Usuário</h3>
+                <h3>📝 Cadastro com convite PDV</h3>
+                <p style="font-size:0.86rem;color:#666;line-height:1.45;margin:0 0 14px;">Somente para quem recebeu um <strong>código de convite</strong> da empresa. Se o administrador já criou seu usuário e senha provisória, <strong>cancele</strong> e use <strong>Entrar</strong> na tela anterior.</p>
                 <form id="registerForm">
                     <div class="form-group">
                         <label for="newUsername">Usuário:</label>
@@ -315,8 +320,8 @@
                     <!-- A empresa vigente é definida automaticamente pelo sistema -->
                     <input type="hidden" id="registerEmpresaId">
                     <div class="form-group">
-                        <label for="registerCodigoConvite">Código de convite</label>
-                        <input type="text" id="registerCodigoConvite" required autocomplete="off" placeholder="Fornecido pelo administrador">
+                        <label for="registerCodigoConvite">Código de convite PDV</label>
+                        <input type="text" id="registerCodigoConvite" required autocomplete="off" placeholder="Gerado em Usuários → código de convite PDV">
                     </div>
                     <div class="form-group">
                         <label for="newPassword">Senha:</label>
@@ -342,7 +347,7 @@
     <script src="api-config.js"></script>
     <script src="theme-defaults.js"></script>
     <script src="config.js"></script>
-    <script src="login.js?v=20260320-2"></script>
+    <script src="login.js?v=20260324-1"></script>
     <script src="pwa-register.js?v=20260320-1"></script>
 </body>
 </html>
