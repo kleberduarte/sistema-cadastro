@@ -20,3 +20,6 @@ hs_err_pid*
 
 # Front Node
 sistema-cadastro-clientes/node_modules/
+
+# Segredos locais (Aiven / env)
+sistema-cadastro-backend/env-aiven.local.cmd
