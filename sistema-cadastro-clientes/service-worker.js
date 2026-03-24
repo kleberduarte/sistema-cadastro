@@ -1,4 +1,4 @@
-const CACHE_NAME = "sistema-cadastro-v5";
+const CACHE_NAME = "sistema-cadastro-v6";
 const CORE_ASSETS = [
   "./",
   "./login.html",
@@ -49,14 +49,10 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
   const isSameOrigin = url.origin === self.location.origin;
-  const isAppShell =
-    req.destination === "document" ||
-    req.destination === "script" ||
-    req.destination === "style";
 
-  // Para HTML/JS/CSS do próprio app: sempre tenta rede primeiro.
-  // Isso evita ficar preso em arquivos antigos ao trocar de usuário/perfil.
-  if (isSameOrigin && isAppShell) {
+  // Sempre prioriza rede para recursos do próprio app.
+  // Evita precisar Ctrl+Shift+R após deploy em produção.
+  if (isSameOrigin) {
     event.respondWith(
       fetch(req)
         .then((response) => {
@@ -64,24 +60,19 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(req, responseClone));
           return response;
         })
-        .catch(() => caches.match(req).then((cached) => cached || caches.match("./index.html")))
+        .catch(() =>
+          caches.match(req).then((cached) => {
+            if (cached) return cached;
+            if (req.destination === "document") return caches.match("./login.html");
+            return new Response("", { status: 504, statusText: "Gateway Timeout" });
+          })
+        )
     );
     return;
   }
 
-  // Demais assets: cache-first com atualização quando vier da rede.
+  // Requisições de outros domínios seguem padrão normal.
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(req, responseClone);
-          });
-          return response;
-        })
-        .catch(() => caches.match("./index.html"));
-    })
+    fetch(req).catch(() => caches.match(req))
   );
 });
