@@ -38,6 +38,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProdutoService {
     private static final int IMPORT_BATCH_SIZE = 500;
+    private static final int PREVIEW_MAX_ITEMS = 500;
+    private static final int CONFIRM_MAX_ERROR_DETAILS = 300;
 
     private final ProdutoRepository produtoRepository;
     private final EmpresaScopeService empresaScopeService;
@@ -157,7 +159,7 @@ public class ProdutoService {
     @Transactional
     public long deleteAllByEmpresa(Usuario u, Long empresaIdParam) {
         long empresaId = empresaScopeService.resolveForWrite(u, empresaIdParam);
-        return produtoRepository.deleteByEmpresaId(empresaId);
+        return produtoRepository.deleteAllDirectByEmpresaId(empresaId);
     }
 
     @Transactional(readOnly = true)
@@ -211,16 +213,22 @@ public class ProdutoService {
         for (ParsedRow row : rows) {
             if (row.erro != null) {
                 invalidas++;
-                itens.add(toPreviewItem(row, "INVALID", row.erro));
+                if (itens.size() < PREVIEW_MAX_ITEMS) {
+                    itens.add(toPreviewItem(row, "INVALID", row.erro));
+                }
                 continue;
             }
             validas++;
             if (existentesPorCodigo.containsKey(row.codigoProduto)) {
                 atualizar++;
-                itens.add(toPreviewItem(row, "UPDATE", "Produto existente nesta empresa"));
+                if (itens.size() < PREVIEW_MAX_ITEMS) {
+                    itens.add(toPreviewItem(row, "UPDATE", "Produto existente nesta empresa"));
+                }
             } else {
                 criar++;
-                itens.add(toPreviewItem(row, "CREATE", "Novo produto"));
+                if (itens.size() < PREVIEW_MAX_ITEMS) {
+                    itens.add(toPreviewItem(row, "CREATE", "Novo produto"));
+                }
             }
         }
 
@@ -250,7 +258,9 @@ public class ProdutoService {
         for (ParsedRow row : rows) {
             if (row.erro != null) {
                 erros++;
-                detalhes.add(toPreviewItem(row, "INVALID", row.erro));
+                if (detalhes.size() < CONFIRM_MAX_ERROR_DETAILS) {
+                    detalhes.add(toPreviewItem(row, "INVALID", row.erro));
+                }
                 continue;
             }
             try {
@@ -269,7 +279,6 @@ public class ProdutoService {
                     lotePersistencia.add(p);
                     flushLoteSeNecessario(lotePersistencia);
                     atualizados++;
-                    detalhes.add(toPreviewItem(row, "UPDATE", "Atualizado"));
                 } else {
                     Produto p = new Produto();
                     p.setEmpresaId(empresaId);
@@ -285,12 +294,13 @@ public class ProdutoService {
                     lotePersistencia.add(p);
                     flushLoteSeNecessario(lotePersistencia);
                     criados++;
-                    detalhes.add(toPreviewItem(row, "CREATE", "Criado"));
                 }
             } catch (Exception e) {
                 erros++;
                 ignorados++;
-                detalhes.add(toPreviewItem(row, "INVALID", "Falha ao persistir: " + e.getMessage()));
+                if (detalhes.size() < CONFIRM_MAX_ERROR_DETAILS) {
+                    detalhes.add(toPreviewItem(row, "INVALID", "Falha ao persistir: " + e.getMessage()));
+                }
             }
         }
         flushLoteFinal(lotePersistencia);

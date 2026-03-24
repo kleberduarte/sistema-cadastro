@@ -3,6 +3,7 @@ package com.sistema.cadastro.repository;
 import com.sistema.cadastro.model.Produto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,7 +25,9 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
     boolean existsByEmpresaIdAndCodigoProdutoAndIdNot(Long empresaId, String codigoProduto, Long id);
 
-    long deleteByEmpresaId(Long empresaId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Produto p WHERE p.empresaId = :empresaId")
+    int deleteAllDirectByEmpresaId(@Param("empresaId") Long empresaId);
 
     @Query("""
             SELECT p FROM Produto p
