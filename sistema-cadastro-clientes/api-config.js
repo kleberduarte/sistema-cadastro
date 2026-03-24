@@ -9,13 +9,23 @@
  */
 (function (w) {
     if (!w) return;
-    var DEFAULT = 'https://sistema-cadastro-kfd8.onrender.com/api';
+    /** Produção (Render); usado quando o front não roda em localhost. */
+    var PROD = 'https://sistema-cadastro-kfd8.onrender.com/api';
+    /** Live Server (ex.: http://127.0.0.1:5500) + Spring local em 8080. */
+    var LOCAL = 'http://127.0.0.1:8080/api';
+    var inferred = PROD;
+    try {
+        var h = w.location && w.location.hostname ? String(w.location.hostname) : '';
+        if (/^(127\.0\.0\.1|localhost)$/i.test(h)) {
+            inferred = LOCAL;
+        }
+    } catch (_) {}
     if (!w.API_URL) {
-        w.API_URL = DEFAULT;
+        w.API_URL = inferred;
     }
     w.API_URL = String(w.API_URL).replace(/\s/g, '');
     w.getApiBaseUrl = function () {
-        return String(w.API_URL || DEFAULT).replace(/\/$/, '');
+        return String(w.API_URL || inferred).replace(/\/$/, '');
     };
 
     /**
