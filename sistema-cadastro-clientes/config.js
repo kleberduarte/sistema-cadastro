@@ -907,6 +907,11 @@ async function saveClientParams(params) {
         if (r) r(!!yes);
     }
 
+    /** Fecha o modal de confirmação como “Cancelar” (ex.: chamado pelo PDV antes de stopPropagation no window). */
+    window.dismissSystemConfirm = function () {
+        finishSystemConfirm(false);
+    };
+
     /**
      * Modal de confirmação estilizado (substitui window.confirm).
      * Retorna Promise resolvida com true/false.
@@ -932,7 +937,7 @@ async function saveClientParams(params) {
             ov.querySelector('.system-alert-cancel').textContent = opts.cancelText || 'Cancelar';
             ov.classList.add('show');
             confirmEscHandler = function (e) {
-                if (e.key === 'Escape') finishSystemConfirm(false);
+                if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) finishSystemConfirm(false);
             };
             document.addEventListener('keydown', confirmEscHandler);
         });

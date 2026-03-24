@@ -221,35 +221,96 @@ function setupEventListeners() {
 }
 
 function setupKeyboardShortcuts() {
+    /** Atalhos globais do PDV que devem funcionar mesmo com foco em input dentro de .modal */
+    function isPdvReservedShortcut(key, keyCode, ctrl, alt) {
+        if (keyCode === 27) return true;
+        if (keyCode >= 112 && keyCode <= 123) return true;
+        if (key && /^F([1-9]|1[0-2])$/.test(key)) return true;
+        if (key === 'Escape' || key === 'p' || key === 'P') return true;
+        if (ctrl && (keyCode === 68 || keyCode === 80 || keyCode === 82)) return true;
+        if (ctrl && key && /^[dpr]$/i.test(String(key))) return true;
+        if (alt && (keyCode === 70 || (key && /^f$/i.test(String(key))))) return true;
+        if (!ctrl && keyCode === 80 && (!key || key === 'Unidentified' || key === 'p' || key === 'P')) return true;
+        return false;
+    }
+
     function handleShortcut(e) {
         var keyCode = e.keyCode || e.which;
         var key = e.key;
-        if (!key && keyCode >= 112 && keyCode <= 123) {
-            key = 'F' + (keyCode - 111);
+        if (!key || key === 'Unidentified') {
+            if (keyCode >= 112 && keyCode <= 123) {
+                key = 'F' + (keyCode - 111);
+            } else if (e.code && /^F(1[0-2]?|[1-9])$/.test(e.code)) {
+                key = e.code;
+            }
+        }
+        if (keyCode === 27 || key === 'Esc') {
+            key = 'Escape';
         }
 
         var ctrl = e.ctrlKey;
         var alt = e.altKey;
+        if (ctrl && (!key || key === 'Unidentified')) {
+            if (keyCode === 68) key = 'd';
+            else if (keyCode === 80) key = 'p';
+            else if (keyCode === 82) key = 'r';
+        }
+        if (!ctrl && (!key || key === 'Unidentified') && keyCode === 80) {
+            key = 'p';
+        }
+
         var tag = e.target && e.target.tagName ? e.target.tagName : '';
         var inModal = e.target && e.target.closest && e.target.closest('.modal');
         var isModalInput = inModal && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
 
-        if (isModalInput && key !== 'Escape') {
+        if (isModalInput && !isPdvReservedShortcut(key, keyCode, ctrl, alt)) {
             return;
         }
 
+        /* showSystemConfirm / showSystemAlert usam listener no document; este handler está no window em capture
+         * e faz stopPropagation, então ESC nunca fechava o modal em PRD. Tratar antes. */
+        if (key === 'Escape') {
+            var ovConf = document.getElementById('systemConfirmOverlay');
+            if (ovConf && ovConf.classList.contains('show')) {
+                if (typeof window.dismissSystemConfirm === 'function') {
+                    window.dismissSystemConfirm();
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            var ovAlert = document.getElementById('systemAlertOverlay');
+            if (ovAlert && ovAlert.classList.contains('show')) {
+                if (typeof window.hideSystemAlert === 'function') {
+                    window.hideSystemAlert();
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+        }
+
         var isFKey = key && String(key).match(/^F([1-9]|1[0-2])$/);
-        var isShortcut = isFKey || key === 'p' || key === 'P' || key === 'Escape' || (ctrl && /^[dpr]$/i.test(key)) || (alt && key === 'f');
+        var isFKeyCode = keyCode >= 112 && keyCode <= 123;
+        var isAltF = alt && (keyCode === 70 || key === 'f' || key === 'F');
+        var isShortcut = isFKey || isFKeyCode || key === 'p' || key === 'P' || key === 'Escape' || (ctrl && key && /^[dpr]$/i.test(key)) || (ctrl && (keyCode === 68 || keyCode === 80 || keyCode === 82)) || isAltF;
         if (isShortcut) {
             e.preventDefault();
             e.stopPropagation();
         }
 
-        if (currentCaixaStatus !== 'LIVRE' && key !== 'F5' && key !== 'F11' && key !== 'Escape') {
-            return;
+        if (currentCaixaStatus !== 'LIVRE') {
+            var allowedWhenNotLivre =
+                key === 'F5' ||
+                key === 'F11' ||
+                key === 'Escape' ||
+                isAltF;
+            if (!allowedWhenNotLivre) {
+                return;
+            }
         }
 
-        if (alt && (key === 'f' || key === 'F')) {
+        if (isAltF) {
             openFechamentoCaixaModal();
             return;
         }
@@ -334,11 +395,10 @@ function setupKeyboardShortcuts() {
                 break;
         }
 
-        if (ctrl && key) {
-            var k = key.toLowerCase();
-            if (k === 'd' && typeof addCpfToSale === 'function') addCpfToSale();
-            else if (k === 'p') alert('Função "Preço Produto (Ctrl+P)" não implementada.');
-            else if (k === 'r') alert('Função "Contas a Receber (Ctrl+R)" não implementada.');
+        if (ctrl && (keyCode === 68 || keyCode === 80 || keyCode === 82)) {
+            if (keyCode === 68 && typeof addCpfToSale === 'function') addCpfToSale();
+            else if (keyCode === 80) alert('Função "Preço Produto (Ctrl+P)" não implementada.');
+            else if (keyCode === 82) alert('Função "Contas a Receber (Ctrl+R)" não implementada.');
         }
     }
 
