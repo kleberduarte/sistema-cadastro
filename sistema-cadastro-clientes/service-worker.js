@@ -1,4 +1,4 @@
-const CACHE_NAME = "sistema-cadastro-v3";
+const CACHE_NAME = "sistema-cadastro-v4";
 const CORE_ASSETS = [
   "./",
   "./login.html",
@@ -19,7 +19,8 @@ const CORE_ASSETS = [
   "./pdvs-monitor.js",
   "./vendas.js",
   "./theme-defaults.js",
-  "./manifest.json"
+  "./manifest.json",
+  "./app-icon.svg"
 ];
 
 self.addEventListener("install", (event) => {

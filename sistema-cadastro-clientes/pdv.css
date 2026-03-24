@@ -7,6 +7,135 @@ body {
     overflow: hidden; /* Evita barras de rolagem */
 }
 
+/* Mobile/tablet: permite rolagem e reorganiza layout do PDV */
+@media (max-width: 980px) {
+    body {
+        overflow: auto;
+    }
+
+    .pdv-container {
+        min-height: 100vh;
+        height: auto;
+    }
+
+    .pdv-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 10px 12px;
+        font-size: 1rem;
+    }
+
+    .operador-info {
+        justify-content: flex-start;
+        text-align: left;
+        font-size: 0.9rem;
+    }
+
+    .pdv-main {
+        flex-direction: column;
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .pdv-left,
+    .pdv-right {
+        flex-basis: auto;
+        width: 100%;
+        padding: 12px;
+    }
+
+    .pdv-left {
+        order: 1;
+    }
+
+    .pdv-right {
+        order: 2;
+        min-height: 380px;
+    }
+
+    .input-group input {
+        font-size: 1.2rem;
+        padding: 10px;
+    }
+
+    .info-display {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 12px;
+        margin-bottom: 12px;
+    }
+
+    .info-box span {
+        font-size: 1.35rem;
+    }
+
+    .info-box.total-item span {
+        font-size: 1.7rem;
+    }
+
+    .cupom-body__cabecalho {
+        display: none;
+    }
+
+    .cupom-table col:nth-child(1),
+    .cupom-table col:nth-child(2),
+    .cupom-table col:nth-child(4),
+    .cupom-table col:nth-child(5) {
+        width: 0 !important;
+    }
+
+    .cupom-table td:nth-child(1),
+    .cupom-table td:nth-child(2),
+    .cupom-table td:nth-child(4),
+    .cupom-table td:nth-child(5) {
+        display: none;
+    }
+
+    .cupom-table td:nth-child(3) {
+        white-space: normal;
+        font-size: 0.92rem;
+    }
+
+    .cupom-table td:nth-child(6) {
+        font-size: 0.92rem;
+        padding-right: 6px;
+    }
+
+    .cupom-table td:nth-child(7) {
+        padding: 4px;
+    }
+
+    .pdv-shortcuts {
+        font-size: 0.72rem;
+        line-height: 1.45;
+        text-align: left;
+        padding: 8px 10px;
+    }
+
+    .pdv-shortcuts span {
+        display: inline-block;
+        margin: 2px 6px 2px 0;
+    }
+
+    .modal-content,
+    .modal-content.large {
+        width: calc(100% - 16px);
+        max-width: none;
+        margin: 4vh auto;
+        padding: 14px;
+    }
+
+    .payment-body {
+        flex-direction: column;
+    }
+
+    .client-form-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}
+
 .pdv-container {
     display: flex;
     flex-direction: column;
