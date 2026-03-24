@@ -51,7 +51,7 @@ public class UsuarioService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        Optional<Usuario> userOpt = usuarioRepository.findByUsername(request.getUsername());
+        Optional<Usuario> userOpt = usuarioRepository.findByUsernameLenient(request.getUsername());
         
         if (userOpt.isEmpty()) {
             return new LoginResponse(null, null, null, null, "Usuário não encontrado", null, null);
@@ -75,7 +75,7 @@ public class UsuarioService {
      */
     @Transactional
     public LoginResponse register(RegisterRequest request) {
-        if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
+        if (usuarioRepository.findByUsernameLenient(request.getUsername()).isPresent()) {
             return new LoginResponse(null, null, null, null, "Usuário já existe", null, null);
         }
         Long empresaId = request.getEmpresaId();
@@ -120,7 +120,7 @@ public class UsuarioService {
     /** Cadastro com escopo do solicitante (ADM = global, ADMIN_EMPRESA = apenas empresa própria). */
     @Transactional
     public AdminCreateUserResponse createByAdmin(AdminCreateUserRequest request, Usuario requester) {
-        if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
+        if (usuarioRepository.findByUsernameLenient(request.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Usuário já existe");
         }
         String plain = null;
@@ -182,7 +182,7 @@ public class UsuarioService {
 
     @Transactional
     public void trocarSenhaPrimeiroAcesso(String username, String senhaAtual, String novaSenha) {
-        Usuario user = usuarioRepository.findByUsername(username)
+        Usuario user = usuarioRepository.findByUsernameLenient(username)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
         if (!Boolean.TRUE.equals(user.getMustChangePassword())) {
             throw new IllegalStateException("Não há obrigatoriedade de troca de senha para esta conta.");
@@ -216,7 +216,7 @@ public class UsuarioService {
     }
 
     public Optional<Usuario> findByUsername(String username) {
-        return usuarioRepository.findByUsername(username);
+        return usuarioRepository.findByUsernameLenient(username);
     }
 
     @Transactional

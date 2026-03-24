@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             username = jwtUtil.extractUsername(jwt);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                Usuario user = usuarioRepository.findByUsername(username).orElse(null);
+                Usuario user = usuarioRepository.findByUsernameLenient(username).orElse(null);
 
                 if (user != null && jwtUtil.validateToken(jwt, username)) {
                     String roleName = (user.getRole() != null) ? user.getRole().name() : "VENDEDOR";
