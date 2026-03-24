@@ -57,6 +57,41 @@ Seguir **`STAGING_CHECKLIST.md`**: smoke test (login, cliente, produto, venda, f
 | HTTPS no front e na API | ☐ |
 | Smoke test completo em staging | ☐ |
 
+## Checklist “fazer tudo” (Render + Aiven + front)
+
+Use após subir o código mais recente em `main` (ex.: validação de logo, import em batch).
+
+### A) Banco (Aiven / MySQL)
+
+1. Colunas de suporte, se ainda não existirem: `suporte_email`, `suporte_whatsapp` em `parametros_empresa`.
+2. **`DB_URL`** do backend: incluir `rewriteBatchedStatements=true` (importação grande em lote). Exemplo de sufixo:  
+   `&rewriteBatchedStatements=true`
+3. **Opcional:** rodar `scripts/limpar_logo_urls_invalidos.sql` se ainda houver `logo_url` com `C:\...` ou `file:` — ou corrigir manualmente para uma URL `https://` pública.
+
+### B) Backend (Render — Web Service)
+
+1. **Manual Deploy** → último commit de `main`.
+2. Conferir env: `SPRING_PROFILES_ACTIVE=prod`, `DB_*`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS` (URL exata do static, sem barra no fim).
+3. Logs: serviço sobe sem erro; testar login na API (Swagger ou `POST /api/auth/login`).
+
+### C) Frontend (Render — Static Site)
+
+1. **Manual Deploy** (ou deploy automático do mesmo repositório/branch).
+2. Abrir o site em aba anônima ou após atualizar o PWA: service worker novo (`v7`) deve puxar `config.js` e telas novas.
+
+### D) Testes manuais no navegador
+
+1. **Login** retaguarda com `?empresaId=`.
+2. **Parâmetros:** salvar com logo `https://...`; tentar `C:\...` → deve bloquear; e-mail/WhatsApp de suporte válidos.
+3. **Produtos:** import CSV grande (se aplicável) sem timeout.
+4. **PDV** (e PDV login): logo e cores da empresa.
+5. **Suporte:** tela `suporte.html` e links do menu.
+
+### E) PWA (celular)
+
+1. Reinstalar/atualizar o atalho após o deploy (ou limpar dados do site).
+2. Conferir ícone e telas principais.
+
 ## Referências
 
 - `RELEASE_CANDIDATE.md` — freeze e variáveis.
