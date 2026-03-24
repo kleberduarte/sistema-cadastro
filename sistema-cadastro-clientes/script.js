@@ -130,7 +130,7 @@ function setupEventListeners() {
         cpfInput.addEventListener('blur', function () { validateFieldRealtime('cpf'); });
     }
 
-    // Máscara para CEP + validação em tempo real
+    // Máscara para CEP + validação em tempo real; Enter dispara a mesma busca do botão "Buscar"
     const cepInput = document.getElementById('cep');
     if (cepInput) {
         cepInput.addEventListener('input', function (e) {
@@ -138,6 +138,12 @@ function setupEventListeners() {
             validateFieldRealtime('cep');
         });
         cepInput.addEventListener('blur', function () { validateFieldRealtime('cep'); });
+        cepInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                if (typeof searchCEP === 'function') searchCEP();
+            }
+        });
     }
 
     // Validação em tempo real dos demais campos

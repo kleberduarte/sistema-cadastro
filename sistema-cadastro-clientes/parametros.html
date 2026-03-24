@@ -24,6 +24,7 @@
             <a href="usuarios.html" class="menu-item-admin">👥 Usuários</a>
             <a href="parametros.html" class="menu-item-admin">⚙️ Parâmetros</a>
             <a href="pdvs-monitor.html" class="menu-item-admin">🖥️ PDVs (empresa)</a>
+            <a href="suporte.html">💬 Suporte</a>
         </nav>
         <div class="nav-sidebar__footer">
             <button class="btn btn-secondary" type="button" onclick="logout()">🚪 Sair</button>
@@ -122,6 +123,18 @@
                     <label for="chavePix">Chave PIX da Empresa</label>
                     <input type="text" id="chavePix" placeholder="CPF, CNPJ, e-mail ou chave aleatória">
                     <small>Essa chave será usada no PDV para gerar o QR Code PIX.</small>
+                </div>
+
+                <h3>Suporte (tela Suporte)</h3>
+                <div class="form-group">
+                    <label for="suporteEmail">E-mail de atendimento</label>
+                    <input type="email" id="suporteEmail" placeholder="ex: suporte@cliente.com.br" autocomplete="email">
+                    <small>Usado na tela <strong>Suporte</strong> para esta empresa. Se vazio, usa o padrão global (<code>api-config.js</code>).</small>
+                </div>
+                <div class="form-group">
+                    <label for="suporteWhatsapp">WhatsApp de suporte (opcional)</label>
+                    <input type="tel" id="suporteWhatsapp" placeholder="DDD + número, ex: 11999998888" autocomplete="tel">
+                    <small>Se vazio, a tela Suporte usa o número global ou oculta o WhatsApp.</small>
                 </div>
 
                 <div class="form-group">
@@ -388,6 +401,8 @@
                 corBotaoTexto: P.corBotaoTexto || '#ffffff',
                 mensagemBoasVindas: '',
                 chavePix: DEFAULT_PIX_KEY,
+                suporteEmail: '',
+                suporteWhatsapp: '',
                 ativo: true
             });
         }
@@ -464,6 +479,8 @@
             document.getElementById('corBotaoTexto').value = params.corBotaoTexto || '#ffffff';
             document.getElementById('mensagemBoasVindas').value = params.mensagemBoasVindas || '';
             document.getElementById('chavePix').value = (params.chavePix && params.chavePix.trim()) ? params.chavePix : DEFAULT_PIX_KEY;
+            document.getElementById('suporteEmail').value = params.suporteEmail != null ? String(params.suporteEmail) : '';
+            document.getElementById('suporteWhatsapp').value = params.suporteWhatsapp != null ? String(params.suporteWhatsapp) : '';
             document.getElementById('ativo').checked = params.ativo !== false;
             
             atualizarPreVisualizacao();
@@ -493,6 +510,8 @@
                 corBotaoTexto: document.getElementById('corBotaoTexto').value,
                 mensagemBoasVindas: document.getElementById('mensagemBoasVindas').value,
                 chavePix: document.getElementById('chavePix').value.trim() || DEFAULT_PIX_KEY,
+                suporteEmail: document.getElementById('suporteEmail').value.trim() || null,
+                suporteWhatsapp: document.getElementById('suporteWhatsapp').value.trim() || null,
                 ativo: document.getElementById('ativo').checked
             };
         }
@@ -605,6 +624,8 @@
                 corBotaoTexto: P.corBotaoTexto || '#ffffff',
                 mensagemBoasVindas: '',
                 chavePix: DEFAULT_PIX_KEY,
+                suporteEmail: '',
+                suporteWhatsapp: '',
                 ativo: true
             };
 
@@ -734,6 +755,8 @@
                     document.getElementById('corBotaoTexto').value = '#ffffff';
                     document.getElementById('mensagemBoasVindas').value = '';
                     document.getElementById('chavePix').value = DEFAULT_PIX_KEY;
+                    document.getElementById('suporteEmail').value = '';
+                    document.getElementById('suporteWhatsapp').value = '';
                     document.getElementById('ativo').checked = true;
                     atualizarPreVisualizacao();
                     if (localStorage.getItem('selectedEmpresaId') === String(eid)) {

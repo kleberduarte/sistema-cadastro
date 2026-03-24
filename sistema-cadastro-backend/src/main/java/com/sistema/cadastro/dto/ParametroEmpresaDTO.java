@@ -22,5 +22,8 @@ public class ParametroEmpresaDTO {
     private String mensagemBoasVindas;
     // Chave PIX padrão da empresa (para pagamentos no PDV)
     private String chavePix;
+    /** Suporte: tela Suporte da retaguarda (por empresa). */
+    private String suporteEmail;
+    private String suporteWhatsapp;
     private Boolean ativo;
 }

@@ -54,6 +54,14 @@ public class ParametroEmpresa {
     @Column(name = "chave_pix", length = 255)
     private String chavePix;
 
+    /** E-mail de suporte exibido na tela Suporte (por empresa). */
+    @Column(name = "suporte_email", length = 255)
+    private String suporteEmail;
+
+    /** WhatsApp de suporte (apenas dígitos ou texto livre; normalizado no cliente). */
+    @Column(name = "suporte_whatsapp", length = 32)
+    private String suporteWhatsapp;
+
     @Column(name = "ativo")
     private Boolean ativo = true;
 }

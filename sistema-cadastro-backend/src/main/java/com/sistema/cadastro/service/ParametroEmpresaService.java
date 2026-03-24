@@ -53,6 +53,8 @@ public class ParametroEmpresaService {
         parametro.setCorBotaoTexto(dto.getCorBotaoTexto());
         parametro.setMensagemBoasVindas(dto.getMensagemBoasVindas());
         parametro.setChavePix(dto.getChavePix());
+        parametro.setSuporteEmail(emptyToNull(dto.getSuporteEmail()));
+        parametro.setSuporteWhatsapp(emptyToNull(dto.getSuporteWhatsapp()));
         parametro.setAtivo(dto.getAtivo() == null ? true : dto.getAtivo());
 
         parametro = repository.save(parametro);
@@ -160,8 +162,16 @@ public class ParametroEmpresaService {
         dto.setCorBotaoTexto(entity.getCorBotaoTexto());
         dto.setMensagemBoasVindas(entity.getMensagemBoasVindas());
         dto.setChavePix(entity.getChavePix());
+        dto.setSuporteEmail(entity.getSuporteEmail());
+        dto.setSuporteWhatsapp(entity.getSuporteWhatsapp());
         dto.setAtivo(entity.getAtivo());
         return dto;
+    }
+
+    private static String emptyToNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
     }
 }
 
