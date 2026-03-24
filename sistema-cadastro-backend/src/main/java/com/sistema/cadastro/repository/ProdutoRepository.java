@@ -18,6 +18,7 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     Page<Produto> findByEmpresaId(Long empresaId, Pageable pageable);
 
     Optional<Produto> findByEmpresaIdAndCodigoProduto(Long empresaId, String codigoProduto);
+    List<Produto> findByEmpresaIdAndCodigoProdutoIn(Long empresaId, List<String> codigosProduto);
 
     boolean existsByEmpresaIdAndCodigoProduto(Long empresaId, String codigoProduto);
 

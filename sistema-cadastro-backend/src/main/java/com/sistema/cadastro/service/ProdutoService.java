@@ -29,11 +29,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProdutoService {
+    private static final int IMPORT_BATCH_SIZE = 500;
 
     private final ProdutoRepository produtoRepository;
     private final EmpresaScopeService empresaScopeService;
@@ -197,6 +201,7 @@ public class ProdutoService {
     public ProdutoImportPreviewResponseDTO previewImportCsv(MultipartFile file, Usuario u, Long empresaIdParam) {
         long empresaId = empresaScopeService.resolveForWrite(u, empresaIdParam);
         List<ParsedRow> rows = parseCsv(file);
+        Map<String, Produto> existentesPorCodigo = carregarExistentesPorCodigo(empresaId, rows);
         List<ProdutoImportPreviewItemDTO> itens = new ArrayList<>();
         int validas = 0;
         int invalidas = 0;
@@ -210,8 +215,7 @@ public class ProdutoService {
                 continue;
             }
             validas++;
-            Optional<Produto> existente = produtoRepository.findByEmpresaIdAndCodigoProduto(empresaId, row.codigoProduto);
-            if (existente.isPresent()) {
+            if (existentesPorCodigo.containsKey(row.codigoProduto)) {
                 atualizar++;
                 itens.add(toPreviewItem(row, "UPDATE", "Produto existente nesta empresa"));
             } else {
@@ -235,7 +239,9 @@ public class ProdutoService {
     public ProdutoImportConfirmResponseDTO confirmImportCsv(MultipartFile file, Usuario u, Long empresaIdParam) {
         long empresaId = empresaScopeService.resolveForWrite(u, empresaIdParam);
         List<ParsedRow> rows = parseCsv(file);
+        Map<String, Produto> existentesPorCodigo = carregarExistentesPorCodigo(empresaId, rows);
         List<ProdutoImportPreviewItemDTO> detalhes = new ArrayList<>();
+        List<Produto> lotePersistencia = new ArrayList<>(IMPORT_BATCH_SIZE);
         int criados = 0;
         int atualizados = 0;
         int ignorados = 0;
@@ -247,10 +253,10 @@ public class ProdutoService {
                 detalhes.add(toPreviewItem(row, "INVALID", row.erro));
                 continue;
             }
-            Optional<Produto> existente = produtoRepository.findByEmpresaIdAndCodigoProduto(empresaId, row.codigoProduto);
             try {
-                if (existente.isPresent()) {
-                    Produto p = existente.get();
+                Produto existente = existentesPorCodigo.get(row.codigoProduto);
+                if (existente != null) {
+                    Produto p = existente;
                     p.setNome(row.nome);
                     p.setPreco(row.preco);
                     p.setQuantidadeEstoque(row.estoque);
@@ -260,7 +266,8 @@ public class ProdutoService {
                     if (row.estoqueMinimo != null) {
                         p.setEstoqueMinimo(row.estoqueMinimo);
                     }
-                    produtoRepository.save(p);
+                    lotePersistencia.add(p);
+                    flushLoteSeNecessario(lotePersistencia);
                     atualizados++;
                     detalhes.add(toPreviewItem(row, "UPDATE", "Atualizado"));
                 } else {
@@ -275,7 +282,8 @@ public class ProdutoService {
                     p.setTipo(row.tipo);
                     p.setEstoqueMinimo(row.estoqueMinimo != null ? row.estoqueMinimo : 0);
                     p.setEmPromocao(false);
-                    produtoRepository.save(p);
+                    lotePersistencia.add(p);
+                    flushLoteSeNecessario(lotePersistencia);
                     criados++;
                     detalhes.add(toPreviewItem(row, "CREATE", "Criado"));
                 }
@@ -285,6 +293,7 @@ public class ProdutoService {
                 detalhes.add(toPreviewItem(row, "INVALID", "Falha ao persistir: " + e.getMessage()));
             }
         }
+        flushLoteFinal(lotePersistencia);
 
         return ProdutoImportConfirmResponseDTO.builder()
                 .empresaId(empresaId)
@@ -295,6 +304,42 @@ public class ProdutoService {
                 .erros(erros)
                 .detalhes(detalhes)
                 .build();
+    }
+
+    private Map<String, Produto> carregarExistentesPorCodigo(long empresaId, List<ParsedRow> rows) {
+        Set<String> codigos = new LinkedHashSet<>();
+        for (ParsedRow row : rows) {
+            if (row.erro == null && row.codigoProduto != null) {
+                codigos.add(row.codigoProduto);
+            }
+        }
+        if (codigos.isEmpty()) return Map.of();
+
+        List<String> listaCodigos = new ArrayList<>(codigos);
+        Map<String, Produto> result = new HashMap<>(listaCodigos.size());
+        for (int i = 0; i < listaCodigos.size(); i += IMPORT_BATCH_SIZE) {
+            int end = Math.min(i + IMPORT_BATCH_SIZE, listaCodigos.size());
+            List<String> chunk = listaCodigos.subList(i, end);
+            List<Produto> encontrados = produtoRepository.findByEmpresaIdAndCodigoProdutoIn(empresaId, chunk);
+            for (Produto p : encontrados) {
+                result.put(p.getCodigoProduto(), p);
+            }
+        }
+        return result;
+    }
+
+    private void flushLoteSeNecessario(List<Produto> lotePersistencia) {
+        if (lotePersistencia.size() >= IMPORT_BATCH_SIZE) {
+            produtoRepository.saveAll(lotePersistencia);
+            lotePersistencia.clear();
+        }
+    }
+
+    private void flushLoteFinal(List<Produto> lotePersistencia) {
+        if (!lotePersistencia.isEmpty()) {
+            produtoRepository.saveAll(lotePersistencia);
+            lotePersistencia.clear();
+        }
     }
 
     private void assertProdutoReadable(Usuario u, Produto p, Long empresaIdParam) {
