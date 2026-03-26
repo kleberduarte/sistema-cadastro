@@ -50,7 +50,7 @@
                 </div>
                 <div class="input-group">
                     <label for="pdv-barcode">CÓDIGO DE BARRAS</label>
-                    <input type="text" id="pdv-barcode" placeholder="Leia o código ou pressione F8 para pesquisar" autofocus autocomplete="off">
+                    <input type="text" id="pdv-barcode" placeholder="Leia o código ou toque em Produtos" autofocus autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" enterkeyhint="done">
                 </div>
 
                 <div class="info-display">
@@ -86,7 +86,7 @@
 
                 <div class="left-footer">
                     <label class="left-footer__label" for="pdv-order-code">Código ou número do pedido</label>
-                    <input type="text" id="pdv-order-code" class="left-footer__input" placeholder="Digite o código ou F3 para pesquisar" aria-label="Código ou pedido">
+                    <input type="text" id="pdv-order-code" class="left-footer__input" placeholder="Digite o código do pedido" aria-label="Código ou pedido" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" enterkeyhint="search">
                 </div>
             </section>
 
@@ -133,6 +133,17 @@
             </section>
         </main>
 
+        <section class="pdv-mobile-actions" aria-label="Ações rápidas no celular">
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('barcode')">Código</button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('pedido')">Pedido</button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('produto')">Produtos</button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('cliente')">Cliente</button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('qtd')">Qtd</button>
+            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--primary" onclick="pdvMobileAction('finalizar')">Finalizar</button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('nova')">Nova venda</button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('vendas')">Vendas</button>
+        </section>
+
         <!-- Rodapé com os atalhos -->
         <footer class="pdv-shortcuts">
             <div><span><b>F2</b>-Cód.Interno</span> <span><b>F3</b>-Pesq.Pedido</span> <span><b>F4</b>-Qtd</span> <span><b>F5</b>-Nova Venda</span> <span><b>F7</b>-Pesq.Venda</span> <span><b>F8</b>-Pesq.Produto</span> <span><b>P</b>-Imprimir</span></div>
@@ -152,7 +163,7 @@
                 <span class="close-button" onclick="closeModal('productSearchModal')">&times;</span>
             </div>
             <div class="modal-body">
-                <input type="text" id="productSearchInput" placeholder="Digite o nome ou código do produto...">
+                <input type="text" id="productSearchInput" placeholder="Digite o nome ou código do produto..." autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" enterkeyhint="search">
                 <div class="table-container modal-table">
                     <table id="product-search-results">
                         <thead>
@@ -193,7 +204,7 @@
                     <div id="payment-value-container" class="payment-details" style="margin-top: 15px;">
                         <label for="payment-value-input">Valor a Pagar (R$)</label>
                         <div class="input-group-addon" style="display: flex; gap: 10px;">
-                            <input type="text" id="payment-value-input" placeholder="0,00" style="flex: 1;" oninput="if(typeof updateInstallmentsInfo==='function') updateInstallmentsInfo()">
+                            <input type="text" id="payment-value-input" placeholder="0,00" style="flex: 1;" inputmode="decimal" enterkeyhint="done" oninput="if(typeof updateInstallmentsInfo==='function') updateInstallmentsInfo()">
                             <button id="btn-add-payment" class="btn btn-secondary" onclick="addPayment()">➕ Adicionar</button>
                         </div>
                     </div>
@@ -265,7 +276,7 @@
                 </div>
                 <div class="form-group" style="margin-top:12px;">
                     <label for="fcValorCaixa">Valor em dinheiro contado no caixa (opcional)</label>
-                    <input type="text" id="fcValorCaixa" placeholder="ex: 150,00">
+                    <input type="text" id="fcValorCaixa" placeholder="ex: 150,00" inputmode="decimal" enterkeyhint="done">
                     <small style="color:#666;display:block;margin-top:6px;">Se informado, o sistema calcula sobra/falta comparando com o total em dinheiro.</small>
                 </div>
                 <div id="fcPreviewDiferenca" style="margin:10px 0 4px;font-weight:600;color:#555;"></div>
@@ -285,7 +296,7 @@
                 <span class="close-button" onclick="closeModal('saleSearchModal')">&times;</span>
             </div>
             <div class="modal-body">
-                <input type="text" id="saleSearchInput" placeholder="Digite o ID da venda ou nome do operador...">
+                <input type="text" id="saleSearchInput" placeholder="Digite o ID da venda ou nome do operador..." autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" enterkeyhint="search">
                 <div class="table-container modal-table">
                     <table id="sale-search-results">
                         <thead>
@@ -316,7 +327,7 @@
             </div>
             <div class="modal-body">
                 <div class="client-modal-search">
-                    <input type="text" id="clientSearchInput" placeholder="Buscar por nome, e-mail ou CPF...">
+                    <input type="text" id="clientSearchInput" placeholder="Buscar por nome, e-mail ou CPF..." autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" enterkeyhint="search">
                     <button type="button" class="btn btn-secondary" onclick="searchClients()">Buscar</button>
                 </div>
                 <div class="table-container modal-table">

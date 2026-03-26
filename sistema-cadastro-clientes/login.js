@@ -374,43 +374,8 @@ async function handleLoginSubmit(e) {
             let usernameResolved = data.username;
             let roleNorm = normalizeRole(data.role);
             var empresaIdResolved = null;
-            try {
-                const meRes = await fetch(`${API_URL}/auth/me`, {
-                    headers: { 'Authorization': 'Bearer ' + data.token }
-                });
-                if (meRes.ok) {
-                    const me = await meRes.json();
-                    if (me && typeof me === 'object' && me.id != null) {
-                        id = me.id;
-                        if (me.username) usernameResolved = me.username;
-                        roleNorm = normalizeRole(me.role);
-                        if (me.empresaId != null && me.empresaId !== '') {
-                            empresaIdResolved = Number(me.empresaId);
-                        }
-                        if (mustForcarTrocaSenha(me)) {
-                            var uMc = { id: id, username: usernameResolved, role: roleNorm };
-                            if (me.empresaId != null && Number(me.empresaId) >= 1) {
-                                uMc.empresaId = Number(me.empresaId);
-                                empresaIdResolved = Number(me.empresaId);
-                            } else if (empresaIdResolved != null) {
-                                uMc.empresaId = empresaIdResolved;
-                            }
-                            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(uMc));
-                            try {
-                                var eM = empresaIdResolved != null && empresaIdResolved >= 1
-                                    ? empresaIdResolved
-                                    : parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || '0', 10);
-                                if (eM >= 1) sessionStorage.setItem('redefinirSenhaEmpresaId', String(eM));
-                            } catch (_) {}
-                            window.location.href = 'redefinir-senha-primeiro-acesso.html';
-                            return;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.warn('Não foi possível confirmar perfil em /auth/me, usando resposta do login.', e);
-            }
-            if (empresaIdResolved == null && data.empresaId != null && data.empresaId !== '') {
+            // Resposta do /auth/login já traz id, perfil, empresa PDV e mustChangePassword — evita 2ª ida ao servidor (/auth/me).
+            if (data.empresaId != null && data.empresaId !== '') {
                 empresaIdResolved = Number(data.empresaId);
             }
             var userPayload = {
