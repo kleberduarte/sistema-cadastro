@@ -99,7 +99,23 @@ function applyCompanyFavicon(logoUrl) {
         var sep = faviconSrc.indexOf('?') >= 0 ? '&' : '?';
         finalHref = faviconSrc + sep + 'v=' + encodeURIComponent(String(Date.now()));
     }
-    setIcons(finalHref, mime);
+
+    // Evita globo quando a URL do logo estiver quebrada em produção.
+    // Só troca o favicon após confirmar que a imagem responde.
+    if (finalHref.indexOf('data:') === 0) {
+        setIcons(finalHref, mime);
+        return;
+    }
+    var probe = new Image();
+    probe.onload = function () {
+        setIcons(finalHref, mime);
+    };
+    probe.onerror = function () {
+        var fb = (typeof window !== 'undefined' && window.__defaultFaviconHref) || 'data:;base64,iVBORw0KGgo=';
+        var fbType = (typeof window !== 'undefined' && window.__defaultFaviconType) || '';
+        setIcons(fb, fbType);
+    };
+    probe.src = finalHref;
 }
 
 /** Mensagem de erro em PT ou null se ok (para formulário Parâmetros). */
