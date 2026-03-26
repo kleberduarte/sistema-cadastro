@@ -74,7 +74,6 @@
                 <div class="form-group">
                     <label for="logoUrl">URL do Logo</label>
                     <input type="text" id="logoUrl" placeholder="https://exemplo.com/logo.png" autocomplete="off">
-                    <small style="display:block;margin-top:6px;color:#666;line-height:1.45;">Em produção use uma URL <strong>https://</strong> pública ou caminho relativo ao site (ex.: <code>logo.png</code>). Caminhos <strong>C:\...</strong> e <strong>file://</strong> não funcionam na internet.</small>
                 </div>
 
                 <h3>Cores do Sistema</h3>
@@ -130,12 +129,10 @@
                 <div class="form-group">
                     <label for="suporteEmail">E-mail de atendimento</label>
                     <input type="email" id="suporteEmail" placeholder="ex: suporte@cliente.com.br" autocomplete="email">
-                    <small>Usado na tela <strong>Suporte</strong> para esta empresa. Se vazio, usa o padrão global (<code>api-config.js</code>).</small>
                 </div>
                 <div class="form-group">
                     <label for="suporteWhatsapp">WhatsApp de suporte (opcional)</label>
                     <input type="tel" id="suporteWhatsapp" placeholder="DDD + número, ex: 11999998888" autocomplete="tel">
-                    <small>Se vazio, a tela Suporte usa o número global ou oculta o WhatsApp.</small>
                 </div>
 
                 <div class="form-group">
@@ -147,7 +144,6 @@
                 <button class="btn btn-primary" onclick="salvarParametros()">💾 Salvar Parâmetros</button>
                 <button type="button" class="btn btn-secondary" id="btnRestaurarParametros" onclick="resetarParametros()">↩️ Restaurar</button>
                 <button type="button" class="btn btn-danger admin-only" id="btnExcluirEmpresa" onclick="excluirCadastroEmpresa()" disabled title="Remove o cadastro de parâmetros desta empresa">🗑️ Excluir cadastro desta empresa</button>
-                <p class="admin-only" style="margin-top:10px;color:#666;font-size:0.9em;"><small><strong>Excluir cadastro:</strong> apaga nome, cores, PIX e demais parâmetros deste ID no banco. <strong>PDVs</strong> já registrados no monitor continuam até serem excluídos na tela de PDVs.</small></p>
             </section>
 
             <section class="form-section">
