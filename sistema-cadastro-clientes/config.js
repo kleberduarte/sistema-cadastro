@@ -26,21 +26,36 @@ function sanitizeLogoUrlForDisplay(logoUrl) {
 function applyCompanyFavicon(logoUrl) {
     if (typeof document === 'undefined') return;
 
+    function findPrimaryIcon() {
+        return document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+    }
+
+    function ensureIcon(relValue) {
+        var el = document.querySelector('link[rel="' + relValue + '"]');
+        if (el) return el;
+        el = document.createElement('link');
+        el.setAttribute('rel', relValue);
+        document.head.appendChild(el);
+        return el;
+    }
+
+    function setIcons(href, type) {
+        var icons = [ensureIcon('icon'), ensureIcon('shortcut icon')];
+        icons.forEach(function (el) {
+            el.setAttribute('href', href);
+            if (type) el.setAttribute('type', type);
+            else el.removeAttribute('type');
+        });
+    }
+
     if (typeof window !== 'undefined' && window.__defaultFaviconHref == null) {
-        var initialIcon = document.querySelector('link[rel="icon"]');
+        var initialIcon = findPrimaryIcon();
         window.__defaultFaviconHref = initialIcon && initialIcon.getAttribute('href')
             ? initialIcon.getAttribute('href')
             : 'data:;base64,iVBORw0KGgo=';
         window.__defaultFaviconType = initialIcon && initialIcon.getAttribute('type')
             ? initialIcon.getAttribute('type')
             : '';
-    }
-
-    var iconEl = document.querySelector('link[rel="icon"]');
-    if (!iconEl) {
-        iconEl = document.createElement('link');
-        iconEl.setAttribute('rel', 'icon');
-        document.head.appendChild(iconEl);
     }
 
     function guessFaviconMime(u) {
@@ -61,10 +76,9 @@ function applyCompanyFavicon(logoUrl) {
 
     var clean = sanitizeLogoUrlForDisplay(logoUrl);
     if (!clean) {
-        iconEl.setAttribute('href', (typeof window !== 'undefined' && window.__defaultFaviconHref) || 'data:;base64,iVBORw0KGgo=');
+        var fallback = (typeof window !== 'undefined' && window.__defaultFaviconHref) || 'data:;base64,iVBORw0KGgo=';
         var defaultType = (typeof window !== 'undefined' && window.__defaultFaviconType) || '';
-        if (defaultType) iconEl.setAttribute('type', defaultType);
-        else iconEl.removeAttribute('type');
+        setIcons(fallback, defaultType);
         return;
     }
 
@@ -78,10 +92,14 @@ function applyCompanyFavicon(logoUrl) {
         }
     } catch (_) {}
 
-    iconEl.setAttribute('href', faviconSrc);
     var mime = guessFaviconMime(faviconSrc);
-    if (mime) iconEl.setAttribute('type', mime);
-    else iconEl.removeAttribute('type');
+    // Bust cache para forçar o browser a trocar o ícone da aba.
+    var finalHref = faviconSrc;
+    if (faviconSrc.indexOf('data:') !== 0) {
+        var sep = faviconSrc.indexOf('?') >= 0 ? '&' : '?';
+        finalHref = faviconSrc + sep + 'v=' + encodeURIComponent(String(Date.now()));
+    }
+    setIcons(finalHref, mime);
 }
 
 /** Mensagem de erro em PT ou null se ok (para formulário Parâmetros). */
