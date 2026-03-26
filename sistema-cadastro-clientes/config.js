@@ -19,6 +19,46 @@ function sanitizeLogoUrlForDisplay(logoUrl) {
     return u;
 }
 
+/**
+ * Atualiza o favicon da aba usando o logo da empresa.
+ * Sem logo válido, restaura o favicon original da página.
+ */
+function applyCompanyFavicon(logoUrl) {
+    if (typeof document === 'undefined') return;
+
+    if (typeof window !== 'undefined' && window.__defaultFaviconHref == null) {
+        var initialIcon = document.querySelector('link[rel="icon"]');
+        window.__defaultFaviconHref = initialIcon && initialIcon.getAttribute('href')
+            ? initialIcon.getAttribute('href')
+            : 'data:;base64,iVBORw0KGgo=';
+    }
+
+    var iconEl = document.querySelector('link[rel="icon"]');
+    if (!iconEl) {
+        iconEl = document.createElement('link');
+        iconEl.setAttribute('rel', 'icon');
+        document.head.appendChild(iconEl);
+    }
+
+    var clean = sanitizeLogoUrlForDisplay(logoUrl);
+    if (!clean) {
+        iconEl.setAttribute('href', (typeof window !== 'undefined' && window.__defaultFaviconHref) || 'data:;base64,iVBORw0KGgo=');
+        return;
+    }
+
+    var faviconSrc = clean;
+    try {
+        if (clean.indexOf('http://') !== 0 &&
+            clean.indexOf('https://') !== 0 &&
+            clean.indexOf('data:') !== 0 &&
+            clean.indexOf('//') !== 0) {
+            faviconSrc = new URL(clean, window.location.href).href;
+        }
+    } catch (_) {}
+
+    iconEl.setAttribute('href', faviconSrc);
+}
+
 /** Mensagem de erro em PT ou null se ok (para formulário Parâmetros). */
 function validateLogoUrlForForm(raw) {
     var s = (raw == null) ? '' : String(raw).trim();
@@ -337,6 +377,7 @@ function applyClientStyles(params) {
 
     // Aplicar logo - múltiplas posições (ignora caminhos locais inúteis na nuvem)
     var logoUrl = params.logoUrl ? sanitizeLogoUrlForDisplay(params.logoUrl) : '';
+    applyCompanyFavicon(logoUrl);
     if (logoUrl) {
         var esc = logoUrl.replace(/"/g, '&quot;');
         var logoContainer = document.querySelector('.header-logo');

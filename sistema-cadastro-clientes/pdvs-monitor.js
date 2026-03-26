@@ -60,7 +60,7 @@
         var nome = getContextEmpresaNome();
         var semNomeSalvo = !nome && eid === EP;
         if (!isAdminEmpresaProfile() && eid === EP && (semNomeSalvo || nome === 'Sistema de Cadastro')) {
-            el.innerHTML = '<strong>ID ' + eid + '</strong> — <em>parâmetros padrão</em> (mesmo ID após <strong>Restaurar</strong> em Parâmetros). <span style="opacity:.85">PDVs só desta empresa.</span>';
+            el.innerHTML = '<strong>ID ' + eid + '</strong> <span style="opacity:.85">(só PDVs desta empresa)</span>';
         } else {
             el.innerHTML = '<strong>ID ' + eid + '</strong>' + (nome ? ' — ' + escapeHtml(nome) : '') + ' <span style="opacity:.85">(só PDVs desta empresa)</span>';
         }
