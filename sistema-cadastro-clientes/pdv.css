@@ -7,6 +7,10 @@ body {
     overflow: hidden; /* Evita barras de rolagem */
 }
 
+.pdv-mobile-actions {
+    display: none;
+}
+
 /* Mobile/tablet: permite rolagem e reorganiza layout do PDV */
 @media (max-width: 980px) {
     body {
@@ -38,6 +42,42 @@ body {
         gap: 10px;
     }
 
+    .pdv-mobile-actions {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        padding: 10px;
+        margin: 4px 10px 10px;
+        background: #ffffff;
+        border: 1px solid #dfe6ef;
+        border-radius: 10px;
+    }
+
+    .pdv-mobile-actions__btn {
+        min-height: 40px;
+        padding: 8px 6px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #f8fafc;
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .pdv-mobile-actions__btn:active {
+        transform: scale(0.98);
+    }
+
+    .pdv-mobile-actions__btn--primary {
+        background: #0f62fe;
+        border-color: #0f62fe;
+        color: #fff;
+    }
+
+    .pdv-shortcuts {
+        display: none;
+    }
+
     .pdv-left,
     .pdv-right {
         flex-basis: auto;
@@ -57,6 +97,10 @@ body {
     .input-group input {
         font-size: 1.2rem;
         padding: 10px;
+    }
+
+    input, select, textarea, button {
+        font-size: 16px;
     }
 
     .info-display {
@@ -124,6 +168,10 @@ body {
         max-width: none;
         margin: 4vh auto;
         padding: 14px;
+    }
+
+    .modal {
+        padding-bottom: env(safe-area-inset-bottom, 0);
     }
 
     .payment-body {

@@ -580,25 +580,10 @@
                 }
                 var token = data.token;
                 var id = data.id;
+                if (data.username && String(data.username).trim()) {
+                    username = String(data.username).trim();
+                }
                 var roleNorm = normRole(data.role);
-                try {
-                    var mr = await fetch(API + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
-                    if (mr.ok) {
-                        var me = await mr.json();
-                        if (me && me.id != null) {
-                            id = me.id;
-                            if (me.username) username = me.username;
-                            roleNorm = normRole(me.role);
-                            if (mustForcarTrocaSenha(me)) {
-                                try { sessionStorage.setItem('redefinirSenhaEmpresaId', String(empresaLogin)); } catch (eMc) {}
-                                localStorage.setItem('authToken', token);
-                                localStorage.setItem('currentUser', JSON.stringify({ id: id, username: username, role: roleNorm }));
-                                window.location.replace('../redefinir-senha-primeiro-acesso.html?from=pdv');
-                                return;
-                            }
-                        }
-                    }
-                } catch (x) {}
                 var vr = await fetch(API + '/pdv/entrar-inteligente', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },

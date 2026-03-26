@@ -81,6 +81,38 @@ function normalizePdvRole(role) {
     return String(role).trim().toUpperCase();
 }
 
+function isTouchPdvDevice() {
+    try {
+        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+    } catch (e) { /* ignore */ }
+    return ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+}
+
+function focusInputForMobile(el) {
+    if (!el || typeof el.focus !== 'function') return;
+    try { el.focus(); } catch (e) { /* ignore */ }
+    if (!isTouchPdvDevice()) return;
+    setTimeout(function () {
+        try {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        } catch (e) { /* ignore */ }
+    }, 120);
+}
+
+function setupMobileKeyboardAssist() {
+    if (!isTouchPdvDevice()) return;
+    try {
+        document.body.classList.add('pdv-touch');
+    } catch (e) { /* ignore */ }
+    document.addEventListener('focusin', function (ev) {
+        var target = ev.target;
+        if (!target || !target.tagName) return;
+        var tag = String(target.tagName).toUpperCase();
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return;
+        focusInputForMobile(target);
+    });
+}
+
 /** Perfil real: API /auth/me (igual ao login); fallback localStorage */
 /** ADM no PDV: ESC encerra sessão no caixa e volta à retaguarda (mantém login JWT). */
 function pdvAdminSairParaRetaguarda() {
@@ -140,6 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProducts({ quiet: true });
     /* Vendas: carregadas sob demanda em openSaleSearchModal (F7) — evita GET /vendas pesado na abertura do PDV */
     setupEventListeners();
+    setupMobileKeyboardAssist();
     setCaixaStatus('LIVRE');
     startPdvHeartbeat();
 });
@@ -184,6 +217,26 @@ function setupEventListeners() {
     if(paymentValueInput) paymentValueInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') addPayment();
     });
+
+    const orderInput = document.getElementById('pdv-order-code');
+    if (orderInput) {
+        orderInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (typeof openSaleSearchModal === 'function') {
+                    void openSaleSearchModal();
+                    setTimeout(function () {
+                        var s = document.getElementById('saleSearchInput');
+                        if (s) {
+                            s.value = String(orderInput.value || '');
+                            if (typeof renderSaleSearchResults === 'function') renderSaleSearchResults();
+                            focusInputForMobile(s);
+                        }
+                    }, 80);
+                }
+            }
+        });
+    }
 
     const saleSearchInput = document.getElementById('saleSearchInput');
     if(saleSearchInput) {
@@ -259,11 +312,20 @@ function setupKeyboardShortcuts() {
             key = 'p';
         }
 
-        var tag = e.target && e.target.tagName ? e.target.tagName : '';
+        var tag = e.target && e.target.tagName ? String(e.target.tagName).toUpperCase() : '';
+        var isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable);
         var inModal = e.target && e.target.closest && e.target.closest('.modal');
         var isModalInput = inModal && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
+        var isFKey = key && String(key).match(/^F([1-9]|1[0-2])$/);
+        var isFKeyCode = keyCode >= 112 && keyCode <= 123;
+        var isAltF = alt && (keyCode === 70 || key === 'f' || key === 'F');
 
         if (isModalInput && !isPdvReservedShortcut(key, keyCode, ctrl, alt)) {
+            return;
+        }
+
+        // Em campos editáveis fora de modal, não sequestrar teclas de digitação comum.
+        if (isEditable && !ctrl && !alt && key !== 'Escape' && !isFKey && !isFKeyCode) {
             return;
         }
 
@@ -290,9 +352,6 @@ function setupKeyboardShortcuts() {
             }
         }
 
-        var isFKey = key && String(key).match(/^F([1-9]|1[0-2])$/);
-        var isFKeyCode = keyCode >= 112 && keyCode <= 123;
-        var isAltF = alt && (keyCode === 70 || key === 'f' || key === 'F');
         var isShortcut = isFKey || isFKeyCode || key === 'p' || key === 'P' || key === 'Escape' || (ctrl && key && /^[dpr]$/i.test(key)) || (ctrl && (keyCode === 68 || keyCode === 80 || keyCode === 82)) || isAltF;
         if (isShortcut) {
             e.preventDefault();
@@ -404,6 +463,43 @@ function setupKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleShortcut, true);
 }
+
+function pdvMobileAction(action) {
+    switch (String(action || '')) {
+        case 'barcode': {
+            var b = document.getElementById('pdv-barcode');
+            focusInputForMobile(b);
+            break;
+        }
+        case 'pedido': {
+            var p = document.getElementById('pdv-order-code');
+            focusInputForMobile(p);
+            break;
+        }
+        case 'produto':
+            if (typeof openProductSearchModal === 'function') openProductSearchModal();
+            break;
+        case 'cliente':
+            if (typeof openClientModal === 'function') openClientModal();
+            break;
+        case 'qtd':
+            if (typeof changeQuantity === 'function') changeQuantity();
+            break;
+        case 'finalizar':
+            if (typeof finalizeSale === 'function') finalizeSale();
+            break;
+        case 'nova':
+            if (typeof novaVenda === 'function') novaVenda();
+            break;
+        case 'vendas':
+            if (typeof openSaleSearchModal === 'function') void openSaleSearchModal();
+            break;
+        default:
+            break;
+    }
+}
+
+window.pdvMobileAction = pdvMobileAction;
 
 /**
  * @param {{ quiet?: boolean }} [opts] quiet=true na abertura do PDV (sem toast de sucesso; menos trabalho na UI)
