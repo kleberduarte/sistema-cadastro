@@ -1,4 +1,4 @@
-const CACHE_NAME = "sistema-cadastro-v10";
+const CACHE_NAME = "sistema-cadastro-v11";
 const CORE_ASSETS = [
   "./",
   "./login.html",
@@ -22,8 +22,7 @@ const CORE_ASSETS = [
   "./vendas.js",
   "./theme-defaults.js",
   "./manifest.json",
-  "./app-icon-192.png",
-  "./app-icon-512.png"
+  "./app-icon.svg"
 ];
 
 self.addEventListener("install", (event) => {
