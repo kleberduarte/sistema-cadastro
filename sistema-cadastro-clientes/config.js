@@ -31,6 +31,9 @@ function applyCompanyFavicon(logoUrl) {
         window.__defaultFaviconHref = initialIcon && initialIcon.getAttribute('href')
             ? initialIcon.getAttribute('href')
             : 'data:;base64,iVBORw0KGgo=';
+        window.__defaultFaviconType = initialIcon && initialIcon.getAttribute('type')
+            ? initialIcon.getAttribute('type')
+            : '';
     }
 
     var iconEl = document.querySelector('link[rel="icon"]');
@@ -40,9 +43,28 @@ function applyCompanyFavicon(logoUrl) {
         document.head.appendChild(iconEl);
     }
 
+    function guessFaviconMime(u) {
+        if (!u) return '';
+        var base = String(u).split('?')[0].split('#')[0].toLowerCase();
+        if (base.endsWith('.svg')) return 'image/svg+xml';
+        if (base.endsWith('.png')) return 'image/png';
+        if (base.endsWith('.jpg') || base.endsWith('.jpeg')) return 'image/jpeg';
+        if (base.endsWith('.webp')) return 'image/webp';
+        if (base.endsWith('.ico')) return 'image/x-icon';
+        if (base.indexOf('data:image/svg+xml') === 0) return 'image/svg+xml';
+        if (base.indexOf('data:image/png') === 0) return 'image/png';
+        if (base.indexOf('data:image/jpeg') === 0) return 'image/jpeg';
+        if (base.indexOf('data:image/webp') === 0) return 'image/webp';
+        if (base.indexOf('data:image/x-icon') === 0 || base.indexOf('data:image/vnd.microsoft.icon') === 0) return 'image/x-icon';
+        return '';
+    }
+
     var clean = sanitizeLogoUrlForDisplay(logoUrl);
     if (!clean) {
         iconEl.setAttribute('href', (typeof window !== 'undefined' && window.__defaultFaviconHref) || 'data:;base64,iVBORw0KGgo=');
+        var defaultType = (typeof window !== 'undefined' && window.__defaultFaviconType) || '';
+        if (defaultType) iconEl.setAttribute('type', defaultType);
+        else iconEl.removeAttribute('type');
         return;
     }
 
@@ -57,6 +79,9 @@ function applyCompanyFavicon(logoUrl) {
     } catch (_) {}
 
     iconEl.setAttribute('href', faviconSrc);
+    var mime = guessFaviconMime(faviconSrc);
+    if (mime) iconEl.setAttribute('type', mime);
+    else iconEl.removeAttribute('type');
 }
 
 /** Mensagem de erro em PT ou null se ok (para formulário Parâmetros). */
