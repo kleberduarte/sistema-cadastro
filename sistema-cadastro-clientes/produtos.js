@@ -135,6 +135,17 @@ function setupEventListeners() {
             e.target.value = value;
         });
     }
+    const pmcInput = document.getElementById('pmc');
+    if (pmcInput) {
+        pmcInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0) {
+                value = parseInt(value, 10) / 100;
+                value = value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            e.target.value = value;
+        });
+    }
     
     // Validar quantidade mínima
     const quantityInput = document.getElementById('quantity');
@@ -780,6 +791,9 @@ function validateForm(formData) {
     if (!formData.tipo || formData.tipo === '') {
         errors.tipo = 'Selecione o tipo';
     }
+    if (formData.pmc != null && formData.pmc < 0) {
+        errors.pmc = 'PMC não pode ser negativo';
+    }
     
     return errors;
 }
@@ -843,6 +857,8 @@ async function handleSubmit(e) {
     const qtdPagarRaw = qtdPagarEl ? String(qtdPagarEl.value || '').trim() : '';
     const promoQtdLevarValue = qtdLevarRaw ? parseInt(qtdLevarRaw, 10) : null;
     const promoQtdPagarValue = qtdPagarRaw ? parseInt(qtdPagarRaw, 10) : null;
+    const pmcRaw = (document.getElementById('pmc').value || '').trim();
+    const pmcValue = pmcRaw ? parseFloat(pmcRaw.replace(/\./g, '').replace(',', '.')) : null;
     
     const formData = {
         nome: document.getElementById('name').value.trim(),
@@ -861,7 +877,14 @@ async function handleSubmit(e) {
         promocaoFim: promoEndValue,
 
         promoQtdLevar: promoQtdLevarValue,
-        promoQtdPagar: promoQtdPagarValue
+        promoQtdPagar: promoQtdPagarValue,
+        tipoControle: (document.getElementById('tipoControle').value || 'COMUM'),
+        exigeReceita: !!document.getElementById('exigeReceita').checked,
+        exigeLote: !!document.getElementById('exigeLote').checked,
+        exigeValidade: !!document.getElementById('exigeValidade').checked,
+        registroMs: (document.getElementById('registroMs').value || '').trim() || null,
+        gtinEan: (document.getElementById('gtinEan').value || '').trim() || null,
+        pmc: isNaN(pmcValue) ? null : pmcValue
     };
     
     // Revalidar unicidade do código (digitado manualmente ou por leitor)
@@ -1157,6 +1180,15 @@ function editProduct(id) {
         document.getElementById('category').value = product.categoria || '';
         document.getElementById('productCode').value = product.codigoProduto || '';
         document.getElementById('tipo').value = product.tipo || '';
+        document.getElementById('tipoControle').value = product.tipoControle || 'COMUM';
+        document.getElementById('exigeReceita').checked = !!product.exigeReceita;
+        document.getElementById('exigeLote').checked = !!product.exigeLote;
+        document.getElementById('exigeValidade').checked = !!product.exigeValidade;
+        document.getElementById('registroMs').value = product.registroMs || '';
+        document.getElementById('gtinEan').value = product.gtinEan || '';
+        document.getElementById('pmc').value = product.pmc != null
+            ? parseFloat(product.pmc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '';
 
         // Promoções
         const promoEnabledEl = document.getElementById('promoEnabled');

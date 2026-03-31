@@ -9,6 +9,7 @@
 function sanitizeLogoUrlForDisplay(logoUrl) {
     if (!logoUrl || !String(logoUrl).trim()) return '';
     var u = String(logoUrl).trim();
+    if (u.indexOf('./') === 0) u = u.substring(2);
     var lower = u.toLowerCase();
     if (lower.indexOf('file:') === 0) return '';
     if (/^[a-z]:\\/i.test(u) || /^[a-z]:\//i.test(u)) return '';
@@ -16,7 +17,26 @@ function sanitizeLogoUrlForDisplay(logoUrl) {
     if (u.indexOf('\\') >= 0) return '';
     if (lower.indexOf('javascript:') === 0 || lower.indexOf('vbscript:') === 0) return '';
     if (u.indexOf('\n') >= 0 || u.indexOf('\r') >= 0) return '';
+    // Erro comum: salvar "pagina.html/logo.png" → o browser pede /pagina.html/logo.png (404).
+    if (lower.indexOf('http://') !== 0 && lower.indexOf('https://') !== 0 && lower.indexOf('data:') !== 0 && lower.indexOf('//') !== 0) {
+        u = u.replace(/(^|\/)[^/#?]+\.html\//gi, '$1');
+    }
     return u;
+}
+
+/** Caminho absoluto para img src (relativos resolvem contra a URL da página). */
+function resolveLogoUrlForBrowser(sanitized) {
+    if (!sanitized) return '';
+    var lower = String(sanitized).toLowerCase();
+    if (lower.indexOf('http://') === 0 || lower.indexOf('https://') === 0 || lower.indexOf('data:') === 0 || lower.indexOf('//') === 0) {
+        return sanitized;
+    }
+    if (typeof window === 'undefined' || !window.location) return sanitized;
+    try {
+        return new URL(sanitized, window.location.href).href;
+    } catch (_) {
+        return sanitized;
+    }
 }
 
 /**
@@ -411,6 +431,16 @@ async function loadClientParams() {
 // Aplicar estilos personalizados do cliente
 function applyClientStyles(params) {
     if (!params) return;
+    // Capacidades por tenant (farmácia, PMC etc.) para telas como PDV/produtos.
+    window.__tenantFeatures = {
+        segmento: params.segmento || '',
+        moduloFarmaciaAtivo: !!params.moduloFarmaciaAtivo,
+        farmaciaLoteValidadeObrigatorio: !!params.farmaciaLoteValidadeObrigatorio,
+        farmaciaControladosAtivo: !!params.farmaciaControladosAtivo,
+        farmaciaAntimicrobianosAtivo: !!params.farmaciaAntimicrobianosAtivo,
+        farmaciaPmcAtivo: !!params.farmaciaPmcAtivo,
+        farmaciaPmcModo: String(params.farmaciaPmcModo || 'ALERTA').toUpperCase()
+    };
 
     // Aplicar nome da empresa ao título da página
     if (params.nomeEmpresa) {
@@ -438,7 +468,7 @@ function applyClientStyles(params) {
     var logoUrl = params.logoUrl ? sanitizeLogoUrlForDisplay(params.logoUrl) : '';
     applyCompanyFavicon(logoUrl);
     if (logoUrl) {
-        var esc = logoUrl.replace(/"/g, '&quot;');
+        var esc = resolveLogoUrlForBrowser(logoUrl).replace(/"/g, '&quot;');
         var logoContainer = document.querySelector('.header-logo');
         if (!logoContainer) {
             var header = document.querySelector('header .header-content');
@@ -728,7 +758,7 @@ function applyClientStyles(params) {
         var cupomLogo = params.logoUrl ? sanitizeLogoUrlForDisplay(params.logoUrl) : '';
         if (cupomLogo) {
             var alt = (params.nomeEmpresa || 'Logo').replace(/"/g, '&quot;');
-            var src = cupomLogo.replace(/"/g, '&quot;');
+            var src = resolveLogoUrlForBrowser(cupomLogo).replace(/"/g, '&quot;');
             cupomEmpresaLogo.innerHTML = '<img src="' + src + '" alt="' + alt + '" onerror="this.style.display=\'none\'">';
             cupomEmpresaLogo.style.display = 'block';
         } else {

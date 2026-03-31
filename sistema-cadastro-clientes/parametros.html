@@ -135,6 +135,44 @@
                     <input type="tel" id="suporteWhatsapp" placeholder="DDD + número, ex: 11999998888" autocomplete="tel">
                 </div>
 
+                <h3>Módulo Farmácia</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="segmento">Segmento</label>
+                        <select id="segmento">
+                            <option value="">Padrão</option>
+                            <option value="FARMACIA">Farmácia</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="farmaciaPmcModo">Modo PMC</label>
+                        <select id="farmaciaPmcModo">
+                            <option value="ALERTA">ALERTA</option>
+                            <option value="BLOQUEIO">BLOQUEIO</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label><input type="checkbox" id="moduloFarmaciaAtivo"> Ativar módulo farmácia</label>
+                    <label><input type="checkbox" id="farmaciaLoteValidadeObrigatorio"> Exigir lote/validade no PDV</label>
+                    <label><input type="checkbox" id="farmaciaControladosAtivo"> Regras de controlados</label>
+                    <label><input type="checkbox" id="farmaciaAntimicrobianosAtivo"> Regras de antimicrobianos</label>
+                    <label><input type="checkbox" id="farmaciaPmcAtivo"> Validar PMC</label>
+                </div>
+                <div class="form-group" style="margin-top: 14px; padding: 12px; border: 1px dashed #cbd5e1; border-radius: 8px;">
+                    <label style="font-weight: 600; margin-bottom: 8px; display: block;">Atualização PMC (ABC Farma/CSV)</label>
+                    <div class="form-row" style="align-items: end;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="pmcFile">Arquivo CSV PMC</label>
+                            <input type="file" id="pmcFile" accept=".csv,text/csv">
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="btnImportarPmc" onclick="importarPmcCsv()">📥 Importar CSV PMC</button>
+                        <button type="button" class="btn btn-secondary" id="btnSyncPmc" onclick="sincronizarPmcFonte()">🔄 Sincronizar fonte PMC</button>
+                    </div>
+                    <small style="display:block;margin-top:8px;color:#64748b;">A importação/sync atualiza a base regulatória e também o snapshot de `PMC` nos produtos da empresa.</small>
+                    <div id="pmcResultado" style="margin-top:10px;font-size:0.92rem;color:#334155;"></div>
+                </div>
+
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="ativo" checked> Ativo
@@ -192,6 +230,16 @@
             if (!btn) return;
             var eid = document.getElementById('empresaSelect').value || document.getElementById('empresaId').value;
             btn.disabled = !eid || !parametroId;
+            atualizarEstadoAcoesPmc();
+        }
+
+        function atualizarEstadoAcoesPmc() {
+            var eid = document.getElementById('empresaSelect').value || document.getElementById('empresaId').value;
+            var disabled = !eid;
+            var bImport = document.getElementById('btnImportarPmc');
+            var bSync = document.getElementById('btnSyncPmc');
+            if (bImport) bImport.disabled = disabled;
+            if (bSync) bSync.disabled = disabled;
         }
 
         function isPerfilAdminEmpresa() {
@@ -478,6 +526,13 @@
             document.getElementById('chavePix').value = (params.chavePix && params.chavePix.trim()) ? params.chavePix : DEFAULT_PIX_KEY;
             document.getElementById('suporteEmail').value = params.suporteEmail != null ? String(params.suporteEmail) : '';
             document.getElementById('suporteWhatsapp').value = params.suporteWhatsapp != null ? String(params.suporteWhatsapp) : '';
+            document.getElementById('segmento').value = params.segmento || '';
+            document.getElementById('moduloFarmaciaAtivo').checked = !!params.moduloFarmaciaAtivo;
+            document.getElementById('farmaciaLoteValidadeObrigatorio').checked = !!params.farmaciaLoteValidadeObrigatorio;
+            document.getElementById('farmaciaControladosAtivo').checked = !!params.farmaciaControladosAtivo;
+            document.getElementById('farmaciaAntimicrobianosAtivo').checked = !!params.farmaciaAntimicrobianosAtivo;
+            document.getElementById('farmaciaPmcAtivo').checked = !!params.farmaciaPmcAtivo;
+            document.getElementById('farmaciaPmcModo').value = params.farmaciaPmcModo || 'ALERTA';
             document.getElementById('ativo').checked = params.ativo !== false;
             
             atualizarPreVisualizacao();
@@ -509,6 +564,13 @@
                 chavePix: document.getElementById('chavePix').value.trim() || DEFAULT_PIX_KEY,
                 suporteEmail: document.getElementById('suporteEmail').value.trim() || null,
                 suporteWhatsapp: document.getElementById('suporteWhatsapp').value.trim() || null,
+                segmento: document.getElementById('segmento').value || null,
+                moduloFarmaciaAtivo: document.getElementById('moduloFarmaciaAtivo').checked,
+                farmaciaLoteValidadeObrigatorio: document.getElementById('farmaciaLoteValidadeObrigatorio').checked,
+                farmaciaControladosAtivo: document.getElementById('farmaciaControladosAtivo').checked,
+                farmaciaAntimicrobianosAtivo: document.getElementById('farmaciaAntimicrobianosAtivo').checked,
+                farmaciaPmcAtivo: document.getElementById('farmaciaPmcAtivo').checked,
+                farmaciaPmcModo: document.getElementById('farmaciaPmcModo').value || 'ALERTA',
                 ativo: document.getElementById('ativo').checked
             };
         }
@@ -619,6 +681,78 @@
             } catch (error) {
                 console.error('Erro ao salvar parâmetros:', error);
                 showAlert('Erro ao salvar parâmetros', 'error');
+            }
+        }
+
+        function empresaSelecionadaParaPmc() {
+            var eidRaw = document.getElementById('empresaSelect').value || document.getElementById('empresaId').value;
+            var eid = parseInt(String(eidRaw || '').trim(), 10);
+            if (!eid || eid < 1) {
+                showAlert('Selecione uma empresa antes de atualizar PMC.', 'info');
+                return null;
+            }
+            return eid;
+        }
+
+        function renderResultadoPmc(resp, origem) {
+            var box = document.getElementById('pmcResultado');
+            if (!box) return;
+            var imp = resp && resp.importados != null ? resp.importados : '-';
+            var upd = resp && resp.pmcProdutosAtualizados != null ? resp.pmcProdutosAtualizados : '-';
+            box.textContent = origem + ': importados=' + imp + ' | produtos PMC atualizados=' + upd;
+        }
+
+        async function importarPmcCsv() {
+            var empresaId = empresaSelecionadaParaPmc();
+            if (!empresaId) return;
+            var fileInput = document.getElementById('pmcFile');
+            if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+                showAlert('Selecione um arquivo CSV de PMC.', 'info');
+                return;
+            }
+            var form = new FormData();
+            form.append('file', fileInput.files[0]);
+            try {
+                var res = await fetch(apiRoot() + '/farmacia/pmc/importacao?empresaId=' + encodeURIComponent(String(empresaId)), {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken() },
+                    body: form
+                });
+                var txt = await res.text();
+                var data = {};
+                try { data = txt ? JSON.parse(txt) : {}; } catch (_) {}
+                if (!res.ok) {
+                    showAlert(data.message || 'Erro ao importar CSV PMC.', 'error');
+                    return;
+                }
+                renderResultadoPmc(data, 'Importação');
+                showAlert('Importação PMC concluída com sucesso.', 'success');
+            } catch (e) {
+                console.error(e);
+                showAlert('Erro de conexão na importação PMC.', 'error');
+            }
+        }
+
+        async function sincronizarPmcFonte() {
+            var empresaId = empresaSelecionadaParaPmc();
+            if (!empresaId) return;
+            try {
+                var res = await fetch(apiRoot() + '/farmacia/pmc/sync?empresaId=' + encodeURIComponent(String(empresaId)), {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                var txt = await res.text();
+                var data = {};
+                try { data = txt ? JSON.parse(txt) : {}; } catch (_) {}
+                if (!res.ok) {
+                    showAlert(data.message || 'Erro ao sincronizar PMC.', 'error');
+                    return;
+                }
+                renderResultadoPmc(data, 'Sincronização');
+                showAlert('Sincronização PMC concluída com sucesso.', 'success');
+            } catch (e) {
+                console.error(e);
+                showAlert('Erro de conexão na sincronização PMC.', 'error');
             }
         }
 

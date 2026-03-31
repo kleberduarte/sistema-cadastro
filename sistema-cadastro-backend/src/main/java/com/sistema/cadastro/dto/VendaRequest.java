@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -76,6 +77,12 @@ public class VendaRequest {
         private Integer quantidade;
         
         private BigDecimal subtotal;
+        private String loteCodigo;
+        private LocalDate loteValidade;
+        private String receitaTipo;
+        private String receitaNumero;
+        private String receitaPrescritor;
+        private LocalDate receitaData;
     }
 
     @Data

@@ -25,5 +25,12 @@ public class ParametroEmpresaDTO {
     /** Suporte: tela Suporte da retaguarda (por empresa). */
     private String suporteEmail;
     private String suporteWhatsapp;
+    private String segmento;
+    private Boolean moduloFarmaciaAtivo;
+    private Boolean farmaciaLoteValidadeObrigatorio;
+    private Boolean farmaciaControladosAtivo;
+    private Boolean farmaciaAntimicrobianosAtivo;
+    private Boolean farmaciaPmcAtivo;
+    private String farmaciaPmcModo;
     private Boolean ativo;
 }

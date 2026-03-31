@@ -62,6 +62,29 @@ public class ParametroEmpresa {
     @Column(name = "suporte_whatsapp", length = 32)
     private String suporteWhatsapp;
 
+    /** Segmentacao de negocio (ex.: FARMACIA) para habilitar regras especificas. */
+    @Column(name = "segmento", length = 40)
+    private String segmento;
+
+    @Column(name = "modulo_farmacia_ativo")
+    private Boolean moduloFarmaciaAtivo = false;
+
+    @Column(name = "farmacia_lote_validade_obrigatorio")
+    private Boolean farmaciaLoteValidadeObrigatorio = false;
+
+    @Column(name = "farmacia_controlados_ativo")
+    private Boolean farmaciaControladosAtivo = false;
+
+    @Column(name = "farmacia_antimicrobianos_ativo")
+    private Boolean farmaciaAntimicrobianosAtivo = false;
+
+    @Column(name = "farmacia_pmc_ativo")
+    private Boolean farmaciaPmcAtivo = false;
+
+    /** Politica de PMC: ALERTA ou BLOQUEIO. */
+    @Column(name = "farmacia_pmc_modo", length = 20)
+    private String farmaciaPmcModo = "ALERTA";
+
     @Column(name = "ativo")
     private Boolean ativo = true;
 }

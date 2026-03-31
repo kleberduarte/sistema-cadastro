@@ -617,6 +617,27 @@ function getPrecoProdutoAtual(product) {
     return product.preco != null ? Number(product.preco) : 0;
 }
 
+function getFarmaciaFeatures() {
+    var f = (typeof window !== 'undefined' && window.__tenantFeatures) ? window.__tenantFeatures : {};
+    return {
+        on: !!f.moduloFarmaciaAtivo,
+        pmcOn: !!f.farmaciaPmcAtivo,
+        pmcModo: String(f.farmaciaPmcModo || 'ALERTA').toUpperCase(),
+        exigeLoteGlobal: !!f.farmaciaLoteValidadeObrigatorio
+    };
+}
+
+function requiresReceita(product) {
+    if (!product) return false;
+    return !!product.exigeReceita || product.tipoControle === 'ANTIMICROBIANO' || product.tipoControle === 'CONTROLADO';
+}
+
+function requiresLote(product) {
+    if (!product) return false;
+    var f = getFarmaciaFeatures();
+    return !!f.exigeLoteGlobal || !!product.exigeLote || !!product.exigeValidade || requiresReceita(product);
+}
+
 function calcItemSubtotal(item) {
     // `item.price` é o preço unitário atual (normal ou promocional por data/flag).
     // Se houver promo por quantidade (leve X, pague Y), ajusta o total para refletir a quantidade pagável.
@@ -683,6 +704,44 @@ function addToCart(productId, quantity = 1) {
     }
 
     const existingItem = cart.find(item => item.productId === productId);
+    const farm = getFarmaciaFeatures();
+
+    let loteCodigo = null;
+    let receitaTipo = null;
+    let receitaNumero = null;
+    let receitaPrescritor = null;
+    let receitaData = null;
+
+    if (farm.on && requiresLote(product)) {
+        loteCodigo = prompt('Informe o código do lote para "' + product.nome + '":', '') || '';
+        loteCodigo = loteCodigo.trim();
+        if (!loteCodigo) {
+            showAlert('Lote obrigatório para este item.', 'error');
+            return;
+        }
+    }
+    if (farm.on && requiresReceita(product)) {
+        receitaTipo = (prompt('Tipo de receita (A/B/C/Outro):', '') || '').trim();
+        receitaNumero = (prompt('Número da receita:', '') || '').trim();
+        receitaPrescritor = (prompt('Nome do prescritor:', '') || '').trim();
+        receitaData = (prompt('Data da receita (AAAA-MM-DD):', '') || '').trim();
+        if (!receitaTipo || !receitaNumero || !receitaPrescritor || !receitaData) {
+            showAlert('Dados da receita são obrigatórios para este item.', 'error');
+            return;
+        }
+    }
+
+    if (farm.on && farm.pmcOn && product.pmc != null) {
+        var precoAtual = Number(getPrecoProdutoAtual(product) || 0);
+        var pmc = Number(product.pmc || 0);
+        if (!isNaN(precoAtual) && !isNaN(pmc) && precoAtual > pmc) {
+            if (farm.pmcModo === 'BLOQUEIO') {
+                showAlert('Venda bloqueada: preço acima do PMC para ' + product.nome + '.', 'error');
+                return;
+            }
+            showAlert('Atenção: preço acima do PMC para ' + product.nome + '.', 'warning');
+        }
+    }
 
     if (existingItem) {
         existingItem.quantity = parseFloat(existingItem.quantity) + parseFloat(quantity);
@@ -691,6 +750,11 @@ function addToCart(productId, quantity = 1) {
         // Mantém regras de quantidade do produto
         existingItem.promoQtdLevar = product.promoQtdLevar != null ? Number(product.promoQtdLevar) : null;
         existingItem.promoQtdPagar = product.promoQtdPagar != null ? Number(product.promoQtdPagar) : null;
+        if (loteCodigo) existingItem.loteCodigo = loteCodigo;
+        if (receitaTipo) existingItem.receitaTipo = receitaTipo;
+        if (receitaNumero) existingItem.receitaNumero = receitaNumero;
+        if (receitaPrescritor) existingItem.receitaPrescritor = receitaPrescritor;
+        if (receitaData) existingItem.receitaData = receitaData;
     } else {
         cart.push({
             productId: product.id,
@@ -699,7 +763,12 @@ function addToCart(productId, quantity = 1) {
             quantity: quantity,
             code: product.codigoProduto,
             promoQtdLevar: product.promoQtdLevar != null ? Number(product.promoQtdLevar) : null,
-            promoQtdPagar: product.promoQtdPagar != null ? Number(product.promoQtdPagar) : null
+            promoQtdPagar: product.promoQtdPagar != null ? Number(product.promoQtdPagar) : null,
+            loteCodigo: loteCodigo || null,
+            receitaTipo: receitaTipo || null,
+            receitaNumero: receitaNumero || null,
+            receitaPrescritor: receitaPrescritor || null,
+            receitaData: receitaData || null
         });
     }
     
@@ -1649,7 +1718,12 @@ async function processPayment() {
                 quantidade: Math.floor(Number(item.quantity || 0)),
             nome: item.name,
             preco: item.price,
-                subtotal: calcItemSubtotal(item)
+                subtotal: calcItemSubtotal(item),
+            loteCodigo: item.loteCodigo || null,
+            receitaTipo: item.receitaTipo || null,
+            receitaNumero: item.receitaNumero || null,
+            receitaPrescritor: item.receitaPrescritor || null,
+            receitaData: item.receitaData || null
         })),
         desconto: currentDiscount,
         pagamentos: currentPayments.map(p => ({

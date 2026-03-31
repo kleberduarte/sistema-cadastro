@@ -56,4 +56,12 @@ public class ProdutoRequest {
     private String categoria;
     private String codigoProduto;
     private String tipo; // CAIXA ou UNIDADE
+    private String tipoControle; // COMUM | ANTIMICROBIANO | CONTROLADO
+    private Boolean exigeReceita;
+    private Boolean exigeLote;
+    private Boolean exigeValidade;
+    private String registroMs;
+    private String gtinEan;
+    @DecimalMin(value = "0.00", message = "PMC não pode ser negativo")
+    private BigDecimal pmc;
 }
