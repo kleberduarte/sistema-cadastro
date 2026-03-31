@@ -970,6 +970,7 @@ async function saveClientParams(params) {
     };
 
     window.showSystemAlert = function (message, type, title) {
+        if (promptResolve) finishSystemPrompt(null);
         var ov = ensureOverlay();
         var k = String(type || 'info').toLowerCase();
 
@@ -1049,6 +1050,7 @@ async function saveClientParams(params) {
     window.showSystemConfirm = function (message, opts) {
         opts = opts || {};
         return new Promise(function (resolve) {
+            if (promptResolve) finishSystemPrompt(null);
             if (confirmResolve) finishSystemConfirm(false);
             window.hideSystemAlert();
             if (timer) {
@@ -1070,6 +1072,119 @@ async function saveClientParams(params) {
                 if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) finishSystemConfirm(false);
             };
             document.addEventListener('keydown', confirmEscHandler);
+        });
+    };
+
+    var PROMPT_ID = 'systemPromptOverlay';
+    var promptResolve = null;
+    var promptEscHandler = null;
+    var promptEnterHandler = null;
+
+    function finishSystemPrompt(value) {
+        var ov = document.getElementById(PROMPT_ID);
+        if (ov) ov.classList.remove('show');
+        if (promptEscHandler) {
+            document.removeEventListener('keydown', promptEscHandler);
+            promptEscHandler = null;
+        }
+        var inp = document.getElementById('systemPromptInput');
+        if (inp && promptEnterHandler) {
+            inp.removeEventListener('keydown', promptEnterHandler);
+            promptEnterHandler = null;
+        }
+        var r = promptResolve;
+        promptResolve = null;
+        if (r) r(value);
+    }
+
+    function ensurePromptOverlay() {
+        var ov = document.getElementById(PROMPT_ID);
+        if (ov) return ov;
+        ov = document.createElement('div');
+        ov.id = PROMPT_ID;
+        ov.className = 'system-alert-overlay';
+        ov.setAttribute('role', 'dialog');
+        ov.setAttribute('aria-modal', 'true');
+        ov.innerHTML =
+            '<div class="system-alert-dialog">' +
+            '  <div class="system-alert-icon" aria-hidden="true"></div>' +
+            '  <h3 class="system-alert-title"></h3>' +
+            '  <p class="system-alert-text"></p>' +
+            '  <div class="system-alert-field">' +
+            '    <label class="system-alert-label" for="systemPromptInput"></label>' +
+            '    <input type="text" id="systemPromptInput" class="system-alert-input" autocomplete="off" spellcheck="false" />' +
+            '  </div>' +
+            '  <div class="system-alert-actions system-alert-actions--dual">' +
+            '    <button type="button" class="system-alert-cancel"></button>' +
+            '    <button type="button" class="system-alert-confirm"></button>' +
+            '  </div>' +
+            '</div>';
+        document.body.appendChild(ov);
+        ov.addEventListener('click', function (e) {
+            if (e.target === ov) finishSystemPrompt(null);
+        });
+        ov.querySelector('.system-alert-cancel').addEventListener('click', function () {
+            finishSystemPrompt(null);
+        });
+        ov.querySelector('.system-alert-confirm').addEventListener('click', function () {
+            var el = document.getElementById('systemPromptInput');
+            finishSystemPrompt(el ? el.value : '');
+        });
+        return ov;
+    }
+
+    /**
+     * Modal de entrada de texto (substitui window.prompt).
+     * Resolve com string (pode ser vazia) ou null se cancelar / fechar.
+     */
+    window.showSystemPrompt = function (message, opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            if (promptResolve) finishSystemPrompt(null);
+            window.hideSystemAlert();
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+            }
+            if (confirmResolve) finishSystemConfirm(false);
+            promptResolve = resolve;
+            var ov = ensurePromptOverlay();
+            var k = String(opts.type || 'info').toLowerCase();
+            var iconEl = ov.querySelector('.system-alert-icon');
+            if (iconEl) iconEl.innerHTML = iconSvg(k);
+            ov.querySelector('.system-alert-title').textContent =
+                opts.title != null ? String(opts.title) : 'Informação';
+            ov.querySelector('.system-alert-text').textContent = message == null ? '' : String(message);
+            var lbl = ov.querySelector('.system-alert-label');
+            var inp = document.getElementById('systemPromptInput');
+            if (lbl) lbl.textContent = opts.inputLabel != null ? String(opts.inputLabel) : 'Resposta';
+            if (inp) {
+                inp.value = opts.defaultValue != null ? String(opts.defaultValue) : '';
+                inp.placeholder = opts.placeholder != null ? String(opts.placeholder) : '';
+                inp.type = opts.inputType === 'password' ? 'password' : 'text';
+            }
+            ov.querySelector('.system-alert-confirm').textContent = opts.confirmText || 'OK';
+            ov.querySelector('.system-alert-cancel').textContent = opts.cancelText || 'Cancelar';
+            ov.classList.add('show');
+            promptEscHandler = function (e) {
+                if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) finishSystemPrompt(null);
+            };
+            document.addEventListener('keydown', promptEscHandler);
+            if (inp) {
+                promptEnterHandler = function (e) {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        finishSystemPrompt(inp.value);
+                    }
+                };
+                inp.addEventListener('keydown', promptEnterHandler);
+                setTimeout(function () {
+                    try {
+                        inp.focus();
+                        inp.select();
+                    } catch (err) {}
+                }, 0);
+            }
         });
     };
 })();

@@ -30,6 +30,19 @@ function pdvConfirm(message, opts) {
     });
 }
 
+/** Entrada de texto estilizada (mesmo layout do sistema); fallback em prompt nativo. */
+function pdvPrompt(message, opts) {
+    opts = opts || {};
+    if (typeof window.showSystemPrompt === 'function') {
+        return window.showSystemPrompt(message, opts);
+    }
+    return new Promise(function (res) {
+        var def = opts.defaultValue != null ? String(opts.defaultValue) : '';
+        var v = prompt(message, def);
+        res(v === null ? null : String(v));
+    });
+}
+
 /** Links da retaguarda a partir da pasta /pdv/ */
 function pdvAppHref(file) {
     if (typeof window !== 'undefined' && window.IS_PDV_APP) {
@@ -575,7 +588,7 @@ async function addProductByBarcode(codigoLido) {
         return;
     }
 
-    addToCart(foundProduct.id);
+    await addToCart(foundProduct.id);
     var barcodeInput = document.getElementById('pdv-barcode');
     if (barcodeInput) { barcodeInput.value = ''; barcodeInput.focus(); }
 }
@@ -683,7 +696,7 @@ function getPromoQtdInfo(item) {
     };
 }
 
-function addToCart(productId, quantity = 1) {
+async function addToCart(productId, quantity = 1) {
     const product = products.find(p => p.id === productId);
     if (!product) {
         showAlert('Produto não encontrado', 'error');
@@ -721,18 +734,64 @@ function addToCart(productId, quantity = 1) {
     var farmPromptOn = !!farm.on || shouldForceFarmaciaPrompts(product);
 
     if (farmPromptOn && requiresLote(product)) {
-        loteCodigo = prompt('Informe o código do lote para "' + product.nome + '":', '') || '';
-        loteCodigo = loteCodigo.trim();
+        var loteRaw = await pdvPrompt('Informe o código do lote para incluir no cupom desta venda.', {
+            title: 'Lote obrigatório',
+            inputLabel: 'Código do lote',
+            placeholder: 'Ex.: LOT-CTL-001',
+            defaultValue: '',
+            confirmText: 'Confirmar',
+            cancelText: 'Cancelar',
+            type: 'info'
+        });
+        if (loteRaw === null) return;
+        loteCodigo = String(loteRaw).trim();
         if (!loteCodigo) {
             showAlert('Lote obrigatório para este item.', 'error');
             return;
         }
     }
     if (farmPromptOn && requiresReceita(product)) {
-        receitaTipo = (prompt('Tipo de receita (A/B/C/Outro):', '') || '').trim();
-        receitaNumero = (prompt('Número da receita:', '') || '').trim();
-        receitaPrescritor = (prompt('Nome do prescritor:', '') || '').trim();
-        receitaData = (prompt('Data da receita (AAAA-MM-DD):', '') || '').trim();
+        var rt = await pdvPrompt('Informe o tipo de receita (ex.: A, B, C ou Outro).', {
+            title: 'Dados da receita',
+            inputLabel: 'Tipo de receita',
+            placeholder: 'A / B / C / Outro',
+            confirmText: 'Próximo',
+            cancelText: 'Cancelar',
+            type: 'info'
+        });
+        if (rt === null) return;
+        receitaTipo = String(rt).trim();
+        var rn = await pdvPrompt('Informe o número da receita.', {
+            title: 'Dados da receita',
+            inputLabel: 'Número da receita',
+            placeholder: 'Número / série',
+            confirmText: 'Próximo',
+            cancelText: 'Cancelar',
+            type: 'info'
+        });
+        if (rn === null) return;
+        receitaNumero = String(rn).trim();
+        var rp = await pdvPrompt('Informe o nome do prescritor.', {
+            title: 'Dados da receita',
+            inputLabel: 'Prescritor',
+            placeholder: 'Nome completo',
+            confirmText: 'Próximo',
+            cancelText: 'Cancelar',
+            type: 'info'
+        });
+        if (rp === null) return;
+        receitaPrescritor = String(rp).trim();
+        var rd = await pdvPrompt('Informe a data da receita no formato AAAA-MM-DD.', {
+            title: 'Dados da receita',
+            inputLabel: 'Data da receita',
+            placeholder: '2026-03-31',
+            defaultValue: '',
+            confirmText: 'Confirmar',
+            cancelText: 'Cancelar',
+            type: 'info'
+        });
+        if (rd === null) return;
+        receitaData = String(rd).trim();
         if (!receitaTipo || !receitaNumero || !receitaPrescritor || !receitaData) {
             showAlert('Dados da receita são obrigatórios para este item.', 'error');
             return;
@@ -997,14 +1056,22 @@ function changeQuantity() {
     openQuantityChangeModal();
 }
 
-function addCpfToSale() {
-    const cpf = prompt('Digite o CPF do cliente para a nota:', saleCpf || (saleCustomer ? saleCustomer.cpf : ''));
-    if (cpf !== null) {
-        saleCpf = cpf.trim() || null;
-        if (!saleCpf) saleCustomer = null;
-        updateClienteIndicadoDisplay();
-        showAlert(saleCpf ? `CPF ${saleCpf} associado à venda.` : 'CPF removido da venda.', 'success');
-    }
+async function addCpfToSale() {
+    var def = saleCpf || (saleCustomer ? saleCustomer.cpf : '') || '';
+    const cpf = await pdvPrompt('Informe o CPF do cliente para constar na nota (ou deixe em branco para remover).', {
+        title: 'CPF na nota',
+        inputLabel: 'CPF',
+        placeholder: '000.000.000-00',
+        defaultValue: def,
+        confirmText: 'Salvar',
+        cancelText: 'Cancelar',
+        type: 'info'
+    });
+    if (cpf === null) return;
+    saleCpf = String(cpf).trim() || null;
+    if (!saleCpf) saleCustomer = null;
+    updateClienteIndicadoDisplay();
+    showAlert(saleCpf ? `CPF ${saleCpf} associado à venda.` : 'CPF removido da venda.', 'success');
 }
 
 function openQuantityChangeModal() {
@@ -1223,8 +1290,8 @@ function renderSearchResults() {
     });
 }
 
-function selectProductFromSearch(productId) {
-    addToCart(productId);
+async function selectProductFromSearch(productId) {
+    await addToCart(productId);
     closeModal('productSearchModal');
 }
 

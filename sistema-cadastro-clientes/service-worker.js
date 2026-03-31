@@ -1,4 +1,4 @@
-const CACHE_NAME = "sistema-cadastro-v13";
+const CACHE_NAME = "sistema-cadastro-v14";
 const CORE_ASSETS = [
   "./",
   "./login.html",

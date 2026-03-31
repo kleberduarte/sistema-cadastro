@@ -1151,6 +1151,36 @@ body {
     background: #e9ecef;
 }
 
+.system-alert-field {
+    text-align: left;
+    margin: 18px 0 4px;
+}
+
+.system-alert-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #495057;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.system-alert-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1rem;
+    color: #2c3e50;
+    background: #fff;
+    transition: border-color 0.15s ease;
+}
+
+.system-alert-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
  /* ================================================================= */
 /* ======================= IMPRESSÃO (RECIBO) ====================== */
 /* ================================================================= */
