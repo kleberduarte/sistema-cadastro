@@ -33,6 +33,13 @@ public class ProdutoResponse {
     private String categoria;
     private String codigoProduto;
     private String tipo; // CAIXA ou UNIDADE
+    private String tipoControle;
+    private Boolean exigeReceita;
+    private Boolean exigeLote;
+    private Boolean exigeValidade;
+    private String registroMs;
+    private String gtinEan;
+    private BigDecimal pmc;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

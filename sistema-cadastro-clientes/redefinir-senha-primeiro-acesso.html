@@ -95,7 +95,12 @@
         function normalizeLogoUrl(logoUrl) {
             if (!logoUrl || !String(logoUrl).trim()) return '';
             var u = String(logoUrl).trim();
+            if (u.indexOf('./') === 0) u = u.substring(2);
             if (/^[A-Z]:/i.test(u) || u.indexOf(':\\') >= 0) u = u.split(/[/\\]/).pop();
+            var lower = u.toLowerCase();
+            if (lower.indexOf('http://') !== 0 && lower.indexOf('https://') !== 0 && lower.indexOf('data:') !== 0 && lower.indexOf('//') !== 0) {
+                u = u.replace(/(^|\/)[^/#?]+\.html\//gi, '$1');
+            }
             return u;
         }
 

@@ -46,6 +46,43 @@ Seguir **`STAGING_CHECKLIST.md`**: smoke test (login, cliente, produto, venda, f
 - Monitorar erros e latência.
 - Manter **feature freeze** da RC até estabilizar; apenas hotfix conforme `RELEASE_CANDIDATE.md`.
 
+### 6) PMC com fonte regulatória (ABC Farma)
+
+O endpoint manual `POST /api/farmacia/pmc/sync?empresaId={id}` agora suporta CSV e JSON.
+
+#### Cenário A: URL que retorna CSV (GET)
+
+Variáveis:
+
+- `PMC_SYNC_URL=https://seu-endpoint/pmc.csv`
+- `PMC_SYNC_FORMAT=csv` (ou `auto`)
+- `PMC_SYNC_METHOD=GET`
+- `PMC_SYNC_ENABLED=true` (necessário para job automático; sync manual funciona sem isso)
+
+#### Cenário B: Web Service JSON autenticado (ex.: integração ABC via endpoint intermediário)
+
+Variáveis:
+
+- `PMC_SYNC_URL=https://seu-endpoint/pmc-json`
+- `PMC_SYNC_FORMAT=json`
+- `PMC_SYNC_METHOD=GET` ou `POST`
+- `PMC_SYNC_AUTH_HEADER=Authorization`
+- `PMC_SYNC_TOKEN=SEU_TOKEN`
+- `PMC_SYNC_TOKEN_PREFIX=Bearer `
+- `PMC_SYNC_POST_BODY=...` (somente quando método = POST)
+
+Exemplo de `PMC_SYNC_POST_BODY` (form-urlencoded):
+
+`cnpj_cpf=00000000000000&senha=SECRETO&cnpj_sh=00000000000000&pagina=1`
+
+> Observação: a ABC Farma geralmente exige credenciais e fluxo de webservice próprio; em produção, use endpoint autorizado/contratado.
+
+#### Teste rápido pós-configuração
+
+1. `POST /api/farmacia/pmc/sync?empresaId=3`
+2. Esperado: JSON com `importados` e `pmcProdutosAtualizados`.
+3. Conferir auditoria: `GET /api/farmacia/auditoria?empresaId=3` com evento `PMC_IMPORT_MANUAL`.
+
 ## Checklist rápido
 
 | Item | OK? |

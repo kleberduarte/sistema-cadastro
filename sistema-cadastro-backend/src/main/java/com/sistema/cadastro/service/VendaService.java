@@ -8,7 +8,11 @@ import com.sistema.cadastro.model.Role;
 import com.sistema.cadastro.model.Usuario;
 import com.sistema.cadastro.model.Venda;
 import com.sistema.cadastro.model.VendaItem;
+import com.sistema.cadastro.model.ProdutoLote;
+import com.sistema.cadastro.model.PmcReferencia;
 import com.sistema.cadastro.repository.ProdutoRepository;
+import com.sistema.cadastro.repository.ProdutoLoteRepository;
+import com.sistema.cadastro.repository.PmcReferenciaRepository;
 import com.sistema.cadastro.repository.UsuarioRepository;
 import com.sistema.cadastro.repository.VendaRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,8 +36,11 @@ public class VendaService {
     private final VendaRepository vendaRepository;
     private final UsuarioRepository usuarioRepository;
     private final ProdutoRepository produtoRepository;
+    private final ProdutoLoteRepository produtoLoteRepository;
+    private final PmcReferenciaRepository pmcReferenciaRepository;
     private final ParametroEmpresaService parametroEmpresaService;
     private final EmpresaScopeService empresaScopeService;
+    private final FarmaciaSupportService farmaciaSupportService;
 
     @Transactional
     public VendaResponse criarVenda(VendaRequest request, Usuario logado, Long empresaIdParam) {
@@ -60,6 +68,11 @@ public class VendaService {
         venda.setUsuario(usuario);
         venda.setNomeOperador(usuario.getUsername());
 
+        ParametroEmpresaDTO cfg = parametroEmpresaService.buscarPorEmpresaId(empresaVenda).orElseGet(parametroEmpresaService::getParametrosDefault);
+        boolean farmaciaAtiva = Boolean.TRUE.equals(cfg.getModuloFarmaciaAtivo());
+        boolean exigeLoteGlobal = Boolean.TRUE.equals(cfg.getFarmaciaLoteValidadeObrigatorio());
+        String pmcModo = farmaciaSupportService.pmcModo(empresaVenda);
+
         List<VendaItem> itens = new ArrayList<>();
         for (VendaRequest.VendaItemRequest itemReq : request.getItens()) {
             Optional<Produto> produtoOpt = produtoRepository.findById(itemReq.getProdutoId());
@@ -76,6 +89,54 @@ public class VendaService {
                 throw new RuntimeException("Estoque insuficiente para o produto: " + produto.getNome());
             }
 
+            String loteCodigo = null;
+            LocalDate loteValidade = null;
+            String receitaTipo = null;
+            String receitaNumero = null;
+            String receitaPrescritor = null;
+            LocalDate receitaData = null;
+            BigDecimal pmcAplicado = null;
+            String pmcStatus = null;
+
+            if (farmaciaAtiva) {
+                boolean exigeReceita = Boolean.TRUE.equals(produto.getExigeReceita()) || "ANTIMICROBIANO".equals(produto.getTipoControle()) || "CONTROLADO".equals(produto.getTipoControle());
+                boolean exigeLote = exigeLoteGlobal || Boolean.TRUE.equals(produto.getExigeLote()) || Boolean.TRUE.equals(produto.getExigeValidade());
+
+                loteCodigo = itemReq.getLoteCodigo();
+                receitaTipo = itemReq.getReceitaTipo();
+                receitaNumero = itemReq.getReceitaNumero();
+                receitaPrescritor = itemReq.getReceitaPrescritor();
+                receitaData = itemReq.getReceitaData();
+
+                if (exigeReceita) {
+                    if (isBlank(receitaTipo) || isBlank(receitaNumero) || isBlank(receitaPrescritor) || receitaData == null) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item " + produto.getNome() + ": informe todos os dados da receita.");
+                    }
+                }
+
+                if (exigeLote) {
+                    ProdutoLote lote = resolveLoteFefo(empresaVenda, produto.getId(), loteCodigo, itemReq.getQuantidade());
+                    loteCodigo = lote.getCodigoLote();
+                    loteValidade = lote.getValidade();
+                    lote.setQuantidadeAtual(lote.getQuantidadeAtual() - itemReq.getQuantidade());
+                    produtoLoteRepository.save(lote);
+                }
+
+                pmcAplicado = resolvePmcVigente(empresaVenda, produto);
+                if (pmcAplicado != null && itemReq.getPreco() != null && itemReq.getPreco().compareTo(pmcAplicado) > 0) {
+                    if ("BLOQUEIO".equals(pmcModo)) {
+                        farmaciaSupportService.audit(empresaVenda, logado.getId(), "PMC_BLOQUEIO", "PRODUTO", produto.getId(),
+                                "precoVenda=" + itemReq.getPreco() + ", pmc=" + pmcAplicado);
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Preço acima do PMC para " + produto.getNome());
+                    }
+                    pmcStatus = "ALERTA";
+                    farmaciaSupportService.audit(empresaVenda, logado.getId(), "PMC_ALERTA", "PRODUTO", produto.getId(),
+                            "precoVenda=" + itemReq.getPreco() + ", pmc=" + pmcAplicado);
+                } else if (pmcAplicado != null) {
+                    pmcStatus = "OK";
+                }
+            }
+
             produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - itemReq.getQuantidade());
             produtoRepository.save(produto);
 
@@ -85,6 +146,14 @@ public class VendaService {
             item.setPreco(itemReq.getPreco());
             item.setQuantidade(itemReq.getQuantidade());
             item.setSubtotal(itemReq.getSubtotal());
+            item.setLoteCodigo(loteCodigo);
+            item.setLoteValidade(loteValidade);
+            item.setReceitaTipo(receitaTipo);
+            item.setReceitaNumero(receitaNumero);
+            item.setReceitaPrescritor(receitaPrescritor);
+            item.setReceitaData(receitaData);
+            item.setPmcAplicado(pmcAplicado);
+            item.setPmcStatus(pmcStatus);
             itens.add(item);
         }
 
@@ -201,6 +270,14 @@ public class VendaService {
                     itemResp.setPreco(item.getPreco());
                     itemResp.setQuantidade(item.getQuantidade());
                     itemResp.setSubtotal(item.getSubtotal());
+                    itemResp.setLoteCodigo(item.getLoteCodigo());
+                    itemResp.setLoteValidade(item.getLoteValidade());
+                    itemResp.setReceitaTipo(item.getReceitaTipo());
+                    itemResp.setReceitaNumero(item.getReceitaNumero());
+                    itemResp.setReceitaPrescritor(item.getReceitaPrescritor());
+                    itemResp.setReceitaData(item.getReceitaData());
+                    itemResp.setPmcAplicado(item.getPmcAplicado());
+                    itemResp.setPmcStatus(item.getPmcStatus());
                     return itemResp;
                 })
                 .collect(Collectors.toList());
@@ -208,5 +285,39 @@ public class VendaService {
         response.setItens(itensResponse);
 
         return response;
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private ProdutoLote resolveLoteFefo(Long empresaId, Long produtoId, String loteCodigo, Integer quantidade) {
+        if (!isBlank(loteCodigo)) {
+            ProdutoLote lote = produtoLoteRepository.findByEmpresaIdAndProdutoIdAndCodigoLote(empresaId, produtoId, loteCodigo.trim())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lote informado não encontrado."));
+            if (lote.getQuantidadeAtual() < quantidade) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantidade insuficiente no lote informado.");
+            }
+            return lote;
+        }
+        List<ProdutoLote> lotes = produtoLoteRepository.findByEmpresaIdAndProdutoIdOrderByValidadeAscIdAsc(empresaId, produtoId);
+        for (ProdutoLote l : lotes) {
+            if (l.getQuantidadeAtual() != null && l.getQuantidadeAtual() >= quantidade) {
+                return l;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sem lote disponível com saldo para o item.");
+    }
+
+    private BigDecimal resolvePmcVigente(Long empresaId, Produto produto) {
+        // Fonte única regulatória: usa apenas base de referência importada (ex.: ABC Farma/CMED).
+        // O campo produto.pmc não é usado para validação de compliance.
+        List<PmcReferencia> list = pmcReferenciaRepository.findVigenteByChave(
+                empresaId,
+                produto.getRegistroMs(),
+                produto.getGtinEan(),
+                LocalDate.now()
+        );
+        return list.isEmpty() ? null : list.get(0).getPmc();
     }
 }

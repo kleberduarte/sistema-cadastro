@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -37,6 +38,14 @@ public class VendaResponse {
         private BigDecimal preco;
         private Integer quantidade;
         private BigDecimal subtotal;
+        private String loteCodigo;
+        private LocalDate loteValidade;
+        private String receitaTipo;
+        private String receitaNumero;
+        private String receitaPrescritor;
+        private LocalDate receitaData;
+        private BigDecimal pmcAplicado;
+        private String pmcStatus;
     }
 }
 

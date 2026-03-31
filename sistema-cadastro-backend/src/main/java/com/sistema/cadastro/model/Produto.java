@@ -81,6 +81,29 @@ public class Produto {
     @Column(length = 20)
     private String tipo; // CAIXA ou UNIDADE
 
+    /** COMUM, ANTIMICROBIANO, CONTROLADO. */
+    @Column(name = "tipo_controle", length = 30)
+    private String tipoControle = "COMUM";
+
+    @Column(name = "exige_receita")
+    private Boolean exigeReceita = false;
+
+    @Column(name = "exige_lote")
+    private Boolean exigeLote = false;
+
+    @Column(name = "exige_validade")
+    private Boolean exigeValidade = false;
+
+    @Column(name = "registro_ms", length = 30)
+    private String registroMs;
+
+    @Column(name = "gtin_ean", length = 30)
+    private String gtinEan;
+
+    /** Preco maximo ao consumidor vigente para o produto (opcional). */
+    @Column(name = "pmc", precision = 10, scale = 2)
+    private BigDecimal pmc;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

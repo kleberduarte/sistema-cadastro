@@ -58,13 +58,15 @@ public class ProdutoService {
             INSERT INTO produtos (
                 empresa_id, nome, descricao, preco, preco_promocional, promocao_inicio, promocao_fim,
                 em_promocao, promo_qtd_levar, promo_qtd_pagar, quantidade_estoque, estoque_minimo,
-                categoria, codigo_produto, tipo, created_at, updated_at
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                categoria, codigo_produto, tipo, tipo_controle, exige_receita, exige_lote, exige_validade,
+                registro_ms, gtin_ean, pmc, created_at, updated_at
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """;
 
     private static final String JDBC_UPDATE_PRODUTO = """
             UPDATE produtos SET nome=?, descricao=?, preco=?, quantidade_estoque=?, estoque_minimo=?,
-            categoria=?, tipo=?, updated_at=? WHERE id=?
+            categoria=?, tipo=?, tipo_controle=?, exige_receita=?, exige_lote=?, exige_validade=?,
+            registro_ms=?, gtin_ean=?, pmc=?, updated_at=? WHERE id=?
             """;
 
     private final ProdutoRepository produtoRepository;
@@ -96,6 +98,7 @@ public class ProdutoService {
         produto.setCategoria(request.getCategoria());
         produto.setCodigoProduto(codigoNormalizado);
         produto.setTipo(request.getTipo());
+        applyFarmaciaCampos(produto, request);
 
         Produto saved = produtoRepository.save(produto);
         return toResponse(saved);
@@ -170,6 +173,7 @@ public class ProdutoService {
         produto.setCategoria(request.getCategoria());
         produto.setCodigoProduto(codigoNormalizado);
         produto.setTipo(request.getTipo());
+        applyFarmaciaCampos(produto, request);
 
         Produto updated = produtoRepository.save(produto);
         return toResponse(updated);
@@ -301,6 +305,13 @@ public class ProdutoService {
                     p.setCategoria(row.categoria);
                     p.setDescricao(row.descricao);
                     p.setTipo(row.tipo);
+                    p.setTipoControle(row.tipoControle != null ? row.tipoControle : "COMUM");
+                    p.setExigeReceita(row.exigeReceita != null ? row.exigeReceita : false);
+                    p.setExigeLote(row.exigeLote != null ? row.exigeLote : false);
+                    p.setExigeValidade(row.exigeValidade != null ? row.exigeValidade : false);
+                    p.setRegistroMs(row.registroMs);
+                    p.setGtinEan(row.gtinEan);
+                    p.setPmc(row.pmc);
                     if (row.estoqueMinimo != null) {
                         p.setEstoqueMinimo(row.estoqueMinimo);
                     }
@@ -383,8 +394,19 @@ public class ProdutoService {
                     ps.setString(13, row.categoria);
                     ps.setString(14, row.codigoProduto);
                     ps.setString(15, row.tipo);
-                    ps.setTimestamp(16, now);
-                    ps.setTimestamp(17, now);
+                    ps.setString(16, row.tipoControle != null ? row.tipoControle : "COMUM");
+                    ps.setBoolean(17, row.exigeReceita != null ? row.exigeReceita : false);
+                    ps.setBoolean(18, row.exigeLote != null ? row.exigeLote : false);
+                    ps.setBoolean(19, row.exigeValidade != null ? row.exigeValidade : false);
+                    ps.setString(20, row.registroMs);
+                    ps.setString(21, row.gtinEan);
+                    if (row.pmc != null) {
+                        ps.setBigDecimal(22, row.pmc);
+                    } else {
+                        ps.setNull(22, Types.DECIMAL);
+                    }
+                    ps.setTimestamp(23, now);
+                    ps.setTimestamp(24, now);
                 }
 
                 @Override
@@ -419,8 +441,19 @@ public class ProdutoService {
                     }
                     ps.setString(6, p.getCategoria());
                     ps.setString(7, p.getTipo());
-                    ps.setTimestamp(8, now);
-                    ps.setLong(9, p.getId());
+                    ps.setString(8, p.getTipoControle());
+                    ps.setBoolean(9, p.getExigeReceita() != null ? p.getExigeReceita() : false);
+                    ps.setBoolean(10, p.getExigeLote() != null ? p.getExigeLote() : false);
+                    ps.setBoolean(11, p.getExigeValidade() != null ? p.getExigeValidade() : false);
+                    ps.setString(12, p.getRegistroMs());
+                    ps.setString(13, p.getGtinEan());
+                    if (p.getPmc() != null) {
+                        ps.setBigDecimal(14, p.getPmc());
+                    } else {
+                        ps.setNull(14, Types.DECIMAL);
+                    }
+                    ps.setTimestamp(15, now);
+                    ps.setLong(16, p.getId());
                 }
 
                 @Override
@@ -477,6 +510,20 @@ public class ProdutoService {
         }
     }
 
+    private void applyFarmaciaCampos(Produto produto, ProdutoRequest request) {
+        String tipoControle = request.getTipoControle() == null ? "COMUM" : request.getTipoControle().trim().toUpperCase();
+        if (!tipoControle.equals("COMUM") && !tipoControle.equals("ANTIMICROBIANO") && !tipoControle.equals("CONTROLADO")) {
+            throw new RuntimeException("tipoControle inválido. Use COMUM, ANTIMICROBIANO ou CONTROLADO.");
+        }
+        produto.setTipoControle(tipoControle);
+        produto.setExigeReceita(request.getExigeReceita() != null ? request.getExigeReceita() : !"COMUM".equals(tipoControle));
+        produto.setExigeLote(request.getExigeLote() != null ? request.getExigeLote() : !"COMUM".equals(tipoControle));
+        produto.setExigeValidade(request.getExigeValidade() != null ? request.getExigeValidade() : !"COMUM".equals(tipoControle));
+        produto.setRegistroMs(trimToNull(request.getRegistroMs()));
+        produto.setGtinEan(trimToNull(request.getGtinEan()));
+        produto.setPmc(request.getPmc());
+    }
+
     private ProdutoResponse toResponse(Produto produto) {
         ProdutoResponse response = new ProdutoResponse();
         response.setId(produto.getId());
@@ -495,6 +542,13 @@ public class ProdutoService {
         response.setCategoria(produto.getCategoria());
         response.setCodigoProduto(produto.getCodigoProduto());
         response.setTipo(produto.getTipo());
+        response.setTipoControle(produto.getTipoControle());
+        response.setExigeReceita(produto.getExigeReceita());
+        response.setExigeLote(produto.getExigeLote());
+        response.setExigeValidade(produto.getExigeValidade());
+        response.setRegistroMs(produto.getRegistroMs());
+        response.setGtinEan(produto.getGtinEan());
+        response.setPmc(produto.getPmc());
         response.setCreatedAt(produto.getCreatedAt());
         response.setUpdatedAt(produto.getUpdatedAt());
 
@@ -549,6 +603,17 @@ public class ProdutoService {
                     row.categoria = trimToNull(getValue(cols, indexByHeader, "categoria"));
                     row.descricao = trimToNull(getValue(cols, indexByHeader, "descricao"));
                     row.tipo = trimToNull(getValue(cols, indexByHeader, "tipo"));
+                    row.tipoControle = trimToNull(getValue(cols, indexByHeader, "tipo_controle"));
+                    String exigeReceitaRaw = trimToNull(getValue(cols, indexByHeader, "exige_receita"));
+                    row.exigeReceita = exigeReceitaRaw == null ? null : Boolean.parseBoolean(exigeReceitaRaw);
+                    String exigeLoteRaw = trimToNull(getValue(cols, indexByHeader, "exige_lote"));
+                    row.exigeLote = exigeLoteRaw == null ? null : Boolean.parseBoolean(exigeLoteRaw);
+                    String exigeValidadeRaw = trimToNull(getValue(cols, indexByHeader, "exige_validade"));
+                    row.exigeValidade = exigeValidadeRaw == null ? null : Boolean.parseBoolean(exigeValidadeRaw);
+                    row.registroMs = trimToNull(getValue(cols, indexByHeader, "registro_ms"));
+                    row.gtinEan = trimToNull(getValue(cols, indexByHeader, "gtin_ean"));
+                    String pmcRaw = trimToNull(getValue(cols, indexByHeader, "pmc"));
+                    row.pmc = pmcRaw == null ? null : parseMoney(pmcRaw);
                     String estMinRaw = trimToNull(getValue(cols, indexByHeader, "estoque_minimo"));
                     row.estoqueMinimo = estMinRaw == null ? null : parseInt(estMinRaw, "estoque_minimo");
                     validateRow(row);
@@ -634,6 +699,15 @@ public class ProdutoService {
         if (row.nome.length() > 200) throw new IllegalArgumentException("nome excede 200 caracteres");
         if (row.tipo != null && row.tipo.length() > 20) throw new IllegalArgumentException("tipo excede 20 caracteres");
         if (row.categoria != null && row.categoria.length() > 50) throw new IllegalArgumentException("categoria excede 50 caracteres");
+        if (row.tipoControle != null) {
+            String tc = row.tipoControle.trim().toUpperCase();
+            if (!tc.equals("COMUM") && !tc.equals("ANTIMICROBIANO") && !tc.equals("CONTROLADO")) {
+                throw new IllegalArgumentException("tipo_controle inválido");
+            }
+            row.tipoControle = tc;
+        } else {
+            row.tipoControle = "COMUM";
+        }
     }
 
     private static class ParsedRow {
@@ -645,6 +719,13 @@ public class ProdutoService {
         String categoria;
         String descricao;
         String tipo;
+        String tipoControle;
+        Boolean exigeReceita;
+        Boolean exigeLote;
+        Boolean exigeValidade;
+        String registroMs;
+        String gtinEan;
+        BigDecimal pmc;
         Integer estoqueMinimo;
         String erro;
     }
