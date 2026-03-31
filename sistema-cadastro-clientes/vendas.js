@@ -638,6 +638,12 @@ function requiresLote(product) {
     return !!f.exigeLoteGlobal || !!product.exigeLote || !!product.exigeValidade || requiresReceita(product);
 }
 
+function shouldForceFarmaciaPrompts(product) {
+    if (!product) return false;
+    var tc = String(product.tipoControle || '').toUpperCase();
+    return tc === 'CONTROLADO' || tc === 'ANTIMICROBIANO' || !!product.exigeReceita || !!product.exigeLote || !!product.exigeValidade;
+}
+
 function calcItemSubtotal(item) {
     // `item.price` é o preço unitário atual (normal ou promocional por data/flag).
     // Se houver promo por quantidade (leve X, pague Y), ajusta o total para refletir a quantidade pagável.
@@ -712,7 +718,9 @@ function addToCart(productId, quantity = 1) {
     let receitaPrescritor = null;
     let receitaData = null;
 
-    if (farm.on && requiresLote(product)) {
+    var farmPromptOn = !!farm.on || shouldForceFarmaciaPrompts(product);
+
+    if (farmPromptOn && requiresLote(product)) {
         loteCodigo = prompt('Informe o código do lote para "' + product.nome + '":', '') || '';
         loteCodigo = loteCodigo.trim();
         if (!loteCodigo) {
@@ -720,7 +728,7 @@ function addToCart(productId, quantity = 1) {
             return;
         }
     }
-    if (farm.on && requiresReceita(product)) {
+    if (farmPromptOn && requiresReceita(product)) {
         receitaTipo = (prompt('Tipo de receita (A/B/C/Outro):', '') || '').trim();
         receitaNumero = (prompt('Número da receita:', '') || '').trim();
         receitaPrescritor = (prompt('Nome do prescritor:', '') || '').trim();
