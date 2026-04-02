@@ -199,6 +199,8 @@ public class VendaService {
         return toResponse(savedVenda);
     }
 
+    /** Transação necessária em prod (open-in-view=false): {@code itens} é lazy e é acessado em {@link #toResponse}. */
+    @Transactional(readOnly = true)
     public List<VendaResponse> listarTodas(Usuario u, Long empresaIdParam) {
         Optional<Long> scope = empresaScopeService.resolveForList(u, empresaIdParam);
         Long eid = scope.orElse(null);
@@ -212,6 +214,7 @@ public class VendaService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Optional<VendaResponse> buscarPorId(Long id, Usuario u, Long empresaIdParam) {
         return vendaRepository.findById(id)
                 .map(v -> {
@@ -220,6 +223,7 @@ public class VendaService {
                 });
     }
 
+    @Transactional(readOnly = true)
     public List<VendaResponse> buscarPorPeriodo(LocalDateTime startDate, LocalDateTime endDate, Usuario u, Long empresaIdParam) {
         Optional<Long> scope = empresaScopeService.resolveForList(u, empresaIdParam);
         Long eid = scope.orElse(null);
