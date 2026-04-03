@@ -1,20 +1,25 @@
 @echo off
 setlocal enabledelayedexpansion
+set "ROOT=%~dp0"
+cd /d "%ROOT%"
+
 echo ==========================================
 echo   ATUALIZACAO AUTOMATICA DE BRANCHES
 echo ==========================================
 
-if exist "sistema-cadastro-clientes" (
+set "DIR_CLIENTES=%ROOT%sistema-cadastro-clientes"
+set "DIR_BACKEND=%ROOT%sistema-cadastro-backend"
+
+if exist "%DIR_CLIENTES%" (
     echo.
     echo [FRONTEND] Processando sistema-cadastro-clientes...
-    cd sistema-cadastro-clientes
+    cd /d "%DIR_CLIENTES%"
     
     echo.
     echo [DEBUG] Status do Git ^(arquivos modificados^):
     git status -s
     echo.
 
-    rem Salva alteracoes atuais
     git add --all
 
     git diff --staged --quiet
@@ -25,26 +30,23 @@ if exist "sistema-cadastro-clientes" (
         echo [INFO] Frontend: Nenhuma alteracao nova para commitar. A mudanca pode ja estar no historico ou o arquivo esta sendo ignorado.
     )
     
-    rem Atualiza Develop
     git checkout develop
     git pull origin develop
     git push origin develop
     
-    rem Atualiza Main
     git checkout main
     git pull origin main
     git merge --no-ff develop -m "Release: Funcionalidade de status do caixa e melhorias de usabilidade no PDV"
     git push origin main
     
-    rem Volta para Develop
     git checkout develop
-    cd ..
+    cd /d "%ROOT%"
 )
 
-if exist "sistema-cadastro-backend" (
+if exist "%DIR_BACKEND%" (
     echo.
     echo [BACKEND] Processando sistema-cadastro-backend...
-    cd sistema-cadastro-backend
+    cd /d "%DIR_BACKEND%"
     
     git add .
     git diff --staged --quiet
@@ -65,7 +67,7 @@ if exist "sistema-cadastro-backend" (
     git push origin main
     
     git checkout develop
-    cd ..
+    cd /d "%ROOT%"
 )
 
 echo.

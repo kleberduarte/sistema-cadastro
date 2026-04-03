@@ -1,4 +1,4 @@
-# Build backend from monorepo root
+# Build backend (contexto = pasta sistema-cadastro, raiz do repositório Git)
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY sistema-cadastro-backend/pom.xml ./pom.xml
