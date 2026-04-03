@@ -1,13 +1,14 @@
 @echo off
 chcp 65001 >nul
 set LESSCHARSET=utf-8
+set "ROOT=%~dp0"
 echo ==========================================
 echo   VERIFICACAO DE STATUS DO PROJETO
 echo ==========================================
 echo.
 
-if exist "sistema-cadastro-clientes" (
-    pushd "sistema-cadastro-clientes"
+if exist "%ROOT%sistema-cadastro-clientes" (
+    pushd "%ROOT%sistema-cadastro-clientes"
     call :ShowGitLog "[FRONTEND] Sistema de Clientes"
     popd
 )
@@ -16,8 +17,8 @@ echo.
 echo ------------------------------------------
 echo.
 
-if exist "sistema-cadastro-backend" (
-    pushd "sistema-cadastro-backend"
+if exist "%ROOT%sistema-cadastro-backend" (
+    pushd "%ROOT%sistema-cadastro-backend"
     call :ShowGitLog "[BACKEND] Sistema Backend"
     popd
 )

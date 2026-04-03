@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir senha — 1º acesso</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <script src="api-config.js"></script>
+    <script src="theme-defaults.js"></script>
+    <script src="config.js"></script>
+    <style id="redefinir-base">
+        * { box-sizing: border-box; }
+        .redefinir-page {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .redefinir-box {
+            background: #fff; border-radius: 16px; padding: 32px 36px 36px; max-width: 440px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,.35);
+            border-top: 4px solid #667eea;
+        }
+        .redefinir-header { text-align: center; margin-bottom: 20px; }
+        .redefinir-badge {
+            display: inline-block; font-size: .75rem; font-weight: 600; padding: 4px 12px; border-radius: 999px;
+            background: rgba(102, 126, 234, 0.12); color: #5a67d8; margin-bottom: 12px;
+        }
+        .redefinir-logo { margin-bottom: 12px; min-height: 0; }
+        .redefinir-logo img { max-width: 160px; max-height: 72px; object-fit: contain; vertical-align: middle; }
+        .redefinir-box h1 {
+            color: #667eea; font-size: 1.35rem; margin: 0 0 10px; font-weight: 700;
+        }
+        .redefinir-box .sub { color: #666; font-size: .9rem; margin: 0 0 22px; line-height: 1.5; text-align: left; }
+        .redefinir-box label { display: block; font-weight: 600; color: #444; margin-bottom: 6px; font-size: .9rem; }
+        .redefinir-box input {
+            width: 100%; padding: 12px 14px; border: 2px solid #e8e8e8; border-radius: 10px; font-size: 1rem;
+            margin-bottom: 16px;
+        }
+        .redefinir-box input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12); }
+        .redefinir-box button[type="submit"] {
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 700; font-size: 1rem;
+            cursor: pointer; margin-top: 8px;
+        }
+        .redefinir-box button[type="submit"]:hover { opacity: .96; filter: brightness(1.02); }
+        .err { color: #c0392b; font-size: .85rem; margin-top: -8px; margin-bottom: 12px; display: none; }
+        .err.show { display: block; }
+        .redefinir-back {
+            display: block; text-align: center; margin-top: 20px; color: #667eea; font-weight: 700;
+            text-decoration: none; font-size: .95rem; padding: 10px; border-radius: 10px;
+            border: 1px solid rgba(102, 126, 234, 0.25); background: rgba(102, 126, 234, 0.08);
+        }
+        .redefinir-back:hover { background: rgba(102, 126, 234, 0.14); text-decoration: none; }
+    </style>
+</head>
+<body class="redefinir-page">
+    <div class="redefinir-box" id="redefinirBox">
+        <div class="redefinir-header">
+            <div id="redefinirBadge" class="redefinir-badge" style="display: none;"></div>
+            <div id="redefinirLogo" class="redefinir-logo" style="display: none;"></div>
+            <h1 id="redefinirTitle">Definir nova senha</h1>
+        </div>
+        <p class="sub" id="redefinirSub">Sua conta foi criada com senha provisória. Informe a senha que recebeu e escolha uma nova senha (mínimo 6 caracteres).</p>
+        <form id="formTroca">
+            <label for="senhaAtual">Senha provisória (atual)</label>
+            <input id="senhaAtual" type="password" required autocomplete="current-password">
+
+            <label for="novaSenha">Nova senha</label>
+            <input id="novaSenha" type="password" required minlength="6" autocomplete="new-password">
+
+            <label for="novaSenha2">Confirmar nova senha</label>
+            <input id="novaSenha2" type="password" required minlength="6" autocomplete="new-password">
+
+            <div id="err" class="err"></div>
+            <button type="submit">Salvar e continuar</button>
+        </form>
+        <a class="redefinir-back" href="login.html" id="linkSair">Sair e voltar ao login</a>
+    </div>
+    <script>
+    (function () {
+        var API = (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : ((typeof API_URL !== 'undefined' && API_URL) ? String(API_URL).replace(/\/$/, '') : 'http://localhost:8080/api'));
+        var token = localStorage.getItem('authToken');
+        var params = new URLSearchParams(window.location.search || '');
+        var fromPdv = params.get('from') === 'pdv';
+        var empresaParam = parseInt(params.get('e'), 10);
+
+        function temaPadrao() {
+            return window.SISTEMA_THEME_PADRAO || {
+                corPrimaria: '#667eea', corSecundaria: '#764ba2', corFundo: '#ffffff',
+                corTexto: '#333333', corBotao: '#667eea', corBotaoTexto: '#ffffff', nomeEmpresa: 'Sistema de Cadastro'
+            };
+        }
+
+        function normalizeLogoUrl(logoUrl) {
+            if (!logoUrl || !String(logoUrl).trim()) return '';
+            var u = String(logoUrl).trim();
+            if (u.indexOf('./') === 0) u = u.substring(2);
+            if (/^[A-Z]:/i.test(u) || u.indexOf(':\\') >= 0) u = u.split(/[/\\]/).pop();
+            var lower = u.toLowerCase();
+            if (lower.indexOf('http://') !== 0 && lower.indexOf('https://') !== 0 && lower.indexOf('data:') !== 0 && lower.indexOf('//') !== 0) {
+                u = u.replace(/(^|\/)[^/#?]+\.html\//gi, '$1');
+            }
+            return u;
+        }
+
+        function resolveEmpresaId() {
+            if (empresaParam >= 1) return empresaParam;
+            try {
+                var s = sessionStorage.getItem('redefinirSenhaEmpresaId');
+                var n = parseInt(s, 10);
+                if (n >= 1) return n;
+            } catch (x) {}
+            try {
+                n = parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId'), 10);
+                if (n >= 1) return n;
+            } catch (x2) {}
+            var EP = typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number' ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+            return EP >= 1 ? EP : 1;
+        }
+
+        function applyBranding(b) {
+            var P0 = temaPadrao();
+            var prim = (b.corPrimaria && b.corPrimaria.trim()) || P0.corPrimaria;
+            var sec = (b.corSecundaria && b.corSecundaria.trim()) || P0.corSecundaria;
+            var fundo = (b.corFundo && b.corFundo.trim()) || P0.corFundo;
+            var texto = (b.corTexto && b.corTexto.trim()) || P0.corTexto;
+            var rawBtn = (b.corBotao && String(b.corBotao).trim()) || '';
+            var btn = rawBtn;
+            if (!rawBtn || rawBtn.toLowerCase() === String(P0.corBotao).toLowerCase()) btn = prim;
+            var btnTxt = (b.corBotaoTexto && b.corBotaoTexto.trim()) || P0.corBotaoTexto;
+            var eid = parseInt(b.empresaId, 10) || 0;
+
+            var st = document.getElementById('redefinir-theme');
+            if (!st) {
+                st = document.createElement('style');
+                st.id = 'redefinir-theme';
+                document.head.appendChild(st);
+            }
+            st.textContent =
+                '.redefinir-page { background: linear-gradient(135deg, ' + prim + ' 0%, ' + sec + ' 100%) !important; }' +
+                '.redefinir-box { border-top-color: ' + prim + ' !important; background: ' + fundo + ' !important; color: ' + texto + ' !important; }' +
+                '#redefinirTitle { color: ' + prim + ' !important; }' +
+                '.redefinir-box .sub { color: ' + texto + ' !important; opacity: 0.88; }' +
+                '.redefinir-box label { color: ' + texto + ' !important; opacity: 0.92; }' +
+                '.redefinir-box input { border-color: #e0e0e0 !important; color: ' + texto + ' !important; background: #fff !important; }' +
+                '.redefinir-box input:focus { border-color: ' + prim + ' !important; box-shadow: 0 0 0 3px ' + prim + '22 !important; }' +
+                '.redefinir-box button[type="submit"] { background: linear-gradient(135deg, ' + btn + ', ' + sec + ') !important; color: ' + btnTxt + ' !important; }' +
+                '.redefinir-back { color: ' + prim + ' !important; border-color: ' + prim + '40 !important; background: ' + prim + '12 !important; }' +
+                '.redefinir-back:hover { background: ' + prim + '1c !important; }' +
+                '.redefinir-badge { background: ' + prim + '22 !important; color: ' + prim + ' !important; }' +
+                '.err { color: #c0392b !important; }';
+
+            var badge = document.getElementById('redefinirBadge');
+            var logoEl = document.getElementById('redefinirLogo');
+            var titleEl = document.getElementById('redefinirTitle');
+            if (eid >= 1) {
+                var nome = (b.nomeEmpresa && b.nomeEmpresa.trim()) || ('Empresa #' + eid);
+                document.title = nome + ' — Nova senha';
+                titleEl.textContent = nome + ' — Definir nova senha';
+                badge.textContent = 'Empresa ID ' + eid;
+                badge.style.display = 'inline-block';
+                var logo = normalizeLogoUrl(b.logoUrl);
+                if (logo) {
+                    var src = logo.indexOf('http') === 0 || logo.indexOf('data:') === 0 ? logo : logo;
+                    logoEl.innerHTML = '<img src="' + src.replace(/"/g, '&quot;') + '" alt="Logo" onerror="this.parentNode.style.display=\'none\'">';
+                    logoEl.style.display = 'block';
+                } else {
+                    logoEl.style.display = 'none';
+                    logoEl.innerHTML = '';
+                }
+            } else {
+                document.title = 'Redefinir senha — 1º acesso';
+                titleEl.textContent = 'Definir nova senha';
+                badge.style.display = 'none';
+                logoEl.style.display = 'none';
+                logoEl.innerHTML = '';
+            }
+        }
+
+        function defaultBranding(eid) {
+            var P = temaPadrao();
+            applyBranding({
+                empresaId: eid >= 1 ? eid : 0,
+                nomeEmpresa: P.nomeEmpresa,
+                corPrimaria: P.corPrimaria,
+                corSecundaria: P.corSecundaria,
+                corFundo: P.corFundo,
+                corTexto: P.corTexto,
+                corBotao: P.corBotao,
+                corBotaoTexto: P.corBotaoTexto,
+                logoUrl: null
+            });
+            if (eid >= 1) {
+                var badge = document.getElementById('redefinirBadge');
+                var titleEl = document.getElementById('redefinirTitle');
+                badge.textContent = 'Empresa ID ' + eid;
+                badge.style.display = 'inline-block';
+                titleEl.textContent = 'Empresa #' + eid + ' — Definir nova senha';
+                document.title = 'Empresa #' + eid + ' — Nova senha';
+            }
+        }
+
+        var empresaBranding = resolveEmpresaId();
+        function buildLoginTarget() {
+            var base = fromPdv ? 'pdv/login.html' : 'login.html';
+            if (empresaBranding >= 1) {
+                return base + '?empresaId=' + encodeURIComponent(empresaBranding);
+            }
+            if (!fromPdv) {
+                var ep = (typeof window.EMPRESA_ID_PADRAO_SISTEMA === 'number') ? window.EMPRESA_ID_PADRAO_SISTEMA : 1;
+                return 'login.html?empresaId=' + encodeURIComponent(String(ep));
+            }
+            return base;
+        }
+        if (empresaBranding >= 1) {
+            fetch(API + '/parametros-cliente/branding/' + empresaBranding)
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (b) {
+                    if (b && b.empresaId != null) applyBranding(b);
+                    else defaultBranding(empresaBranding);
+                })
+                .catch(function () { defaultBranding(empresaBranding); });
+        } else {
+            defaultBranding(0);
+        }
+
+        if (!token) {
+            window.location.replace(buildLoginTarget());
+            return;
+        }
+
+        document.getElementById('linkSair').href = buildLoginTarget();
+        document.getElementById('linkSair').addEventListener('click', function () {
+            try {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('pdvTerminalId');
+                localStorage.removeItem('pdvTerminalCodigo');
+                sessionStorage.removeItem('redefinirSenhaEmpresaId');
+            } catch (e) {}
+        });
+
+        document.getElementById('formTroca').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            var err = document.getElementById('err');
+            err.classList.remove('show');
+            var a = document.getElementById('senhaAtual').value;
+            var n1 = document.getElementById('novaSenha').value;
+            var n2 = document.getElementById('novaSenha2').value;
+            if (n1.length < 6) {
+                err.textContent = 'A nova senha deve ter no mínimo 6 caracteres.';
+                err.classList.add('show');
+                return;
+            }
+            if (n1 !== n2) {
+                err.textContent = 'As novas senhas não conferem.';
+                err.classList.add('show');
+                return;
+            }
+            try {
+                var r = await fetch(API + '/auth/trocar-senha-primeiro-acesso', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ senhaAtual: a, novaSenha: n1 })
+                });
+                var data = await r.json().catch(function () { return {}; });
+                if (!r.ok) {
+                    err.textContent = (data && data.message) ? data.message : 'Não foi possível alterar a senha.';
+                    err.classList.add('show');
+                    return;
+                }
+                try {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('pdvTerminalId');
+                    localStorage.removeItem('pdvTerminalCodigo');
+                    sessionStorage.removeItem('redefinirSenhaEmpresaId');
+                } catch (x) {}
+                try {
+                    sessionStorage.setItem('msgPosLogin', 'Senha alterada com sucesso. Entre novamente com a nova senha.');
+                } catch (x) {}
+                window.location.replace(buildLoginTarget());
+            } catch (ex) {
+                err.textContent = 'Erro de conexão. Tente novamente.';
+                err.classList.add('show');
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

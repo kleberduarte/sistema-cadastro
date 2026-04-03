@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários - Sistema de Cadastro</title>
+    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+</head>
+<body>
+    <div id="navOverlay" class="nav-overlay" onclick="closeSidebar()"></div>
+    <aside id="navSidebar" class="nav-sidebar" aria-label="Menu lateral">
+        <div class="nav-sidebar__header">
+            <div class="nav-sidebar__brand">
+                <div class="nav-sidebar__title">Menu</div>
+                <div class="nav-sidebar__user">Usuário: <span id="navUserName">—</span></div>
+            </div>
+            <button class="nav-sidebar__close" type="button" aria-label="Fechar menu" onclick="closeSidebar()">×</button>
+        </div>
+        <nav class="nav-links">
+            <a href="index.html">🏠 Clientes</a>
+            <a href="pdv/">💰 PDV</a>
+            <a href="produtos.html">📦 Produtos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+            <a href="usuarios.html" class="menu-item-admin">👥 Usuários</a>
+            <a href="parametros.html" class="menu-item-admin">⚙️ Parâmetros</a>
+            <a href="pdvs-monitor.html" class="menu-item-admin">🖥️ PDVs (empresa)</a>
+            <a href="suporte.html">💬 Suporte</a>
+        </nav>
+        <div class="nav-sidebar__footer">
+            <button class="btn btn-secondary" type="button" onclick="logout()">🚪 Sair</button>
+        </div>
+    </aside>
+
+    <div class="app-content">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1>👥 Gerenciar Usuários</h1>
+                        <p id="welcomeMessage" class="header-welcome" hidden data-welcome-default=""></p>
+                    </div>
+                    <div class="nav-right">
+                        <button class="nav-burger" type="button" aria-label="Abrir menu" onclick="toggleSidebar()">☰</button>
+                        <span id="userDisplay" class="nav-user">Olá, Usuário</span>
+                    </div>
+                </div>
+            </header>
+
+            <main>
+            <section class="form-section" id="secaoConvitePdv">
+                <h2>🔑 Código de convite PDV</h2>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;min-width:220px;">
+                        <label for="conviteUserSelect">Colaborador (opcional)</label>
+                        <select id="conviteUserSelect"><option value="">Carregando…</option></select>
+                        <small style="color:#888;display:block;margin-top:6px;">Só para preencher o WhatsApp. O código é sempre da empresa atual.</small>
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button type="button" class="btn btn-primary" id="btnGerarCodigoConvite">Gerar novo código</button>
+                    </div>
+                </div>
+                <div id="conviteCodigoBox" style="display:none;margin-top:16px;padding:18px;background:#f5f7ff;border-radius:12px;border:1px solid #c5cae9;position:relative;">
+                    <p id="conviteTimerText" style="margin:0 0 10px;font-weight:600;color:#c62828;font-size:0.9rem;"></p>
+                    <p style="margin:0 0 10px;"><strong>Código</strong> <span id="conviteEmpresaNome" style="color:#667eea;"></span></p>
+                    <p style="font-family:monospace;font-size:1.35rem;font-weight:700;letter-spacing:.08em;margin:8px 0;" id="conviteCodigoValor"></p>
+                    <button type="button" class="btn btn-secondary btn-small" id="btnCopiarCodigo">📋 Copiar código</button>
+                    <hr style="margin:18px 0;border:none;border-top:1px solid #dde1f5;">
+                    <label for="conviteWhatsAppPhone" style="font-weight:600;">WhatsApp do colaborador (DDD + número)</label>
+                    <div class="form-row" style="margin-top:8px;align-items:flex-end;">
+                        <div class="form-group" style="flex:1;min-width:180px;">
+                            <input type="tel" id="conviteWhatsAppPhone" placeholder="ex: 11999998888 ou 5511999998888">
+                        </div>
+                        <button type="button" class="btn btn-primary" id="btnWhatsAppConvite">📱 Abrir WhatsApp</button>
+                    </div>
+                    <p style="font-size:.82rem;color:#888;margin-top:10px;margin-bottom:0;">A mensagem inclui ID da empresa, código e link da tela de cadastro. Regenerar o código invalida o anterior.</p>
+                </div>
+                <div class="form-error" id="conviteError" style="margin-top:12px;"></div>
+            </section>
+
+            <section class="form-section">
+                <h2>➕ Cadastrar Novo Usuário</h2>
+                <form id="registerUserForm" class="register-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newUsername">Usuário:</label>
+                            <input type="text" id="newUsername" required placeholder="Digite o usuário">
+                        </div>
+                        <div class="form-group">
+                            <label for="newUserRole">Perfil:</label>
+                            <select id="newUserRole" required>
+                                <option value="VENDEDOR">Vendedor</option>
+                                <option value="ADMIN_EMPRESA">Administrador (empresa)</option>
+                                <option value="ADM">Administrador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newUserTelefone">Celular / WhatsApp <small style="font-weight:400">— para enviar o convite</small></label>
+                            <input type="tel" id="newUserTelefone" maxlength="25" placeholder="ex: 11999998888">
+                        </div>
+                        <div class="form-group">
+                            <label for="newUserEmpresaPdv">ID empresa (PDV)
+                                <small id="hintNewUserEmpresaAdm" style="font-weight:400">— preenchido com a empresa atual; vazio + ADM = sem empresa</small>
+                                <small id="hintNewUserEmpresaEmpresa" style="font-weight:400;display:none">— preenchido com a empresa atual da retaguarda</small>
+                            </label>
+                            <input type="number" id="newUserEmpresaPdv" min="1" placeholder="ex: 770">
+                        </div>
+                    </div>
+                    <div class="form-group user-auto-pass-group">
+                        <label class="user-auto-pass-card" for="gerarSenhaAutomatica">
+                            <span class="user-auto-pass-card__left">
+                                <span class="user-auto-pass-card__title">Gerar senha automática</span>
+                                <span class="user-auto-pass-card__hint">Usuário define a senha definitiva no 1º login.</span>
+                            </span>
+                            <span class="user-auto-pass-card__switch">
+                                <input type="checkbox" id="gerarSenhaAutomatica" checked>
+                                <span class="user-auto-pass-card__slider" aria-hidden="true"></span>
+                            </span>
+                        </label>
+                        <small class="user-auto-pass-helper">Se desmarcar, você define a senha manualmente (sem obrigatoriedade de troca).</small>
+                    </div>
+                    <div class="form-row" id="rowSenhasManual">
+                        <div class="form-group">
+                            <label for="newUserPassword">Senha:</label>
+                            <input type="password" id="newUserPassword" placeholder="Digite a senha">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmUserPassword">Confirmar Senha:</label>
+                            <input type="password" id="confirmUserPassword" placeholder="Confirme a senha">
+                        </div>
+                    </div>
+                    <div id="boxSenhaGerada" style="display:none;margin-top:12px;padding:16px;background:#fff8e1;border-radius:12px;border:1px solid #ffc107;">
+                        <p style="margin:0 0 8px;font-weight:700;color:#856404;">Senha provisória (mostre só ao usuário; some da tela em 2 min)</p>
+                        <p id="senhaGeradaValor" style="font-family:monospace;font-size:1.2rem;margin:8px 0;word-break:break-all;"></p>
+                        <button type="button" class="btn btn-secondary btn-small" id="btnCopiarSenhaGerada">📋 Copiar senha</button>
+                        <p id="senhaGeradaTimer" style="margin:10px 0 0;font-size:.85rem;color:#c62828;"></p>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">💾 Cadastrar Usuário</button>
+                    </div>
+                    <div class="form-error" id="registerUserError"></div>
+                    <div class="form-success" id="registerUserSuccess"></div>
+                </form>
+            </section>
+
+            <section class="search-section">
+                <h2>🔍 Buscar Usuários</h2>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Buscar por usuário ou telefone...">
+                    <button type="button" id="searchBtn" class="btn btn-search">Buscar</button>
+                </div>
+            </section>
+
+            <section class="list-section">
+                <h2>📋 Usuários Cadastrados <span id="userCount">(0)</span></h2>
+                <div class="table-container">
+                    <table id="userTable">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Telefone</th>
+                                <th>Perfil</th>
+                                <th>Empresa PDV</th>
+                                <th>PDV vinc.</th>
+                                <th>Data de Criação</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userList">
+                            <!-- Usuários serão inseridos aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noUsersMessage" class="no-data">
+                    Nenhum usuário cadastrado ainda.
+                </div>
+            </section>
+            </main>
+
+            <footer>
+                <p>© 2024 Sistema de Cadastro de Clientes</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Confirmar Exclusão</h3>
+            <p>Tem certeza que deseja excluir este usuário?</p>
+            <p id="userToDelete" class="client-name"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" onclick="confirmDelete()">Sim, Excluir</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Editar Usuário -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <h3>✏️ Editar Usuário</h3>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label for="editUsername">Usuário:</label>
+                    <input type="text" id="editUsername" required placeholder="Digite o usuário">
+                </div>
+                <div class="form-group">
+                    <label for="editUserRole">Perfil:</label>
+                    <select id="editUserRole" required>
+                        <option value="VENDEDOR">Vendedor</option>
+                        <option value="ADMIN_EMPRESA">Administrador (empresa)</option>
+                        <option value="ADM">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editTelefone">Celular / WhatsApp</label>
+                    <input type="tel" id="editTelefone" maxlength="25" placeholder="ex: 11999998888">
+                </div>
+                <div class="form-group">
+                    <label for="editEmpresaPdv">ID empresa (PDV)
+                        <small id="hintEmpresaPdvAdm" style="font-weight:400">— vazio = padrão sistema</small>
+                        <small id="hintEmpresaPdvEmpresa" style="font-weight:400;display:none">— em branco, usa a empresa em contexto (Parâmetros)</small>
+                    </label>
+                    <input type="number" id="editEmpresaPdv" min="1" placeholder="ex: 770">
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;">
+                        <input type="checkbox" id="editDesvincularPdv"> Desvincular deste PDV (liberar para cadastrar em outro caixa)
+                    </label>
+                    <small style="display:block;margin-top:4px;color:#666;">Obrigatório para o usuário poder operar em outro terminal.</small>
+                </div>
+                <div class="form-group">
+                    <label for="editPassword">Nova Senha (deixe em branco para manter):</label>
+                    <input type="password" id="editPassword" placeholder="Digite a nova senha">
+                </div>
+                <div class="form-error" id="editUserError"></div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">💾 Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="api-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="theme-defaults.js"></script>
+    <script src="config.js"></script>
+    <script src="nav.js?v=3"></script>
+    <script src="usuarios.js"></script>
+    <script>
+        // Verificar se é admin para acessar esta página
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!checkPermission('adm')) return;
+        });
+    </script>
+</body>
+</html>
+
+
