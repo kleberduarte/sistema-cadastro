@@ -5,7 +5,7 @@ Este documento conecta o que já está definido (`RELEASE_CANDIDATE.md`, `STAGIN
 ## Onde estamos
 
 - Código em `develop` / `main` com perfil `prod`, JWT, CORS e rate limit alinhados ao checklist.
-- **Frontend:** URL da API centralizada em `sistema-cadastro-clientes/api-config.js` (na raiz do repositório Git = pasta `sistema-cadastro`) — **ajuste esse arquivo** (ou injete `window.API_URL` antes dele) no ambiente real.
+- **Frontend:** URL da API centralizada em `sistema-cadastro-clientes/api-config.js` (na raiz do repositório) — **ajuste esse arquivo** (ou injete `window.API_URL` antes dele) no ambiente real.
 
 ## Ordem sugerida (produção)
 

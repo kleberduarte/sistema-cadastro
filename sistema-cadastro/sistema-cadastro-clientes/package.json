@@ -1,9 +1,0 @@
-{
-  "name": "sistema-cadastro-clientes",
-  "private": true,
-  "description": "npm start = servidor Node próprio (sem loop /login). Requer Node instalado.",
-  "scripts": {
-    "start": "node server-estatico.js",
-    "serve": "node server-estatico.js"
-  }
-}
