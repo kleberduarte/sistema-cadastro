@@ -18,20 +18,30 @@
         }
     })();
     </script>
-    <link rel="stylesheet" href="../pdv.css">
+    <link rel="stylesheet" href="../pdv.css?v=20260404-pdv-sair">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23667eea'/%3E%3Cstop offset='1' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='12' fill='url(%23g)'/%3E%3Cpath d='M20 34l8 8 16-16' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23667eea'/%3E%3Cstop offset='1' stop-color='%23764ba2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='12' fill='url(%23g)'/%3E%3Cpath d='M20 34l8 8 16-16' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
 <body>
     <div class="pdv-container">
-        <header class="pdv-header">
-            <div id="status-caixa" class="status-caixa livre" onclick="cycleCaixaStatus()" title="Clique para alterar o status">CAIXA LIVRE</div>
-            <div class="operador-info">
-                <span class="pdv-header-caixa" title="Código do caixa (retaguarda)">PDV-<b id="pdv-terminal-codigo">—</b></span>
-                <span class="pdv-header-sep" aria-hidden="true">·</span>
-                <span>Operador: <b id="pdv-operator-name">Nome do Operador</b></span>
-            </div>
-        </header>
+        <div class="pdv-app-top">
+            <header class="pdv-header">
+                <div id="status-caixa" class="status-caixa livre" onclick="cycleCaixaStatus()" title="Clique para alterar o status">CAIXA LIVRE</div>
+                <div class="operador-info">
+                    <span class="pdv-header-caixa" title="Código do caixa (retaguarda)">PDV-<b id="pdv-terminal-codigo">—</b></span>
+                    <span class="pdv-header-sep" aria-hidden="true">·</span>
+                    <span>Operador: <b id="pdv-operator-name">Nome do Operador</b></span>
+                </div>
+            </header>
+
+            <!-- Resumo no app (celular/tablet): total visível junto ao topo -->
+            <section class="pdv-app-strip" aria-label="Resumo da venda">
+                <div class="pdv-app-strip__inner">
+                    <span class="pdv-app-strip__label">Total da venda</span>
+                    <strong class="pdv-app-strip__total" id="pdv-total-mobile">R$ 0,00</strong>
+                </div>
+            </section>
+        </div>
 
         <main class="pdv-main">
             <!-- Seção Esquerda: Comandos e Inputs -->
@@ -133,15 +143,17 @@
             </section>
         </main>
 
-        <section class="pdv-mobile-actions" aria-label="Ações rápidas no celular">
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('barcode')">Código</button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('pedido')">Pedido</button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('produto')">Produtos</button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('cliente')">Cliente</button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('qtd')">Qtd</button>
-            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--primary" onclick="pdvMobileAction('finalizar')">Finalizar</button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('nova')">Nova venda</button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('vendas')">Vendas</button>
+        <section class="pdv-mobile-actions" aria-label="Ações rápidas (toque)">
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('barcode')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📷</span><span class="pdv-mobile-actions__txt">Código</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('produto')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📦</span><span class="pdv-mobile-actions__txt">Produtos</span></button>
+            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--primary" onclick="pdvMobileAction('finalizar')"><span class="pdv-mobile-actions__ic" aria-hidden="true">✅</span><span class="pdv-mobile-actions__txt">Finalizar</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('pedido')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📋</span><span class="pdv-mobile-actions__txt">Pedido</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('cliente')"><span class="pdv-mobile-actions__ic" aria-hidden="true">👤</span><span class="pdv-mobile-actions__txt">Cliente</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('qtd')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🔢</span><span class="pdv-mobile-actions__txt">Quantidade</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('nova')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🆕</span><span class="pdv-mobile-actions__txt">Nova venda</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('vendas')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🔍</span><span class="pdv-mobile-actions__txt">Vendas</span></button>
+            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--accent" onclick="pdvMobileAction('caixa')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🏁</span><span class="pdv-mobile-actions__txt">Fechar caixa</span></button>
+            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--sair" onclick="pdvMobileAction('sair')" title="Sair do PDV (mesmo que tecla Esc)"><span class="pdv-mobile-actions__ic" aria-hidden="true">🚪</span><span class="pdv-mobile-actions__txt">Sair</span><span class="pdv-mobile-actions__sub">Esc</span></button>
         </section>
 
         <!-- Rodapé com os atalhos -->
@@ -425,7 +437,7 @@
     <script src="../auth.js"></script>
     <script src="../theme-defaults.js"></script>
     <script src="../config.js"></script>
-    <script src="../vendas.js?v=20260331-5"></script>
+    <script src="../vendas.js?v=20260404-pdv-sair"></script>
     <script src="../pwa-register.js?v=20260320-1"></script>
 </body>
 </html>

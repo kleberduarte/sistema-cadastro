@@ -432,38 +432,7 @@ function setupKeyboardShortcuts() {
                 if (!ctrl && typeof printLastSale === 'function') printLastSale();
                 break;
             case 'Escape':
-                if (activeModal) {
-                    closeModal(activeModal);
-                } else {
-                    if (window.__pdvEscLeavePending) break;
-                    window.__pdvEscLeavePending = true;
-                    resolvePdvUserRole().then(function (roleNorm) {
-                        window.__pdvEscLeavePending = false;
-                        if (roleNorm === 'ADM') {
-                            pdvAdminSairParaRetaguarda();
-                        } else if (roleNorm === 'VENDEDOR') {
-                            pdvConfirm('Deseja sair do PDV e fazer logout?', {
-                                title: 'Sair do PDV',
-                                confirmText: 'Sim, sair',
-                                cancelText: 'Cancelar',
-                                type: 'warning'
-                            }).then(function (ok) {
-                                if (ok && typeof logout === 'function') logout();
-                            });
-                        } else {
-                            pdvConfirm('Deseja sair do PDV e voltar para a retaguarda do sistema?', {
-                                title: 'Retaguarda',
-                                confirmText: 'Sim',
-                                cancelText: 'Cancelar',
-                                type: 'info'
-                            }).then(function (ok) {
-                                if (ok) window.location.href = pdvAppHref('index.html');
-                            });
-                        }
-                    }).catch(function () {
-                        window.__pdvEscLeavePending = false;
-                    });
-                }
+                pdvRequestExit();
                 break;
         }
 
@@ -506,6 +475,12 @@ function pdvMobileAction(action) {
             break;
         case 'vendas':
             if (typeof openSaleSearchModal === 'function') void openSaleSearchModal();
+            break;
+        case 'caixa':
+            if (typeof openFechamentoCaixaModal === 'function') void openFechamentoCaixaModal();
+            break;
+        case 'sair':
+            if (typeof pdvRequestExit === 'function') pdvRequestExit();
             break;
         default:
             break;
@@ -940,7 +915,10 @@ function updateTotalsFooter() {
         discountDisplay.style.display = 'none';
     }
 
-    document.getElementById('pdv-total').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    var totalFmt = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.getElementById('pdv-total').textContent = totalFmt;
+    var totalMob = document.getElementById('pdv-total-mobile');
+    if (totalMob) totalMob.textContent = totalFmt;
 }
 
 function novaVenda() {
@@ -1245,6 +1223,46 @@ function closeModal(modalId) {
         document.getElementById('pdv-barcode').focus(); // Foco de volta no principal
     }
 }
+
+/** Mesma lógica do Esc: fecha modal ou pergunta saída (retaguarda / logout conforme perfil). */
+function pdvRequestExit() {
+    if (activeModal) {
+        closeModal(activeModal);
+        return;
+    }
+    if (window.__pdvEscLeavePending) return;
+    window.__pdvEscLeavePending = true;
+    resolvePdvUserRole()
+        .then(function (roleNorm) {
+            window.__pdvEscLeavePending = false;
+            if (roleNorm === 'ADM') {
+                pdvAdminSairParaRetaguarda();
+            } else if (roleNorm === 'VENDEDOR') {
+                pdvConfirm('Deseja sair do PDV e fazer logout?', {
+                    title: 'Sair do PDV',
+                    confirmText: 'Sim, sair',
+                    cancelText: 'Cancelar',
+                    type: 'warning'
+                }).then(function (ok) {
+                    if (ok && typeof logout === 'function') logout();
+                });
+            } else {
+                pdvConfirm('Deseja sair do PDV e voltar para a retaguarda do sistema?', {
+                    title: 'Retaguarda',
+                    confirmText: 'Sim',
+                    cancelText: 'Cancelar',
+                    type: 'info'
+                }).then(function (ok) {
+                    if (ok) window.location.href = pdvAppHref('index.html');
+                });
+            }
+        })
+        .catch(function () {
+            window.__pdvEscLeavePending = false;
+        });
+}
+
+window.pdvRequestExit = pdvRequestExit;
 
 // --- Modal de Pesquisa de Produto (F8) ---
 function openProductSearchModal() {
