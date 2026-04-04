@@ -1,4 +1,0 @@
-codigo;nome;preco;estoque;estoque_minimo;categoria;descricao;tipo;tipo_controle;exige_receita;exige_lote;exige_validade;registro_ms;gtin_ean;pmc
-FARMA-COM-001;Dipirona Sodica 500mg Comprimido;12,90;120;20;Medicamentos;Analgesico e antitermico de uso comum;MEDICAMENTO;COMUM;false;false;false;;;
-FARMA-CTL-001;Clonazepam 2mg 30 Comprimidos;45,00;40;10;Medicamentos Controlados;Ansiolitico sujeito a controle especial;MEDICAMENTO;CONTROLADO;true;true;true;1234567890123;7891234567890;39,90
-FARMA-ATM-001;Amoxicilina 500mg 21 Capsulas;32,50;60;15;Antimicrobianos;Antibiotico de uso sob prescricao;MEDICAMENTO;ANTIMICROBIANO;true;true;true;9876543210001;7899876543210;29,90

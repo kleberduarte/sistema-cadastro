@@ -39,12 +39,37 @@ function resolveLogoUrlForBrowser(sanitized) {
     }
 }
 
+/** URL está na pasta do caixa /pdv/... (favicon pode usar logo da loja). Não usar substring /pdv — casaria com /pdvs-monitor. */
+function isPathUnderPdvFolder() {
+    try {
+        var p = String(window.location.pathname || '').toLowerCase().replace(/\\/g, '/');
+        return p === '/pdv' || p.endsWith('/pdv') || p.indexOf('/pdv/') !== -1;
+    } catch (_) {
+        return false;
+    }
+}
+
+function sistemaFaviconFallbackHrefType() {
+    if (!isPathUnderPdvFolder() && typeof window !== 'undefined' && window.SISTEMA_FAVICON_SVG_DATA) {
+        return { href: window.SISTEMA_FAVICON_SVG_DATA, type: 'image/svg+xml' };
+    }
+    var fb = (typeof window !== 'undefined' && window.__defaultFaviconHref) || 'data:;base64,iVBORw0KGgo=';
+    var tp = (typeof window !== 'undefined' && window.__defaultFaviconType) || '';
+    return { href: fb, type: tp };
+}
+
 /**
  * Atualiza o favicon da aba usando o logo da empresa.
  * Sem logo válido, restaura o favicon original da página.
  */
 function applyCompanyFavicon(logoUrl) {
     if (typeof document === 'undefined') return;
+
+    // Evita corrida: load assíncrono de um logo antigo (ex. Drogasil) não pode sobrescrever um reset posterior.
+    if (typeof window !== 'undefined') {
+        window.__faviconApplySeq = (window.__faviconApplySeq || 0) + 1;
+    }
+    var faviconSeq = typeof window !== 'undefined' ? window.__faviconApplySeq : 0;
 
     function findPrimaryIcon() {
         return document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
@@ -61,6 +86,11 @@ function applyCompanyFavicon(logoUrl) {
 
     function setIcons(href, type) {
         var icons = [ensureIcon('icon'), ensureIcon('shortcut icon')];
+        try {
+            document.querySelectorAll('link[rel="apple-touch-icon"]').forEach(function (el) {
+                icons.push(el);
+            });
+        } catch (_) {}
         icons.forEach(function (el) {
             el.setAttribute('href', href);
             if (type) el.setAttribute('type', type);
@@ -96,9 +126,8 @@ function applyCompanyFavicon(logoUrl) {
 
     var clean = sanitizeLogoUrlForDisplay(logoUrl);
     if (!clean) {
-        var fallback = (typeof window !== 'undefined' && window.__defaultFaviconHref) || 'data:;base64,iVBORw0KGgo=';
-        var defaultType = (typeof window !== 'undefined' && window.__defaultFaviconType) || '';
-        setIcons(fallback, defaultType);
+        var ftEmpty = sistemaFaviconFallbackHrefType();
+        setIcons(ftEmpty.href, ftEmpty.type);
         return;
     }
 
@@ -128,12 +157,13 @@ function applyCompanyFavicon(logoUrl) {
     }
     var probe = new Image();
     probe.onload = function () {
+        if (typeof window !== 'undefined' && window.__faviconApplySeq !== faviconSeq) return;
         setIcons(finalHref, mime);
     };
     probe.onerror = function () {
-        var fb = (typeof window !== 'undefined' && window.__defaultFaviconHref) || 'data:;base64,iVBORw0KGgo=';
-        var fbType = (typeof window !== 'undefined' && window.__defaultFaviconType) || '';
-        setIcons(fb, fbType);
+        if (typeof window !== 'undefined' && window.__faviconApplySeq !== faviconSeq) return;
+        var ftErr = sistemaFaviconFallbackHrefType();
+        setIcons(ftErr.href, ftErr.type);
     };
     probe.src = finalHref;
 }
@@ -281,6 +311,41 @@ function setSelectedEmpresaId(id) {
 // Função para obter o ID do cliente atual
 function getClienteId() {
     return CLIENTE_ID;
+}
+
+function effectiveClienteIdForTenant() {
+    if (typeof CLIENTE_ID !== 'undefined' && CLIENTE_ID != null && !isNaN(CLIENTE_ID) && CLIENTE_ID >= 1) {
+        return CLIENTE_ID;
+    }
+    var ep = getEmpresaPadraoSistemaId();
+    var ls = parseInt(localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId') || String(ep), 10);
+    if (!isNaN(ls) && ls >= 1) return ls;
+    return ep;
+}
+
+/**
+ * Tenant atual é a empresa padrão do sistema (theme-defaults.js → EMPRESA_ID_PADRAO_SISTEMA).
+ */
+function isTenantEmpresaPadraoSistema() {
+    return effectiveClienteIdForTenant() === getEmpresaPadraoSistemaId();
+}
+
+function isPdvPath() {
+    return isPathUnderPdvFolder();
+}
+
+/**
+ * Retaguarda com nome institucional (igual ao tema padrão) ou tenant ID padrão: não usa logo de marca na aba/header.
+ * Cobre API com nome "Sistema de Cadastro" e logo de teste (ex. Drogasil) em outro campo.
+ */
+function deveSuprimirLogoMarcaCliente(params) {
+    if (isTenantEmpresaPadraoSistema()) return true;
+    if (!isPdvPath()) {
+        var nomeParam = (params && params.nomeEmpresa != null ? String(params.nomeEmpresa) : '').trim();
+        var nomePadrao = (temaPadrao().nomeEmpresa || '').trim();
+        if (nomeParam && nomePadrao && nomeParam === nomePadrao) return true;
+    }
+    return false;
 }
 
 /**
@@ -466,8 +531,14 @@ function applyClientStyles(params) {
 
     // Aplicar logo - múltiplas posições (ignora caminhos locais inúteis na nuvem)
     var logoUrl = params.logoUrl ? sanitizeLogoUrlForDisplay(params.logoUrl) : '';
-    applyCompanyFavicon(logoUrl);
-    if (logoUrl) {
+    var usarLogoMarcaCliente = !!(logoUrl && !deveSuprimirLogoMarcaCliente(params));
+    // Retaguarda: ícone da aba sempre o institucional; logo da empresa só na página (header/login) e no PDV na aba.
+    if (isPathUnderPdvFolder()) {
+        applyCompanyFavicon(usarLogoMarcaCliente ? logoUrl : '');
+    } else {
+        applyCompanyFavicon('');
+    }
+    if (usarLogoMarcaCliente) {
         var esc = resolveLogoUrlForBrowser(logoUrl).replace(/"/g, '&quot;');
         var logoContainer = document.querySelector('.header-logo');
         if (!logoContainer) {
