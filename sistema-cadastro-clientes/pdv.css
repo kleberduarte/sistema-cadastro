@@ -224,7 +224,7 @@ body {
     }
 
     .pdv-left {
-        order: 1;
+        order: 2;
         border-radius: 14px;
     }
 
@@ -239,16 +239,16 @@ body {
     }
 
     .pdv-right {
-        order: 2;
+        order: 1;
         min-height: 0;
-        max-height: min(62vh, 700px);
+        max-height: none;
         padding: 8px;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .cupom-paper {
-        min-height: 260px;
-        max-height: min(60vh, 660px);
+        min-height: clamp(300px, 52vh, 560px);
+        max-height: none;
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
@@ -260,6 +260,9 @@ body {
     }
 
     .item-list-container {
+        min-height: 160px;
+        max-height: calc(52vh - 160px);
+        overflow-y: auto;
         overflow-x: hidden;
     }
 
@@ -366,6 +369,16 @@ body {
     .client-form-row {
         grid-template-columns: 1fr;
         gap: 8px;
+    }
+}
+
+@media (max-width: 700px) {
+    .cupom-paper {
+        min-height: clamp(280px, 50vh, 500px);
+    }
+
+    .item-list-container {
+        max-height: calc(50vh - 160px);
     }
 }
 
