@@ -442,6 +442,22 @@ body {
     }
 }
 
+/* Override final mobile/tablet: garante rolagem vertical no PDV touch.
+   Fica aqui no fim do arquivo para vencer regras globais de .pdv-container. */
+@media (max-width: 1180px) {
+    .pdv-container {
+        height: auto !important;
+        min-height: 100dvh;
+        overflow-y: auto !important;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .pdv-main {
+        overflow: visible !important;
+    }
+}
+
 .pdv-header {
     display: flex;
     justify-content: space-between;
