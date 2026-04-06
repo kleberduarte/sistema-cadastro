@@ -134,6 +134,20 @@ body {
         box-sizing: border-box;
     }
 
+    .pdv-mobile-actions.pdv-mobile-actions--compact {
+        padding-top: 10px;
+        gap: 8px;
+    }
+
+    .pdv-mobile-actions.pdv-mobile-actions--compact .pdv-mobile-actions__btn.is-hidden-action {
+        display: none;
+    }
+
+    .pdv-mobile-actions.pdv-mobile-actions--compact + .pdv-shortcuts,
+    .pdv-mobile-actions.pdv-mobile-actions--compact ~ .pdv-shortcuts {
+        display: none;
+    }
+
     .pdv-mobile-actions__btn {
         display: flex;
         flex-direction: column;
@@ -183,6 +197,12 @@ body {
         background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
         border-color: #94a3b8;
         color: #334155;
+    }
+
+    .pdv-mobile-actions__btn[data-action="mais"] {
+        background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%);
+        border-color: #a5b4fc;
+        color: #3730a3;
     }
 
     .pdv-mobile-actions__btn--sair {

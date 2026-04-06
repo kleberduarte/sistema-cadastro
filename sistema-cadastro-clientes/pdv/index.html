@@ -143,17 +143,18 @@
             </section>
         </main>
 
-        <section class="pdv-mobile-actions" aria-label="Ações rápidas (toque)">
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('barcode')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📷</span><span class="pdv-mobile-actions__txt">Código</span></button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('produto')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📦</span><span class="pdv-mobile-actions__txt">Produtos</span></button>
-            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--primary" onclick="pdvMobileAction('finalizar')"><span class="pdv-mobile-actions__ic" aria-hidden="true">✅</span><span class="pdv-mobile-actions__txt">Finalizar</span></button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('pedido')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📋</span><span class="pdv-mobile-actions__txt">Pedido</span></button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('cliente')"><span class="pdv-mobile-actions__ic" aria-hidden="true">👤</span><span class="pdv-mobile-actions__txt">Cliente</span></button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('qtd')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🔢</span><span class="pdv-mobile-actions__txt">Quantidade</span></button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('nova')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🆕</span><span class="pdv-mobile-actions__txt">Nova venda</span></button>
-            <button type="button" class="pdv-mobile-actions__btn" onclick="pdvMobileAction('vendas')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🔍</span><span class="pdv-mobile-actions__txt">Vendas</span></button>
-            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--accent" onclick="pdvMobileAction('caixa')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🏁</span><span class="pdv-mobile-actions__txt">Fechar caixa</span></button>
-            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--sair" onclick="pdvMobileAction('sair')" title="Sair do PDV (mesmo que tecla Esc)"><span class="pdv-mobile-actions__ic" aria-hidden="true">🚪</span><span class="pdv-mobile-actions__txt">Sair</span><span class="pdv-mobile-actions__sub">Esc</span></button>
+        <section id="pdv-mobile-actions" class="pdv-mobile-actions" aria-label="Ações rápidas (toque)">
+            <button type="button" class="pdv-mobile-actions__btn" data-action="barcode" onclick="pdvMobileAction('barcode')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📷</span><span class="pdv-mobile-actions__txt">Código</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" data-action="produto" onclick="pdvMobileAction('produto')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📦</span><span class="pdv-mobile-actions__txt">Produtos</span></button>
+            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--primary" data-action="finalizar" onclick="pdvMobileAction('finalizar')"><span class="pdv-mobile-actions__ic" aria-hidden="true">✅</span><span class="pdv-mobile-actions__txt">Finalizar</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" data-action="pedido" onclick="pdvMobileAction('pedido')"><span class="pdv-mobile-actions__ic" aria-hidden="true">📋</span><span class="pdv-mobile-actions__txt">Pedido</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" data-action="cliente" onclick="pdvMobileAction('cliente')"><span class="pdv-mobile-actions__ic" aria-hidden="true">👤</span><span class="pdv-mobile-actions__txt">Cliente</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" data-action="qtd" onclick="pdvMobileAction('qtd')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🔢</span><span class="pdv-mobile-actions__txt">Quantidade</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" data-action="nova" onclick="pdvMobileAction('nova')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🆕</span><span class="pdv-mobile-actions__txt">Nova venda</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" data-action="vendas" onclick="pdvMobileAction('vendas')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🔍</span><span class="pdv-mobile-actions__txt">Vendas</span></button>
+            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--accent" data-action="caixa" onclick="pdvMobileAction('caixa')"><span class="pdv-mobile-actions__ic" aria-hidden="true">🏁</span><span class="pdv-mobile-actions__txt">Fechar caixa</span></button>
+            <button type="button" class="pdv-mobile-actions__btn" data-action="mais" onclick="pdvMobileAction('mais')" title="Mostrar mais ações"><span class="pdv-mobile-actions__ic" aria-hidden="true">⋯</span><span class="pdv-mobile-actions__txt">Mais</span></button>
+            <button type="button" class="pdv-mobile-actions__btn pdv-mobile-actions__btn--sair" data-action="sair" onclick="pdvMobileAction('sair')" title="Sair do PDV (mesmo que tecla Esc)"><span class="pdv-mobile-actions__ic" aria-hidden="true">🚪</span><span class="pdv-mobile-actions__txt">Sair</span><span class="pdv-mobile-actions__sub">Esc</span></button>
         </section>
 
         <!-- Rodapé com os atalhos -->
