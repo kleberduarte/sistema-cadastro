@@ -156,12 +156,9 @@ function getVisibleMobileActionsByMode(mode) {
         base.cliente = true;
     } else if (mode === 'cart') {
         base.produto = true;
-        base.pedido = true;
         base.qtd = true;
         base.cliente = true;
         base.nova = true;
-        base.vendas = true;
-        base.caixa = true;
     } else if (mode === 'full') {
         return {
             barcode: true, produto: true, finalizar: true, pedido: true, cliente: true, qtd: true,
