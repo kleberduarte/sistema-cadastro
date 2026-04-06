@@ -126,6 +126,82 @@ function setupMobileKeyboardAssist() {
     });
 }
 
+let pdvMobileActionsExpanded = false;
+let pdvMobileActionsContextReady = false;
+
+function isCompactPdvActionsViewport() {
+    if (!isTouchPdvDevice()) return false;
+    try {
+        return !!(window.matchMedia && window.matchMedia('(max-width: 1180px)').matches);
+    } catch (e) {
+        return false;
+    }
+}
+
+function getPdvMobileActionsMode() {
+    if (!isCompactPdvActionsViewport()) return 'full';
+    if (pdvMobileActionsExpanded) return 'full';
+    if (Array.isArray(cart) && cart.length > 0) return 'cart';
+    var activeId = (document.activeElement && document.activeElement.id) ? String(document.activeElement.id) : '';
+    if (activeId === 'pdv-barcode' || activeId === 'pdv-order-code' || activeId === 'discountValue') return 'entry';
+    return 'base';
+}
+
+function getVisibleMobileActionsByMode(mode) {
+    var base = { barcode: true, finalizar: true, sair: true, mais: true };
+    if (mode === 'entry') {
+        base.produto = true;
+        base.pedido = true;
+        base.qtd = true;
+        base.cliente = true;
+    } else if (mode === 'cart') {
+        base.produto = true;
+        base.pedido = true;
+        base.qtd = true;
+        base.cliente = true;
+        base.nova = true;
+        base.vendas = true;
+        base.caixa = true;
+    } else if (mode === 'full') {
+        return {
+            barcode: true, produto: true, finalizar: true, pedido: true, cliente: true, qtd: true,
+            nova: true, vendas: true, caixa: true, mais: true, sair: true
+        };
+    }
+    return base;
+}
+
+function updatePdvMobileActionsContext() {
+    var actionsRoot = document.getElementById('pdv-mobile-actions');
+    if (!actionsRoot) return;
+
+    var compact = isCompactPdvActionsViewport();
+    actionsRoot.classList.toggle('pdv-mobile-actions--compact', compact);
+    pdvMobileActionsExpanded = compact ? pdvMobileActionsExpanded : false;
+
+    var mode = getPdvMobileActionsMode();
+    var visible = getVisibleMobileActionsByMode(mode);
+    actionsRoot.querySelectorAll('.pdv-mobile-actions__btn[data-action]').forEach(function (btn) {
+        var action = btn.getAttribute('data-action');
+        var isVisible = !!visible[action];
+        btn.classList.toggle('is-hidden-action', !isVisible);
+    });
+
+    var moreBtn = actionsRoot.querySelector('.pdv-mobile-actions__btn[data-action="mais"] .pdv-mobile-actions__txt');
+    if (moreBtn) moreBtn.textContent = pdvMobileActionsExpanded ? 'Menos' : 'Mais';
+}
+
+function setupPdvMobileActionsContext() {
+    if (pdvMobileActionsContextReady) return;
+    pdvMobileActionsContextReady = true;
+    updatePdvMobileActionsContext();
+    window.addEventListener('resize', updatePdvMobileActionsContext);
+    document.addEventListener('focusin', updatePdvMobileActionsContext);
+    document.addEventListener('focusout', function () {
+        setTimeout(updatePdvMobileActionsContext, 60);
+    });
+}
+
 /** Perfil real: API /auth/me (igual ao login); fallback localStorage */
 /** ADM no PDV: ESC encerra sessão no caixa e volta à retaguarda (mantém login JWT). */
 function pdvAdminSairParaRetaguarda() {
@@ -186,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
     /* Vendas: carregadas sob demanda em openSaleSearchModal (F7) — evita GET /vendas pesado na abertura do PDV */
     setupEventListeners();
     setupMobileKeyboardAssist();
+    setupPdvMobileActionsContext();
     setCaixaStatus('LIVRE');
     startPdvHeartbeat();
 });
@@ -215,6 +292,7 @@ function setupEventListeners() {
                 addProductByBarcode(barcodeInput.value);
             }
         });
+        barcodeInput.addEventListener('focus', updatePdvMobileActionsContext);
     }
 
     const productSearchInput = document.getElementById('productSearchInput');
@@ -249,6 +327,7 @@ function setupEventListeners() {
                 }
             }
         });
+        orderInput.addEventListener('focus', updatePdvMobileActionsContext);
     }
 
     const saleSearchInput = document.getElementById('saleSearchInput');
@@ -481,6 +560,10 @@ function pdvMobileAction(action) {
             break;
         case 'sair':
             if (typeof pdvRequestExit === 'function') pdvRequestExit();
+            break;
+        case 'mais':
+            pdvMobileActionsExpanded = !pdvMobileActionsExpanded;
+            updatePdvMobileActionsContext();
             break;
         default:
             break;
@@ -867,6 +950,7 @@ function renderCart(highlightNewLine) {
     }
     updateDisplayInfo();
     updateTotalsFooter();
+    updatePdvMobileActionsContext();
 }
 
 function updateDisplayInfo() {
