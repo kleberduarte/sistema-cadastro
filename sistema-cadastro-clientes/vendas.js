@@ -186,6 +186,16 @@ function updatePdvMobileActionsContext() {
 
     var moreBtn = actionsRoot.querySelector('.pdv-mobile-actions__btn[data-action="mais"] .pdv-mobile-actions__txt');
     if (moreBtn) moreBtn.textContent = pdvMobileActionsExpanded ? 'Menos' : 'Mais';
+
+    // Evita cobrir desconto/rodapé: calcula altura real da barra fixa no mobile.
+    try {
+        if (compact) {
+            var h = Math.max(140, Math.ceil(actionsRoot.getBoundingClientRect().height || actionsRoot.offsetHeight || 0));
+            document.documentElement.style.setProperty('--pdv-actions-h', String(h) + 'px');
+        } else {
+            document.documentElement.style.removeProperty('--pdv-actions-h');
+        }
+    } catch (e) { /* ignore */ }
 }
 
 function setupPdvMobileActionsContext() {
@@ -1543,11 +1553,17 @@ function printLastSale() {
         return;
     }
     openSaleDetailModal(lastSale);
-    // Atraso para garantir que o modal renderize antes de imprimir
+    // Em alguns navegadores móveis/embarcados, fechar imediatamente após print gera página em branco.
+    // Mantém o modal aberto até afterprint (com fallback por timeout).
     setTimeout(() => {
+        const onAfterPrint = () => {
+            try { window.removeEventListener('afterprint', onAfterPrint); } catch (_) { /* ignore */ }
+            closeModal('saleDetailModal');
+        };
+        try { window.addEventListener('afterprint', onAfterPrint, { once: true }); } catch (_) { /* ignore */ }
         window.print();
-        closeModal('saleDetailModal'); // Fecha o modal após a impressão
-    }, 500);
+        setTimeout(onAfterPrint, 1800);
+    }, 350);
 }
 
 // =================================================================
