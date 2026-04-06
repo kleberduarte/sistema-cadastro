@@ -44,7 +44,8 @@ body {
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
-        padding-bottom: env(safe-area-inset-bottom, 0);
+        /* Espaço extra para a barra fixa (fora do fluxo): evita desconto / rodapé cobertos */
+        padding-bottom: calc(var(--pdv-actions-h, 340px) + 28px + env(safe-area-inset-bottom, 0));
     }
 
     .pdv-app-top {
@@ -107,7 +108,7 @@ body {
 
     .pdv-main {
         flex-direction: column;
-        padding: 12px 12px calc(var(--pdv-actions-h, 290px) + 16px + env(safe-area-inset-bottom, 0));
+        padding: 12px 12px calc(var(--pdv-actions-h, 340px) + max(32px, 8vh) + env(safe-area-inset-bottom, 0));
         gap: 12px;
         flex: 1 1 auto;
         overflow: visible;
@@ -334,6 +335,8 @@ body {
     .discount-section {
         padding: 10px;
         margin-bottom: 8px;
+        /* Ao rolar ou focar, mantém folga acima da barra fixa */
+        scroll-margin-bottom: calc(var(--pdv-actions-h, 340px) + 32px + env(safe-area-inset-bottom, 0));
     }
 
     .left-footer {

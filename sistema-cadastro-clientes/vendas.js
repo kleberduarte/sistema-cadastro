@@ -174,15 +174,39 @@ function updatePdvMobileActionsContext() {
     var moreBtn = actionsRoot.querySelector('.pdv-mobile-actions__btn[data-action="mais"] .pdv-mobile-actions__txt');
     if (moreBtn) moreBtn.textContent = pdvMobileActionsExpanded ? 'Menos' : 'Mais';
 
-    // Evita cobrir desconto/rodapé: calcula altura real da barra fixa no mobile.
-    try {
-        if (compact) {
-            var h = Math.max(140, Math.ceil(actionsRoot.getBoundingClientRect().height || actionsRoot.offsetHeight || 0));
+    // Altura real da barra fixa (medir depois do layout; "Menos" muda a altura).
+    function applyBarHeight() {
+        try {
+            if (!compact) return;
+            var h = Math.ceil(actionsRoot.getBoundingClientRect().height || actionsRoot.offsetHeight || 0);
+            h = Math.max(220, h);
             document.documentElement.style.setProperty('--pdv-actions-h', String(h) + 'px');
-        } else {
+        } catch (e) { /* ignore */ }
+    }
+    applyBarHeight();
+    if (compact) {
+        requestAnimationFrame(function () {
+            requestAnimationFrame(applyBarHeight);
+        });
+    } else {
+        try {
             document.documentElement.style.removeProperty('--pdv-actions-h');
+        } catch (e) { /* ignore */ }
+    }
+}
+
+/** Mobile/tablet: traz o bloco de desconto para a área útil acima da barra fixa. */
+function scrollPdvDiscountIntoView() {
+    if (!isCompactPdvActionsViewport()) return;
+    var el = document.querySelector('.discount-section');
+    if (!el) return;
+    setTimeout(function () {
+        try {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth', inline: 'nearest' });
+        } catch (e) {
+            try { el.scrollIntoView(true); } catch (e2) { /* ignore */ }
         }
-    } catch (e) { /* ignore */ }
+    }, 80);
 }
 
 function setupPdvMobileActionsContext() {
@@ -338,6 +362,8 @@ function setupEventListeners() {
     const discountTypeSelect = document.getElementById('discountType');
     if (discountTypeSelect) {
         discountTypeSelect.addEventListener('change', toggleDiscountInput);
+        discountTypeSelect.addEventListener('focus', scrollPdvDiscountIntoView);
+        discountTypeSelect.addEventListener('click', scrollPdvDiscountIntoView);
     }
     const applyDiscountBtn = document.getElementById('applyDiscountBtn');
     if (applyDiscountBtn) {
@@ -1018,10 +1044,12 @@ function toggleDiscountInput() {
         discountValueInput.value = '';
         applyDiscount(); // Aplica desconto zero para resetar
     } else {
+        scrollPdvDiscountIntoView();
         discountValueInput.style.display = 'block';
         applyDiscountBtn.style.display = 'inline-block';
         discountValueInput.placeholder = discountType === 'percent' ? '%' : 'R$';
         discountValueInput.focus();
+        scrollPdvDiscountIntoView();
     }
 }
 
