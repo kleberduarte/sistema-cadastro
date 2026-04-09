@@ -201,6 +201,109 @@
         .param-ativo-toggle input:checked + .param-ativo-toggle__track .param-ativo-toggle__thumb {
             transform: translateX(22px);
         }
+
+        /* Slide Módulo Farmácia — agrupamentos */
+        .param-farmacia-lead {
+            margin: 0 0 16px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #64748b;
+        }
+        .param-farmacia-panel {
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+        }
+        .param-farmacia-panel:last-of-type {
+            margin-bottom: 0;
+        }
+        .param-farmacia-panel__kicker {
+            margin: 0 0 12px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        .param-farmacia-panel--pmc {
+            background: linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
+            border-style: solid;
+            border-color: #cbd5e1;
+        }
+        .param-farmacia-checkgrid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        @media (min-width: 640px) {
+            .param-farmacia-checkgrid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .param-farmacia-check--full {
+                grid-column: 1 / -1;
+            }
+        }
+        .param-farmacia-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 0;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .param-farmacia-check:hover {
+            border-color: #cbd5e1;
+        }
+        .param-farmacia-check:focus-within {
+            border-color: #a5b4fc;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18);
+        }
+        .param-farmacia-check--primary {
+            border-color: #c4b5fd;
+            background: linear-gradient(135deg, #faf5ff 0%, #fff 100%);
+        }
+        .param-farmacia-check input {
+            margin-top: 3px;
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+        .param-farmacia-check__text {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #1e293b;
+            line-height: 1.35;
+        }
+        .param-farmacia-check__hint {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.78rem;
+            font-weight: 400;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+        .param-farmacia-pmc-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+            margin-top: 8px;
+        }
+        .param-farmacia-pmc-actions .form-group {
+            flex: 1 1 200px;
+            margin-bottom: 0;
+        }
+        .param-farmacia-pmc-actions .btn {
+            flex: 0 0 auto;
+        }
     </style>
 </head>
 <body>
@@ -345,40 +448,82 @@
                         <div class="param-modulos-carousel__track" id="paramModulosTrack">
                             <div class="param-modulos-carousel__slide" role="group" aria-roledescription="slide" aria-label="1 de 2: Farmácia">
                                 <h4>Módulo Farmácia</h4>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="segmento">Segmento</label>
-                                        <select id="segmento">
-                                            <option value="">Padrão</option>
-                                            <option value="FARMACIA">Farmácia</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="farmaciaPmcModo">Modo PMC</label>
-                                        <select id="farmaciaPmcModo">
-                                            <option value="ALERTA">ALERTA</option>
-                                            <option value="BLOQUEIO">BLOQUEIO</option>
-                                        </select>
+                                <p class="param-farmacia-lead">Regras de farmácia, lotes no PDV e preço máximo (PMC). Ative o módulo para aplicar validações na venda e no cadastro de produtos.</p>
+
+                                <div class="param-farmacia-panel">
+                                    <p class="param-farmacia-panel__kicker">Segmento e política de preço</p>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="segmento">Segmento do negócio</label>
+                                            <select id="segmento">
+                                                <option value="">Padrão (sem regras de farmácia)</option>
+                                                <option value="FARMACIA">Farmácia</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="farmaciaPmcModo">Quando o preço passar do PMC</label>
+                                            <select id="farmaciaPmcModo" aria-describedby="hintPmcModo">
+                                                <option value="ALERTA">Só alertar (permite venda)</option>
+                                                <option value="BLOQUEIO">Bloquear venda</option>
+                                            </select>
+                                            <small id="hintPmcModo" class="param-farmacia-check__hint" style="margin-top:6px;display:block;">Exige ter base PMC atualizada (importação ou sync abaixo).</small>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="form-row">
-                                    <label><input type="checkbox" id="moduloFarmaciaAtivo"> Ativar módulo farmácia</label>
-                                    <label><input type="checkbox" id="farmaciaLoteValidadeObrigatorio"> Exigir lote/validade no PDV</label>
-                                    <label><input type="checkbox" id="farmaciaControladosAtivo"> Regras de controlados</label>
-                                    <label><input type="checkbox" id="farmaciaAntimicrobianosAtivo"> Regras de antimicrobianos</label>
-                                    <label><input type="checkbox" id="farmaciaPmcAtivo"> Validar PMC</label>
+
+                                <div class="param-farmacia-panel">
+                                    <p class="param-farmacia-panel__kicker">O que ligar no sistema</p>
+                                    <div class="param-farmacia-checkgrid">
+                                        <label class="param-farmacia-check param-farmacia-check--primary param-farmacia-check--full">
+                                            <input type="checkbox" id="moduloFarmaciaAtivo">
+                                            <span>
+                                                <span class="param-farmacia-check__text">Ativar módulo farmácia</span>
+                                                <span class="param-farmacia-check__hint">Liga validações de receita, lote/validade e PMC conforme as opções abaixo.</span>
+                                            </span>
+                                        </label>
+                                        <label class="param-farmacia-check">
+                                            <input type="checkbox" id="farmaciaLoteValidadeObrigatorio">
+                                            <span>
+                                                <span class="param-farmacia-check__text">Exigir lote e validade no PDV</span>
+                                                <span class="param-farmacia-check__hint">Obriga informar lote (e validade quando aplicável) na venda.</span>
+                                            </span>
+                                        </label>
+                                        <label class="param-farmacia-check">
+                                            <input type="checkbox" id="farmaciaControladosAtivo">
+                                            <span>
+                                                <span class="param-farmacia-check__text">Regras para medicamentos controlados</span>
+                                                <span class="param-farmacia-check__hint">Fluxo reforçado para itens classificados como controlados.</span>
+                                            </span>
+                                        </label>
+                                        <label class="param-farmacia-check">
+                                            <input type="checkbox" id="farmaciaAntimicrobianosAtivo">
+                                            <span>
+                                                <span class="param-farmacia-check__text">Regras para antimicrobianos</span>
+                                                <span class="param-farmacia-check__hint">Exige dados de receita quando o produto for antimicrobiano.</span>
+                                            </span>
+                                        </label>
+                                        <label class="param-farmacia-check">
+                                            <input type="checkbox" id="farmaciaPmcAtivo">
+                                            <span>
+                                                <span class="param-farmacia-check__text">Validar preço máximo (PMC)</span>
+                                                <span class="param-farmacia-check__hint">Compara preço de venda com a base importada; usa o modo escolhido acima.</span>
+                                            </span>
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="form-group" style="margin-top: 14px; padding: 12px; border: 1px dashed #cbd5e1; border-radius: 8px;">
-                                    <label style="font-weight: 600; margin-bottom: 8px; display: block;">Atualização PMC (ABC Farma/CSV)</label>
-                                    <div class="form-row" style="align-items: end;">
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label for="pmcFile">Arquivo CSV PMC</label>
+
+                                <div class="param-farmacia-panel param-farmacia-panel--pmc">
+                                    <p class="param-farmacia-panel__kicker">Base de PMC (ABC Farma / CSV)</p>
+                                    <p class="param-farmacia-lead" style="margin-bottom:10px;">Importe um CSV ou sincronize a fonte configurada no servidor para atualizar referências e o PMC nos produtos desta empresa.</p>
+                                    <div class="param-farmacia-pmc-actions">
+                                        <div class="form-group">
+                                            <label for="pmcFile">Arquivo CSV</label>
                                             <input type="file" id="pmcFile" accept=".csv,text/csv">
                                         </div>
-                                        <button type="button" class="btn btn-secondary" id="btnImportarPmc" onclick="importarPmcCsv()">📥 Importar CSV PMC</button>
-                                        <button type="button" class="btn btn-secondary" id="btnSyncPmc" onclick="sincronizarPmcFonte()">🔄 Sincronizar fonte PMC</button>
+                                        <button type="button" class="btn btn-secondary" id="btnImportarPmc" onclick="importarPmcCsv()">📥 Importar CSV</button>
+                                        <button type="button" class="btn btn-secondary" id="btnSyncPmc" onclick="sincronizarPmcFonte()">🔄 Sincronizar fonte</button>
                                     </div>
-                                    <small style="display:block;margin-top:8px;color:#64748b;">A importação/sync atualiza a base regulatória e também o snapshot de `PMC` nos produtos da empresa.</small>
+                                    <small style="display:block;margin-top:12px;color:#64748b;font-size:0.85rem;line-height:1.45;">A importação e a sincronização atualizam a base regulatória e o valor de PMC associado aos produtos.</small>
                                     <div id="pmcResultado" style="margin-top:10px;font-size:0.92rem;color:#334155;"></div>
                                 </div>
                             </div>
