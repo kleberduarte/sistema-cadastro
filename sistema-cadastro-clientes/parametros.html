@@ -21,6 +21,7 @@
             <a href="pdv/">💰 PDV</a>
             <a href="produtos.html">📦 Produtos</a>
             <a href="relatorios.html">📊 Relatórios</a>
+            <a href="ordem-servico.html" class="menu-item-informatica">🛠️ Ordem de Serviço</a>
             <a href="usuarios.html" class="menu-item-admin">👥 Usuários</a>
             <a href="parametros.html" class="menu-item-admin">⚙️ Parâmetros</a>
             <a href="pdvs-monitor.html" class="menu-item-admin">🖥️ PDVs (empresa)</a>
@@ -171,6 +172,11 @@
                     </div>
                     <small style="display:block;margin-top:8px;color:#64748b;">A importação/sync atualiza a base regulatória e também o snapshot de `PMC` nos produtos da empresa.</small>
                     <div id="pmcResultado" style="margin-top:10px;font-size:0.92rem;color:#334155;"></div>
+                </div>
+
+                <h3>Módulo Informática</h3>
+                <div class="form-row">
+                    <label><input type="checkbox" id="moduloInformaticaAtivo"> Ativar módulo informática (Ordem de Serviço)</label>
                 </div>
 
                 <div class="form-group">
@@ -533,6 +539,7 @@
             document.getElementById('farmaciaAntimicrobianosAtivo').checked = !!params.farmaciaAntimicrobianosAtivo;
             document.getElementById('farmaciaPmcAtivo').checked = !!params.farmaciaPmcAtivo;
             document.getElementById('farmaciaPmcModo').value = params.farmaciaPmcModo || 'ALERTA';
+            document.getElementById('moduloInformaticaAtivo').checked = !!params.moduloInformaticaAtivo;
             document.getElementById('ativo').checked = params.ativo !== false;
             
             atualizarPreVisualizacao();
@@ -571,6 +578,7 @@
                 farmaciaAntimicrobianosAtivo: document.getElementById('farmaciaAntimicrobianosAtivo').checked,
                 farmaciaPmcAtivo: document.getElementById('farmaciaPmcAtivo').checked,
                 farmaciaPmcModo: document.getElementById('farmaciaPmcModo').value || 'ALERTA',
+                moduloInformaticaAtivo: document.getElementById('moduloInformaticaAtivo').checked,
                 ativo: document.getElementById('ativo').checked
             };
         }

@@ -8,6 +8,7 @@ import com.sistema.cadastro.repository.FechamentoCaixaRepository;
 import com.sistema.cadastro.repository.PdvConvitePorEmpresaRepository;
 import com.sistema.cadastro.repository.PdvTerminalRepository;
 import com.sistema.cadastro.repository.ProdutoRepository;
+import com.sistema.cadastro.repository.OrdemServicoRepository;
 import com.sistema.cadastro.repository.UsuarioRepository;
 import com.sistema.cadastro.repository.VendaRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class EmpresaTenantExclusaoService {
     private final ProdutoRepository produtoRepository;
     private final ClienteRepository clienteRepository;
     private final PdvConvitePorEmpresaRepository pdvConvitePorEmpresaRepository;
+    private final OrdemServicoRepository ordemServicoRepository;
 
     @Transactional
     public void excluirTodosDadosDoTenant(Long empresaId) {
@@ -41,6 +43,7 @@ public class EmpresaTenantExclusaoService {
 
         List<Venda> vendas = vendaRepository.findByEmpresaId(empresaId);
         vendaRepository.deleteAll(vendas);
+        ordemServicoRepository.deleteAll(ordemServicoRepository.findByEmpresaIdOrderByDataAberturaDesc(empresaId));
 
         fechamentoCaixaRepository.deleteAll(fechamentoCaixaRepository.findByEmpresaId(empresaId));
 

@@ -70,6 +70,7 @@ public class ParametroEmpresaService {
         parametro.setFarmaciaAntimicrobianosAtivo(dto.getFarmaciaAntimicrobianosAtivo() != null ? dto.getFarmaciaAntimicrobianosAtivo() : false);
         parametro.setFarmaciaPmcAtivo(dto.getFarmaciaPmcAtivo() != null ? dto.getFarmaciaPmcAtivo() : false);
         parametro.setFarmaciaPmcModo(normalizePmcMode(dto.getFarmaciaPmcModo()));
+        parametro.setModuloInformaticaAtivo(dto.getModuloInformaticaAtivo() != null ? dto.getModuloInformaticaAtivo() : false);
         parametro.setAtivo(dto.getAtivo() == null ? true : dto.getAtivo());
 
         parametro = repository.save(parametro);
@@ -116,6 +117,7 @@ public class ParametroEmpresaService {
         dto.setFarmaciaAntimicrobianosAtivo(false);
         dto.setFarmaciaPmcAtivo(false);
         dto.setFarmaciaPmcModo("ALERTA");
+        dto.setModuloInformaticaAtivo(false);
         dto.setAtivo(true);
         return dto;
     }
@@ -199,6 +201,7 @@ public class ParametroEmpresaService {
         dto.setFarmaciaAntimicrobianosAtivo(entity.getFarmaciaAntimicrobianosAtivo());
         dto.setFarmaciaPmcAtivo(entity.getFarmaciaPmcAtivo());
         dto.setFarmaciaPmcModo(entity.getFarmaciaPmcModo());
+        dto.setModuloInformaticaAtivo(entity.getModuloInformaticaAtivo());
         dto.setAtivo(entity.getAtivo());
         return dto;
     }

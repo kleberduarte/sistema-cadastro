@@ -32,5 +32,6 @@ public class ParametroEmpresaDTO {
     private Boolean farmaciaAntimicrobianosAtivo;
     private Boolean farmaciaPmcAtivo;
     private String farmaciaPmcModo;
+    private Boolean moduloInformaticaAtivo;
     private Boolean ativo;
 }

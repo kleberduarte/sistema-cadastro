@@ -86,6 +86,29 @@ function applyNavPermissions() {
       item.style.display = 'none';
     });
   }
+  applyModuloInformaticaVisibility();
+}
+
+function isModuloInformaticaAtivo() {
+  try {
+    if (typeof window !== 'undefined' && window.__tenantFeatures) {
+      return !!window.__tenantFeatures.moduloInformaticaAtivo;
+    }
+    var raw = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
+    if (!raw) return false;
+    var p = JSON.parse(raw);
+    return !!(p && p.moduloInformaticaAtivo);
+  } catch (_) {
+    return false;
+  }
+}
+
+function applyModuloInformaticaVisibility() {
+  var ativo = isModuloInformaticaAtivo();
+  var links = document.querySelectorAll('.menu-item-informatica');
+  links.forEach(function (item) {
+    item.style.display = ativo ? '' : 'none';
+  });
 }
 
 document.addEventListener('keydown', function (e) {
@@ -101,11 +124,16 @@ document.addEventListener('DOMContentLoaded', function () {
   var done = function () {
     applyNavPermissions();
     setActiveNavLink();
+    setTimeout(applyModuloInformaticaVisibility, 400);
   };
   if (p && typeof p.then === 'function') {
     p.then(done).catch(done);
   } else {
     done();
   }
+});
+
+window.addEventListener('tenantFeaturesUpdated', function () {
+  applyModuloInformaticaVisibility();
 });
 

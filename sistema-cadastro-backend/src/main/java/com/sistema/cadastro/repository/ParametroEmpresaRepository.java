@@ -23,6 +23,7 @@ public interface ParametroEmpresaRepository extends JpaRepository<ParametroEmpre
               COALESCE((SELECT MAX(empresa_id) FROM produtos), 0),
               COALESCE((SELECT MAX(empresa_id) FROM clientes), 0),
               COALESCE((SELECT MAX(empresa_id) FROM vendas), 0),
+              COALESCE((SELECT MAX(empresa_id) FROM ordens_servico), 0),
               COALESCE((SELECT MAX(empresa_id) FROM pdv_terminais), 0),
               COALESCE((SELECT MAX(empresa_id) FROM fechamentos_caixa), 0),
               COALESCE((SELECT MAX(empresa_id_pdv) FROM usuarios), 0)

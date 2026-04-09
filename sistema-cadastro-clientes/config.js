@@ -504,8 +504,12 @@ function applyClientStyles(params) {
         farmaciaControladosAtivo: !!params.farmaciaControladosAtivo,
         farmaciaAntimicrobianosAtivo: !!params.farmaciaAntimicrobianosAtivo,
         farmaciaPmcAtivo: !!params.farmaciaPmcAtivo,
-        farmaciaPmcModo: String(params.farmaciaPmcModo || 'ALERTA').toUpperCase()
+        farmaciaPmcModo: String(params.farmaciaPmcModo || 'ALERTA').toUpperCase(),
+        moduloInformaticaAtivo: !!params.moduloInformaticaAtivo
     };
+    try {
+        window.dispatchEvent(new CustomEvent('tenantFeaturesUpdated', { detail: window.__tenantFeatures }));
+    } catch (_) {}
 
     // Aplicar nome da empresa ao título da página
     if (params.nomeEmpresa) {

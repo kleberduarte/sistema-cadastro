@@ -85,6 +85,9 @@ public class ParametroEmpresa {
     @Column(name = "farmacia_pmc_modo", length = 20)
     private String farmaciaPmcModo = "ALERTA";
 
+    @Column(name = "modulo_informatica_ativo")
+    private Boolean moduloInformaticaAtivo = false;
+
     @Column(name = "ativo")
     private Boolean ativo = true;
 }

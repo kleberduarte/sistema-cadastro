@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordem de Serviço - Sistema de Cadastro</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="navOverlay" class="nav-overlay" onclick="closeSidebar()"></div>
+    <aside id="navSidebar" class="nav-sidebar" aria-label="Menu lateral">
+        <div class="nav-sidebar__header">
+            <div class="nav-sidebar__brand">
+                <div class="nav-sidebar__title">Menu</div>
+                <div class="nav-sidebar__user">Usuário: <span id="navUserName">—</span></div>
+            </div>
+            <button class="nav-sidebar__close" type="button" aria-label="Fechar menu" onclick="closeSidebar()">×</button>
+        </div>
+        <nav class="nav-links">
+            <a href="index.html">🏠 Clientes</a>
+            <a href="pdv/">💰 PDV</a>
+            <a href="produtos.html">📦 Produtos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+            <a href="ordem-servico.html" class="menu-item-informatica">🛠️ Ordem de Serviço</a>
+            <a href="usuarios.html" class="menu-item-admin">👥 Usuários</a>
+            <a href="parametros.html" class="menu-item-admin">⚙️ Parâmetros</a>
+            <a href="pdvs-monitor.html" class="menu-item-admin">🖥️ PDVs (empresa)</a>
+            <a href="suporte.html">💬 Suporte</a>
+        </nav>
+        <div class="nav-sidebar__footer">
+            <button class="btn btn-secondary" type="button" onclick="logout()">🚪 Sair</button>
+        </div>
+    </aside>
+
+    <div class="app-content">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1>🛠️ Ordem de Serviço</h1>
+                        <p id="welcomeMessage" class="header-welcome" hidden data-welcome-default=""></p>
+                    </div>
+                    <div class="nav-right">
+                        <button class="nav-burger" type="button" aria-label="Abrir menu" onclick="toggleSidebar()">☰</button>
+                        <span id="userName" class="nav-user">Olá, Usuário</span>
+                    </div>
+                </div>
+            </header>
+
+            <main>
+                <section class="form-section">
+                    <h2>Cadastro de OS</h2>
+                    <input type="hidden" id="osId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nomeCliente">Cliente</label>
+                            <input type="text" id="nomeCliente" maxlength="180" placeholder="Nome do cliente">
+                        </div>
+                        <div class="form-group">
+                            <label for="contatoCliente">Contato</label>
+                            <input type="text" id="contatoCliente" maxlength="120" placeholder="Telefone, e-mail, WhatsApp">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="equipamento">Equipamento *</label>
+                            <input type="text" id="equipamento" maxlength="140" placeholder="Notebook, Desktop, Impressora..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="marca">Marca</label>
+                            <input type="text" id="marca" maxlength="80">
+                        </div>
+                        <div class="form-group">
+                            <label for="modelo">Modelo</label>
+                            <input type="text" id="modelo" maxlength="120">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="numeroSerie">Nº de Série</label>
+                            <input type="text" id="numeroSerie" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="tecnicoResponsavel">Técnico</label>
+                            <input type="text" id="tecnicoResponsavel" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="dataPrevisaoEntrega">Previsão de Entrega</label>
+                            <input type="datetime-local" id="dataPrevisaoEntrega">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="defeitoRelatado">Defeito Relatado</label>
+                        <textarea id="defeitoRelatado" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="diagnostico">Diagnóstico</label>
+                        <textarea id="diagnostico" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="servicoExecutado">Serviço Executado</label>
+                        <textarea id="servicoExecutado" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="observacao">Observação</label>
+                        <textarea id="observacao" rows="2"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="valorServico">Valor Serviço</label>
+                            <input type="number" id="valorServico" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="desconto">Desconto</label>
+                            <input type="number" id="desconto" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="statusOs">Status</label>
+                            <select id="statusOs">
+                                <option value="ABERTA">ABERTA</option>
+                                <option value="EM_ANALISE">EM_ANALISE</option>
+                                <option value="AGUARDANDO_APROVACAO">AGUARDANDO_APROVACAO</option>
+                                <option value="CONCLUIDA">CONCLUIDA</option>
+                                <option value="ENTREGUE">ENTREGUE</option>
+                                <option value="CANCELADA">CANCELADA</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <button class="btn btn-primary" type="button" onclick="salvarOrdemServico()">💾 Salvar OS</button>
+                        <button class="btn btn-secondary" type="button" onclick="limparFormularioOs()">↩️ Nova OS</button>
+                    </div>
+                </section>
+
+                <section class="list-section">
+                    <h2>Lista de Ordens de Serviço</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="filtroStatus">Status</label>
+                            <select id="filtroStatus">
+                                <option value="">Todos</option>
+                                <option value="ABERTA">ABERTA</option>
+                                <option value="EM_ANALISE">EM_ANALISE</option>
+                                <option value="AGUARDANDO_APROVACAO">AGUARDANDO_APROVACAO</option>
+                                <option value="CONCLUIDA">CONCLUIDA</option>
+                                <option value="ENTREGUE">ENTREGUE</option>
+                                <option value="CANCELADA">CANCELADA</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filtroInicio">Início</label>
+                            <input type="date" id="filtroInicio">
+                        </div>
+                        <div class="form-group">
+                            <label for="filtroFim">Fim</label>
+                            <input type="date" id="filtroFim">
+                        </div>
+                        <button class="btn btn-secondary" type="button" onclick="carregarOrdensServico()">🔎 Filtrar</button>
+                    </div>
+                    <div style="overflow:auto;">
+                        <table id="tabelaOs">
+                            <thead>
+                                <tr>
+                                    <th>Nº OS</th>
+                                    <th>Cliente</th>
+                                    <th>Equipamento</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Abertura</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaOsBody"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="api-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="theme-defaults.js"></script>
+    <script src="config.js"></script>
+    <script src="nav.js"></script>
+    <script src="script.js"></script>
+    <script>
+        function apiRoot() {
+            return (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function')
+                ? window.getApiBaseUrl()
+                : 'http://localhost:8080/api';
+        }
+
+        function getTokenOrThrow() {
+            var token = getToken();
+            if (!token) throw new Error('Token não encontrado.');
+            return token;
+        }
+
+        function getEmpresaQueryParam() {
+            try {
+                var u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+                var role = String(u && u.role ? u.role : '').toUpperCase();
+                if (role === 'ADM') {
+                    var eid = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId');
+                    var n = parseInt(String(eid || '').trim(), 10);
+                    if (!isNaN(n) && n >= 1) return '?empresaId=' + encodeURIComponent(String(n));
+                }
+            } catch (_) {}
+            return '';
+        }
+
+        function moeda(v) {
+            var n = parseFloat(v || 0);
+            return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function dataHoraBr(v) {
+            if (!v) return '-';
+            try {
+                return new Date(v).toLocaleString('pt-BR');
+            } catch (_) {
+                return v;
+            }
+        }
+
+        function toInputDateTime(v) {
+            if (!v) return '';
+            var d = new Date(v);
+            var pad = function (n) { return String(n).padStart(2, '0'); };
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        }
+
+        function osPayloadFromForm() {
+            var valorServico = parseFloat(document.getElementById('valorServico').value || '0');
+            var desconto = parseFloat(document.getElementById('desconto').value || '0');
+            return {
+                nomeCliente: document.getElementById('nomeCliente').value || null,
+                contatoCliente: document.getElementById('contatoCliente').value || null,
+                equipamento: document.getElementById('equipamento').value || null,
+                marca: document.getElementById('marca').value || null,
+                modelo: document.getElementById('modelo').value || null,
+                numeroSerie: document.getElementById('numeroSerie').value || null,
+                defeitoRelatado: document.getElementById('defeitoRelatado').value || null,
+                diagnostico: document.getElementById('diagnostico').value || null,
+                servicoExecutado: document.getElementById('servicoExecutado').value || null,
+                tecnicoResponsavel: document.getElementById('tecnicoResponsavel').value || null,
+                observacao: document.getElementById('observacao').value || null,
+                valorServico: isNaN(valorServico) ? 0 : valorServico,
+                desconto: isNaN(desconto) ? 0 : desconto,
+                valorTotal: Math.max(0, (isNaN(valorServico) ? 0 : valorServico) - (isNaN(desconto) ? 0 : desconto)),
+                status: document.getElementById('statusOs').value || 'ABERTA',
+                dataPrevisaoEntrega: document.getElementById('dataPrevisaoEntrega').value ? new Date(document.getElementById('dataPrevisaoEntrega').value).toISOString() : null
+            };
+        }
+
+        async function salvarOrdemServico() {
+            try {
+                var id = document.getElementById('osId').value;
+                var payload = osPayloadFromForm();
+                if (!payload.equipamento) {
+                    showAlert('Informe o equipamento.', 'info');
+                    return;
+                }
+                var method = id ? 'PUT' : 'POST';
+                var url = apiRoot() + '/ordens-servico' + (id ? ('/' + encodeURIComponent(id)) : '') + getEmpresaQueryParam();
+                var res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + getTokenOrThrow()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    var txt = await res.text();
+                    showAlert(txt || 'Erro ao salvar OS.', 'error');
+                    return;
+                }
+                showAlert('OS salva com sucesso.', 'success');
+                limparFormularioOs();
+                await carregarOrdensServico();
+            } catch (e) {
+                console.error(e);
+                showAlert('Erro de conexão ao salvar OS.', 'error');
+            }
+        }
+
+        function preencherFormularioOs(os) {
+            document.getElementById('osId').value = os.id || '';
+            document.getElementById('nomeCliente').value = os.nomeCliente || '';
+            document.getElementById('contatoCliente').value = os.contatoCliente || '';
+            document.getElementById('equipamento').value = os.equipamento || '';
+            document.getElementById('marca').value = os.marca || '';
+            document.getElementById('modelo').value = os.modelo || '';
+            document.getElementById('numeroSerie').value = os.numeroSerie || '';
+            document.getElementById('defeitoRelatado').value = os.defeitoRelatado || '';
+            document.getElementById('diagnostico').value = os.diagnostico || '';
+            document.getElementById('servicoExecutado').value = os.servicoExecutado || '';
+            document.getElementById('tecnicoResponsavel').value = os.tecnicoResponsavel || '';
+            document.getElementById('observacao').value = os.observacao || '';
+            document.getElementById('valorServico').value = os.valorServico || 0;
+            document.getElementById('desconto').value = os.desconto || 0;
+            document.getElementById('statusOs').value = os.status || 'ABERTA';
+            document.getElementById('dataPrevisaoEntrega').value = toInputDateTime(os.dataPrevisaoEntrega);
+        }
+
+        function limparFormularioOs() {
+            document.getElementById('osId').value = '';
+            ['nomeCliente','contatoCliente','equipamento','marca','modelo','numeroSerie','defeitoRelatado','diagnostico','servicoExecutado','tecnicoResponsavel','observacao'].forEach(function (id) {
+                document.getElementById(id).value = '';
+            });
+            document.getElementById('valorServico').value = '';
+            document.getElementById('desconto').value = '';
+            document.getElementById('statusOs').value = 'ABERTA';
+            document.getElementById('dataPrevisaoEntrega').value = '';
+        }
+
+        async function carregarOrdensServico() {
+            try {
+                var status = document.getElementById('filtroStatus').value || '';
+                var inicio = document.getElementById('filtroInicio').value || '';
+                var fim = document.getElementById('filtroFim').value || '';
+                var qs = [];
+                if (status) qs.push('status=' + encodeURIComponent(status));
+                if (inicio) qs.push('dataInicio=' + encodeURIComponent(inicio));
+                if (fim) qs.push('dataFim=' + encodeURIComponent(fim));
+
+                var empresaSuffix = getEmpresaQueryParam();
+                if (empresaSuffix) qs.push(empresaSuffix.substring(1));
+                var url = apiRoot() + '/ordens-servico' + (qs.length ? ('?' + qs.join('&')) : '');
+                var res = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + getTokenOrThrow() }
+                });
+                if (!res.ok) {
+                    var txt = await res.text();
+                    showAlert(txt || 'Erro ao carregar OS.', 'error');
+                    return;
+                }
+                renderTabelaOs(await res.json());
+            } catch (e) {
+                console.error(e);
+                showAlert('Erro de conexão ao carregar OS.', 'error');
+            }
+        }
+
+        function renderTabelaOs(lista) {
+            var body = document.getElementById('tabelaOsBody');
+            body.innerHTML = '';
+            (lista || []).forEach(function (os) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = ''
+                    + '<td>#' + (os.numeroOs || '-') + '</td>'
+                    + '<td>' + (os.nomeCliente || '-') + '</td>'
+                    + '<td>' + (os.equipamento || '-') + '</td>'
+                    + '<td>' + (os.status || '-') + '</td>'
+                    + '<td>' + moeda(os.valorTotal || 0) + '</td>'
+                    + '<td>' + dataHoraBr(os.dataAbertura) + '</td>'
+                    + '<td>'
+                    + '<button class="btn btn-secondary" type="button" onclick="editarOs(' + os.id + ')">Editar</button> '
+                    + '<button class="btn btn-secondary" type="button" onclick="imprimirOs(' + os.id + ')">Imprimir</button> '
+                    + '<button class="btn btn-primary" type="button" onclick="fecharOs(' + os.id + ')">Fechar</button>'
+                    + '</td>';
+                body.appendChild(tr);
+            });
+        }
+
+        async function editarOs(id) {
+            try {
+                var url = apiRoot() + '/ordens-servico/' + encodeURIComponent(id) + getEmpresaQueryParam();
+                var res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getTokenOrThrow() } });
+                if (!res.ok) {
+                    showAlert('OS não encontrada.', 'error');
+                    return;
+                }
+                preencherFormularioOs(await res.json());
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (e) {
+                showAlert('Erro ao carregar OS.', 'error');
+            }
+        }
+
+        async function fecharOs(id) {
+            try {
+                var op = await showSystemConfirm('Fechar OS com geração de venda?', {
+                    title: 'Fechamento da OS',
+                    confirmText: 'Com venda',
+                    cancelText: 'Sem venda',
+                    type: 'warning'
+                });
+                var gerarVenda = !!op;
+                var payload = { gerarVenda: gerarVenda };
+                var url = apiRoot() + '/ordens-servico/' + encodeURIComponent(id) + '/fechar' + getEmpresaQueryParam();
+                var res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + getTokenOrThrow()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    var txt = await res.text();
+                    showAlert(txt || 'Erro ao fechar OS.', 'error');
+                    return;
+                }
+                var saved = await res.json();
+                var msg = gerarVenda
+                    ? ('OS fechada com venda vinculada #' + (saved.vendaId || '-') + '.')
+                    : 'OS fechada sem gerar venda.';
+                showAlert(msg, 'success');
+                await carregarOrdensServico();
+            } catch (e) {
+                console.error(e);
+                showAlert('Erro no fechamento da OS.', 'error');
+            }
+        }
+
+        async function imprimirOs(id) {
+            try {
+                var url = apiRoot() + '/ordens-servico/' + encodeURIComponent(id) + '/impressao' + getEmpresaQueryParam();
+                var res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getTokenOrThrow() } });
+                if (!res.ok) {
+                    showAlert('Não foi possível carregar dados para impressão.', 'error');
+                    return;
+                }
+                var os = await res.json();
+                var w = window.open('', '_blank');
+                if (!w) {
+                    showAlert('Permita pop-up para impressão.', 'warning');
+                    return;
+                }
+                var html = '<html><head><title>OS #' + (os.numeroOs || os.id) + '</title></head><body style="font-family:Arial,sans-serif;padding:20px;">'
+                    + '<h2>Ordem de Serviço #' + (os.numeroOs || os.id) + '</h2>'
+                    + '<p><strong>Status:</strong> ' + (os.status || '-') + '</p>'
+                    + '<p><strong>Cliente:</strong> ' + (os.nomeCliente || '-') + '</p>'
+                    + '<p><strong>Contato:</strong> ' + (os.contatoCliente || '-') + '</p>'
+                    + '<p><strong>Equipamento:</strong> ' + (os.equipamento || '-') + '</p>'
+                    + '<p><strong>Marca/Modelo:</strong> ' + (os.marca || '-') + ' / ' + (os.modelo || '-') + '</p>'
+                    + '<p><strong>Nº Série:</strong> ' + (os.numeroSerie || '-') + '</p>'
+                    + '<p><strong>Defeito:</strong><br>' + (os.defeitoRelatado || '-') + '</p>'
+                    + '<p><strong>Diagnóstico:</strong><br>' + (os.diagnostico || '-') + '</p>'
+                    + '<p><strong>Serviço executado:</strong><br>' + (os.servicoExecutado || '-') + '</p>'
+                    + '<p><strong>Técnico:</strong> ' + (os.tecnicoResponsavel || '-') + '</p>'
+                    + '<p><strong>Total:</strong> ' + moeda(os.valorTotal || 0) + '</p>'
+                    + '<p><strong>Abertura:</strong> ' + dataHoraBr(os.dataAbertura) + '</p>'
+                    + '</body></html>';
+                w.document.write(html);
+                w.document.close();
+                w.focus();
+                w.print();
+            } catch (e) {
+                console.error(e);
+                showAlert('Erro na impressão da OS.', 'error');
+            }
+        }
+
+        async function validarModuloInformaticaAtivo() {
+            try {
+                var eid = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId');
+                if (!eid) return true;
+                var res = await fetch(apiRoot() + '/parametros-empresa/empresa/' + encodeURIComponent(eid), {
+                    headers: { 'Authorization': 'Bearer ' + getTokenOrThrow() }
+                });
+                if (!res.ok) return true;
+                var p = await res.json();
+                if (!p || !p.moduloInformaticaAtivo) {
+                    showAlert('Ative o Módulo Informática em Parâmetros para usar Ordem de Serviço.', 'warning');
+                    window.location.href = 'parametros.html';
+                    return false;
+                }
+                return true;
+            } catch (_) {
+                return true;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            if (!checkAuth()) return;
+            displayUserName();
+            if (!(await validarModuloInformaticaAtivo())) return;
+            carregarOrdensServico();
+        });
+    </script>
+</body>
+</html>
