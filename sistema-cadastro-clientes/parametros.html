@@ -109,6 +109,98 @@
             .param-modulos-carousel__top { flex-direction: column; align-items: stretch; }
             .param-modulos-carousel__controls { justify-content: space-between; width: 100%; }
         }
+
+        /* Status da empresa: cadastro ativo no sistema */
+        .param-ativo-card {
+            margin: 1.25rem 0 1rem;
+            padding: 16px 18px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .param-ativo-card__copy {
+            flex: 1;
+            min-width: 200px;
+        }
+        .param-ativo-card__title {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .param-ativo-card__hint {
+            margin: 0;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            color: #64748b;
+        }
+        .param-ativo-card__control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .param-ativo-badge {
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #ecfdf5;
+            color: #047857;
+        }
+        .param-ativo-badge.is-off {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .param-ativo-toggle {
+            position: relative;
+            width: 52px;
+            height: 30px;
+            flex-shrink: 0;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .param-ativo-toggle input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .param-ativo-toggle__track {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: #cbd5e1;
+            transition: background 0.25s ease, box-shadow 0.25s ease;
+        }
+        .param-ativo-toggle__thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .param-ativo-toggle input:focus-visible + .param-ativo-toggle__track {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.35);
+        }
+        .param-ativo-toggle input:checked + .param-ativo-toggle__track {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .param-ativo-toggle input:checked + .param-ativo-toggle__track .param-ativo-toggle__thumb {
+            transform: translateX(22px);
+        }
     </style>
 </head>
 <body>
@@ -305,10 +397,18 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="ativo" checked> Ativo
-                    </label>
+                <div class="param-ativo-card" role="group" aria-labelledby="paramAtivoTitulo">
+                    <div class="param-ativo-card__copy">
+                        <p id="paramAtivoTitulo" class="param-ativo-card__title">Cadastro desta empresa no sistema</p>
+                        <p id="paramAtivoHint" class="param-ativo-card__hint">Com <strong>ligado</strong>, a empresa entra nas consultas e recursos que consideram apenas cadastros ativos. Com <strong>desligado</strong>, fica fora desse filtro (útil para pausar sem apagar dados).</p>
+                    </div>
+                    <div class="param-ativo-card__control">
+                        <span id="ativoStatusBadge" class="param-ativo-badge">Ativa</span>
+                        <label class="param-ativo-toggle" title="Ativar ou pausar cadastro">
+                            <input type="checkbox" id="ativo" checked aria-describedby="paramAtivoHint">
+                            <span class="param-ativo-toggle__track"><span class="param-ativo-toggle__thumb"></span></span>
+                        </label>
+                    </div>
                 </div>
 
                 <button class="btn btn-primary" onclick="salvarParametros()">💾 Salvar Parâmetros</button>
@@ -404,6 +504,23 @@
             }
         }
 
+        function atualizarBadgeEmpresaAtiva() {
+            var cb = document.getElementById('ativo');
+            var badge = document.getElementById('ativoStatusBadge');
+            if (!cb || !badge) return;
+            var on = !!cb.checked;
+            badge.textContent = on ? 'Ativa' : 'Pausada';
+            badge.classList.toggle('is-off', !on);
+        }
+
+        function setupParamAtivoToggle() {
+            var cb = document.getElementById('ativo');
+            if (cb) {
+                cb.addEventListener('change', atualizarBadgeEmpresaAtiva);
+                atualizarBadgeEmpresaAtiva();
+            }
+        }
+
         function setupParamModulosCarousel() {
             var track = document.getElementById('paramModulosTrack');
             var prev = document.getElementById('paramModulosPrev');
@@ -434,6 +551,7 @@
             if (!checkPermission('adm')) return;
             displayUserName();
             setupParamModulosCarousel();
+            setupParamAtivoToggle();
             try {
                 if (typeof syncCurrentUserFromApi === 'function') {
                     await syncCurrentUserFromApi();
@@ -693,7 +811,8 @@
             document.getElementById('farmaciaPmcModo').value = params.farmaciaPmcModo || 'ALERTA';
             document.getElementById('moduloInformaticaAtivo').checked = !!params.moduloInformaticaAtivo;
             document.getElementById('ativo').checked = params.ativo !== false;
-            
+            atualizarBadgeEmpresaAtiva();
+
             atualizarPreVisualizacao();
         }
 
@@ -1091,6 +1210,7 @@
                     document.getElementById('suporteEmail').value = '';
                     document.getElementById('suporteWhatsapp').value = '';
                     document.getElementById('ativo').checked = true;
+                    atualizarBadgeEmpresaAtiva();
                     atualizarPreVisualizacao();
                     if (localStorage.getItem('selectedEmpresaId') === String(eid)) {
                         localStorage.removeItem('selectedEmpresaId');
