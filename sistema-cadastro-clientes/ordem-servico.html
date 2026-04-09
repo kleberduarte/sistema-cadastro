@@ -57,8 +57,9 @@
                             <input type="text" id="nomeCliente" maxlength="180" placeholder="Nome do cliente">
                         </div>
                         <div class="form-group">
-                            <label for="contatoCliente">Contato</label>
-                            <input type="text" id="contatoCliente" maxlength="120" placeholder="Telefone, e-mail, WhatsApp">
+                            <label for="contatoCliente">Contato (WhatsApp para envio automático)</label>
+                            <input type="text" id="contatoCliente" maxlength="120" placeholder="Ex.: 11999998888 ou +55 11 99999-8888">
+                            <small style="display:block;margin-top:6px;color:#64748b;font-size:0.86rem;line-height:1.4;">Use um número de celular com DDD. Ao salvar uma <strong>nova</strong> OS, o sistema pode abrir o WhatsApp com o mesmo texto da impressão.</small>
                         </div>
                     </div>
                     <div class="form-row">
@@ -125,6 +126,12 @@
                                 <option value="CANCELADA">CANCELADA</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-weight:normal;">
+                            <input type="checkbox" id="enviarWhatsappAoSalvar" checked style="width:18px;height:18px;margin-top:3px;accent-color:#667eea;flex-shrink:0;">
+                            <span>Após salvar uma <strong>nova</strong> OS, abrir WhatsApp no número do contato com o resumo da ordem (igual à impressão).</span>
+                        </label>
                     </div>
                     <div class="form-row">
                         <button class="btn btn-primary" type="button" onclick="salvarOrdemServico()">💾 Salvar OS</button>
@@ -224,6 +231,71 @@
             }
         }
 
+        function nomeEmpresaAtual() {
+            try {
+                var raw = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
+                if (!raw) return '';
+                var p = JSON.parse(raw);
+                return (p && p.nomeEmpresa) ? String(p.nomeEmpresa).trim() : '';
+            } catch (_) {
+                return '';
+            }
+        }
+
+        /** Dígitos para wa.me: Brasil 55 + DDD + número (10–11 dígitos locais). */
+        function normalizarNumeroWhatsAppBr(contatoRaw) {
+            var d = String(contatoRaw || '').replace(/\D/g, '');
+            if (!d) return null;
+            if (d.indexOf('55') === 0) {
+                if (d.length >= 12 && d.length <= 13) return d;
+                if (d.length > 13) return d.substring(0, 13);
+                return null;
+            }
+            if (d.length >= 10 && d.length <= 11) return '55' + d;
+            return null;
+        }
+
+        /** Mesmo conteúdo lógico da impressão, em texto (WhatsApp). */
+        function montarTextoOsParaEnvio(os) {
+            var nomeEmp = nomeEmpresaAtual();
+            var linhas = [];
+            linhas.push('*Ordem de Serviço #' + (os.numeroOs || os.id) + '*');
+            if (nomeEmp) linhas.push('_' + nomeEmp + '_');
+            linhas.push('');
+            linhas.push('*Status:* ' + (os.status || '-'));
+            linhas.push('*Cliente:* ' + (os.nomeCliente || '-'));
+            linhas.push('*Contato:* ' + (os.contatoCliente || '-'));
+            linhas.push('*Equipamento:* ' + (os.equipamento || '-'));
+            linhas.push('*Marca / Modelo:* ' + (os.marca || '-') + ' / ' + (os.modelo || '-'));
+            linhas.push('*Nº série:* ' + (os.numeroSerie || '-'));
+            linhas.push('*Defeito:* ' + (os.defeitoRelatado || '-'));
+            linhas.push('*Diagnóstico:* ' + (os.diagnostico || '-'));
+            linhas.push('*Serviço executado:* ' + (os.servicoExecutado || '-'));
+            linhas.push('*Técnico:* ' + (os.tecnicoResponsavel || '-'));
+            linhas.push('*Total:* ' + moeda(os.valorTotal || 0));
+            linhas.push('*Abertura:* ' + dataHoraBr(os.dataAbertura));
+            if (os.observacao) linhas.push('*Obs.:* ' + os.observacao);
+            var t = linhas.join('\n');
+            if (t.length > 4000) t = t.substring(0, 3997) + '...';
+            return t;
+        }
+
+        function enviarOsParaWhatsAppCliente(os) {
+            var tel = normalizarNumeroWhatsAppBr(os && os.contatoCliente);
+            if (!tel) {
+                showAlert('Não foi possível detectar um número de WhatsApp no campo Contato. Use DDD + número (ex.: 11999998888). A OS foi salva normalmente.', 'info');
+                return;
+            }
+            var texto = montarTextoOsParaEnvio(os);
+            var url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(texto);
+            try {
+                var w = window.open(url, '_blank', 'noopener,noreferrer');
+                if (!w) showAlert('Permita pop-ups para abrir o WhatsApp, ou copie o resumo manualmente.', 'warning');
+            } catch (e) {
+                window.location.href = url;
+            }
+        }
+
         function toInputDateTime(v) {
             if (!v) return '';
             var d = new Date(v);
@@ -277,7 +349,19 @@
                     showAlert(txt || 'Erro ao salvar OS.', 'error');
                     return;
                 }
+                var saved = await res.json();
+                var eraNovaOs = !id;
                 showAlert('OS salva com sucesso.', 'success');
+                try {
+                    var chk = document.getElementById('enviarWhatsappAoSalvar');
+                    if (eraNovaOs && saved && chk && chk.checked) {
+                        setTimeout(function () {
+                            enviarOsParaWhatsAppCliente(saved);
+                        }, 400);
+                    }
+                } catch (e2) {
+                    console.warn(e2);
+                }
                 limparFormularioOs();
                 await carregarOrdensServico();
             } catch (e) {
@@ -425,6 +509,7 @@
                     return;
                 }
                 var os = await res.json();
+                var nomeEmp = nomeEmpresaAtual();
                 var w = window.open('', '_blank');
                 if (!w) {
                     showAlert('Permita pop-up para impressão.', 'warning');
@@ -432,6 +517,7 @@
                 }
                 var html = '<html><head><title>OS #' + (os.numeroOs || os.id) + '</title></head><body style="font-family:Arial,sans-serif;padding:20px;">'
                     + '<h2>Ordem de Serviço #' + (os.numeroOs || os.id) + '</h2>'
+                    + (nomeEmp ? '<p style="color:#555;margin-top:-8px;">' + nomeEmp.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>' : '')
                     + '<p><strong>Status:</strong> ' + (os.status || '-') + '</p>'
                     + '<p><strong>Cliente:</strong> ' + (os.nomeCliente || '-') + '</p>'
                     + '<p><strong>Contato:</strong> ' + (os.contatoCliente || '-') + '</p>'
@@ -442,6 +528,7 @@
                     + '<p><strong>Diagnóstico:</strong><br>' + (os.diagnostico || '-') + '</p>'
                     + '<p><strong>Serviço executado:</strong><br>' + (os.servicoExecutado || '-') + '</p>'
                     + '<p><strong>Técnico:</strong> ' + (os.tecnicoResponsavel || '-') + '</p>'
+                    + (os.observacao ? '<p><strong>Observação:</strong><br>' + (os.observacao || '-') + '</p>' : '')
                     + '<p><strong>Total:</strong> ' + moeda(os.valorTotal || 0) + '</p>'
                     + '<p><strong>Abertura:</strong> ' + dataHoraBr(os.dataAbertura) + '</p>'
                     + '</body></html>';
