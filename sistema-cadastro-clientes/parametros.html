@@ -5,6 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parâmetros da Empresa - Sistema de Cadastro</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .param-modulos-carousel {
+            margin: 1.5rem 0 1rem;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: linear-gradient(180deg, #f8fafc 0%, #fff 48%);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+        .param-modulos-carousel__top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.85);
+        }
+        .param-modulos-carousel__title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .param-modulos-carousel__controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .param-modulos-carousel__arrow {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #334155;
+            font-size: 1.35rem;
+            line-height: 1;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+        .param-modulos-carousel__arrow:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #0f172a;
+        }
+        .param-modulos-carousel__viewport {
+            overflow: hidden;
+            position: relative;
+        }
+        .param-modulos-carousel__track {
+            display: flex;
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            will-change: transform;
+        }
+        .param-modulos-carousel__slide {
+            flex: 0 0 100%;
+            min-width: 100%;
+            box-sizing: border-box;
+            padding: 18px 16px 20px;
+        }
+        .param-modulos-carousel__slide h4 {
+            margin: 0 0 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #475569;
+            letter-spacing: 0.02em;
+        }
+        .param-modulos-carousel__dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 16px 14px;
+            flex-wrap: wrap;
+        }
+        .param-modulos-carousel__dot {
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #64748b;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        .param-modulos-carousel__dot:hover {
+            border-color: #94a3b8;
+            color: #334155;
+        }
+        .param-modulos-carousel__dot.is-active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea14 0%, #764ba214 100%);
+            color: #4338ca;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+        @media (max-width: 600px) {
+            .param-modulos-carousel__top { flex-direction: column; align-items: stretch; }
+            .param-modulos-carousel__controls { justify-content: space-between; width: 100%; }
+        }
+    </style>
 </head>
 <body>
     <div id="navOverlay" class="nav-overlay" onclick="closeSidebar()"></div>
@@ -136,47 +241,68 @@
                     <input type="tel" id="suporteWhatsapp" placeholder="DDD + número, ex: 11999998888" autocomplete="tel">
                 </div>
 
-                <h3>Módulo Farmácia</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="segmento">Segmento</label>
-                        <select id="segmento">
-                            <option value="">Padrão</option>
-                            <option value="FARMACIA">Farmácia</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="farmaciaPmcModo">Modo PMC</label>
-                        <select id="farmaciaPmcModo">
-                            <option value="ALERTA">ALERTA</option>
-                            <option value="BLOQUEIO">BLOQUEIO</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <label><input type="checkbox" id="moduloFarmaciaAtivo"> Ativar módulo farmácia</label>
-                    <label><input type="checkbox" id="farmaciaLoteValidadeObrigatorio"> Exigir lote/validade no PDV</label>
-                    <label><input type="checkbox" id="farmaciaControladosAtivo"> Regras de controlados</label>
-                    <label><input type="checkbox" id="farmaciaAntimicrobianosAtivo"> Regras de antimicrobianos</label>
-                    <label><input type="checkbox" id="farmaciaPmcAtivo"> Validar PMC</label>
-                </div>
-                <div class="form-group" style="margin-top: 14px; padding: 12px; border: 1px dashed #cbd5e1; border-radius: 8px;">
-                    <label style="font-weight: 600; margin-bottom: 8px; display: block;">Atualização PMC (ABC Farma/CSV)</label>
-                    <div class="form-row" style="align-items: end;">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="pmcFile">Arquivo CSV PMC</label>
-                            <input type="file" id="pmcFile" accept=".csv,text/csv">
+                <div class="param-modulos-carousel" role="region" aria-roledescription="carousel" aria-label="Módulos adicionais">
+                    <div class="param-modulos-carousel__top">
+                        <h3 class="param-modulos-carousel__title">Módulos adicionais</h3>
+                        <div class="param-modulos-carousel__controls">
+                            <button type="button" class="param-modulos-carousel__arrow" id="paramModulosPrev" aria-controls="paramModulosTrack" aria-label="Módulo anterior">‹</button>
+                            <button type="button" class="param-modulos-carousel__arrow" id="paramModulosNext" aria-controls="paramModulosTrack" aria-label="Próximo módulo">›</button>
                         </div>
-                        <button type="button" class="btn btn-secondary" id="btnImportarPmc" onclick="importarPmcCsv()">📥 Importar CSV PMC</button>
-                        <button type="button" class="btn btn-secondary" id="btnSyncPmc" onclick="sincronizarPmcFonte()">🔄 Sincronizar fonte PMC</button>
                     </div>
-                    <small style="display:block;margin-top:8px;color:#64748b;">A importação/sync atualiza a base regulatória e também o snapshot de `PMC` nos produtos da empresa.</small>
-                    <div id="pmcResultado" style="margin-top:10px;font-size:0.92rem;color:#334155;"></div>
-                </div>
-
-                <h3>Módulo Informática</h3>
-                <div class="form-row">
-                    <label><input type="checkbox" id="moduloInformaticaAtivo"> Ativar módulo informática (Ordem de Serviço)</label>
+                    <div class="param-modulos-carousel__viewport">
+                        <div class="param-modulos-carousel__track" id="paramModulosTrack">
+                            <div class="param-modulos-carousel__slide" role="group" aria-roledescription="slide" aria-label="1 de 2: Farmácia">
+                                <h4>Módulo Farmácia</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="segmento">Segmento</label>
+                                        <select id="segmento">
+                                            <option value="">Padrão</option>
+                                            <option value="FARMACIA">Farmácia</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="farmaciaPmcModo">Modo PMC</label>
+                                        <select id="farmaciaPmcModo">
+                                            <option value="ALERTA">ALERTA</option>
+                                            <option value="BLOQUEIO">BLOQUEIO</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <label><input type="checkbox" id="moduloFarmaciaAtivo"> Ativar módulo farmácia</label>
+                                    <label><input type="checkbox" id="farmaciaLoteValidadeObrigatorio"> Exigir lote/validade no PDV</label>
+                                    <label><input type="checkbox" id="farmaciaControladosAtivo"> Regras de controlados</label>
+                                    <label><input type="checkbox" id="farmaciaAntimicrobianosAtivo"> Regras de antimicrobianos</label>
+                                    <label><input type="checkbox" id="farmaciaPmcAtivo"> Validar PMC</label>
+                                </div>
+                                <div class="form-group" style="margin-top: 14px; padding: 12px; border: 1px dashed #cbd5e1; border-radius: 8px;">
+                                    <label style="font-weight: 600; margin-bottom: 8px; display: block;">Atualização PMC (ABC Farma/CSV)</label>
+                                    <div class="form-row" style="align-items: end;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="pmcFile">Arquivo CSV PMC</label>
+                                            <input type="file" id="pmcFile" accept=".csv,text/csv">
+                                        </div>
+                                        <button type="button" class="btn btn-secondary" id="btnImportarPmc" onclick="importarPmcCsv()">📥 Importar CSV PMC</button>
+                                        <button type="button" class="btn btn-secondary" id="btnSyncPmc" onclick="sincronizarPmcFonte()">🔄 Sincronizar fonte PMC</button>
+                                    </div>
+                                    <small style="display:block;margin-top:8px;color:#64748b;">A importação/sync atualiza a base regulatória e também o snapshot de `PMC` nos produtos da empresa.</small>
+                                    <div id="pmcResultado" style="margin-top:10px;font-size:0.92rem;color:#334155;"></div>
+                                </div>
+                            </div>
+                            <div class="param-modulos-carousel__slide" role="group" aria-roledescription="slide" aria-label="2 de 2: Informática">
+                                <h4>Módulo Informática</h4>
+                                <p style="margin:0 0 12px;color:#64748b;font-size:0.9rem;line-height:1.5;">Habilita a tela de Ordem de Serviço no menu, para assistência técnica e manutenção.</p>
+                                <div class="form-row">
+                                    <label><input type="checkbox" id="moduloInformaticaAtivo"> Ativar módulo informática (Ordem de Serviço)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="param-modulos-carousel__dots" role="tablist" aria-label="Escolher módulo">
+                        <button type="button" class="param-modulos-carousel__dot is-active" id="paramModulosDot0" role="tab" aria-selected="true" aria-controls="paramModulosTrack">Farmácia</button>
+                        <button type="button" class="param-modulos-carousel__dot" id="paramModulosDot1" role="tab" aria-selected="false" aria-controls="paramModulosTrack">Informática</button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -278,10 +404,36 @@
             }
         }
 
+        function setupParamModulosCarousel() {
+            var track = document.getElementById('paramModulosTrack');
+            var prev = document.getElementById('paramModulosPrev');
+            var next = document.getElementById('paramModulosNext');
+            var dot0 = document.getElementById('paramModulosDot0');
+            var dot1 = document.getElementById('paramModulosDot1');
+            if (!track || !prev || !next) return;
+            var total = 2;
+            var index = 0;
+            function go(i) {
+                index = ((i % total) + total) % total;
+                track.style.transform = 'translateX(-' + (index * 100) + '%)';
+                [dot0, dot1].forEach(function (d, idx) {
+                    if (!d) return;
+                    d.classList.toggle('is-active', idx === index);
+                    d.setAttribute('aria-selected', idx === index ? 'true' : 'false');
+                });
+            }
+            prev.addEventListener('click', function () { go(index - 1); });
+            next.addEventListener('click', function () { go(index + 1); });
+            if (dot0) dot0.addEventListener('click', function () { go(0); });
+            if (dot1) dot1.addEventListener('click', function () { go(1); });
+            go(0);
+        }
+
         document.addEventListener('DOMContentLoaded', async function() {
             if (!checkAuth()) return;
             if (!checkPermission('adm')) return;
             displayUserName();
+            setupParamModulosCarousel();
             try {
                 if (typeof syncCurrentUserFromApi === 'function') {
                     await syncCurrentUserFromApi();
