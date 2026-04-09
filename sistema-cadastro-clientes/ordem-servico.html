@@ -255,7 +255,7 @@
         /** HTML da página de impressão (mesmo layout do botão Imprimir). */
         function montarHtmlImpressaoOs(os) {
             var nomeEmp = nomeEmpresaAtual();
-            var h = '<html><head><title>OS #' + (os.numeroOs || os.id) + '</title></head><body style="font-family:Arial,sans-serif;padding:20px;">'
+            var h = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>OS #' + (os.numeroOs || os.id) + '</title></head><body style="font-family:Arial,sans-serif;padding:20px;">'
                 + '<h2>Ordem de Serviço #' + (os.numeroOs || os.id) + '</h2>'
                 + (nomeEmp ? '<p style="color:#555;margin-top:-8px;">' + escHtml(nomeEmp) + '</p>' : '')
                 + '<p><strong>Status:</strong> ' + escHtml(os.status || '-') + '</p>'
@@ -276,19 +276,75 @@
         }
 
         function abrirJanelaImpressaoOs(os) {
-            var w = window.open('', '_blank', 'noopener,noreferrer');
+            var html = montarHtmlImpressaoOs(os);
+            var w = null;
+            var blobUrl = null;
+
+            try {
+                var blob = new Blob([html], { type: 'text/html;charset=UTF-8' });
+                blobUrl = URL.createObjectURL(blob);
+                w = window.open(blobUrl, '_blank');
+            } catch (e0) {
+                console.warn(e0);
+            }
+
+            if (!w) {
+                try {
+                    w = window.open('', '_blank');
+                    if (w) {
+                        w.document.open();
+                        w.document.write(html);
+                        w.document.close();
+                    }
+                } catch (e2) {
+                    console.warn(e2);
+                }
+            }
+
             if (!w) {
                 showAlert('Permita pop-up para abrir a impressão.', 'warning');
+                if (blobUrl) {
+                    try { URL.revokeObjectURL(blobUrl); } catch (_) {}
+                }
                 return;
             }
-            w.document.write(montarHtmlImpressaoOs(os));
-            w.document.close();
-            w.focus();
-            try {
-                w.print();
-            } catch (e1) {
-                console.warn(e1);
+
+            var printJa = false;
+            function dispararPrint() {
+                if (printJa) return;
+                printJa = true;
+                try {
+                    if (!w.closed) {
+                        w.focus();
+                        w.print();
+                    }
+                } catch (e1) {
+                    console.warn(e1);
+                }
+                if (blobUrl) {
+                    setTimeout(function () {
+                        try { URL.revokeObjectURL(blobUrl); } catch (_) {}
+                    }, 2000);
+                }
             }
+
+            function agendarPrintAposDom() {
+                try {
+                    if (w.document.readyState === 'complete') {
+                        setTimeout(dispararPrint, 150);
+                    } else {
+                        w.addEventListener('load', function onPrnLoad() {
+                            w.removeEventListener('load', onPrnLoad);
+                            setTimeout(dispararPrint, 150);
+                        });
+                    }
+                } catch (_) {
+                    setTimeout(dispararPrint, 300);
+                }
+            }
+
+            agendarPrintAposDom();
+            setTimeout(dispararPrint, 900);
         }
 
         /** Dígitos para wa.me: Brasil 55 + DDD + número (10–11 dígitos locais). */
