@@ -127,10 +127,11 @@
                             </select>
                         </div>
                     </div>
+                    <p style="font-size:0.88rem;color:#64748b;margin:0 0 10px;line-height:1.45;">Ao clicar em <strong>Salvar OS</strong>, a ordem é gravada e a <strong>janela de impressão</strong> abre automaticamente (mesmo conteúdo do botão Imprimir).</p>
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-weight:normal;">
                             <input type="checkbox" id="enviarWhatsappAoSalvar" checked style="width:18px;height:18px;margin-top:3px;accent-color:#667eea;flex-shrink:0;">
-                            <span>Após salvar uma <strong>nova</strong> OS, abrir WhatsApp no número do contato com o resumo da ordem (igual à impressão).</span>
+                            <span>Em <strong>nova</strong> OS, também abrir WhatsApp depois (com o mesmo resumo), se o contato tiver número válido.</span>
                         </label>
                     </div>
                     <div class="form-row">
@@ -239,6 +240,54 @@
                 return (p && p.nomeEmpresa) ? String(p.nomeEmpresa).trim() : '';
             } catch (_) {
                 return '';
+            }
+        }
+
+        function escHtml(s) {
+            if (s == null || s === '') return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        /** HTML da página de impressão (mesmo layout do botão Imprimir). */
+        function montarHtmlImpressaoOs(os) {
+            var nomeEmp = nomeEmpresaAtual();
+            var h = '<html><head><title>OS #' + (os.numeroOs || os.id) + '</title></head><body style="font-family:Arial,sans-serif;padding:20px;">'
+                + '<h2>Ordem de Serviço #' + (os.numeroOs || os.id) + '</h2>'
+                + (nomeEmp ? '<p style="color:#555;margin-top:-8px;">' + escHtml(nomeEmp) + '</p>' : '')
+                + '<p><strong>Status:</strong> ' + escHtml(os.status || '-') + '</p>'
+                + '<p><strong>Cliente:</strong> ' + escHtml(os.nomeCliente || '-') + '</p>'
+                + '<p><strong>Contato:</strong> ' + escHtml(os.contatoCliente || '-') + '</p>'
+                + '<p><strong>Equipamento:</strong> ' + escHtml(os.equipamento || '-') + '</p>'
+                + '<p><strong>Marca/Modelo:</strong> ' + escHtml(os.marca || '-') + ' / ' + escHtml(os.modelo || '-') + '</p>'
+                + '<p><strong>Nº Série:</strong> ' + escHtml(os.numeroSerie || '-') + '</p>'
+                + '<p><strong>Defeito:</strong><br>' + escHtml(os.defeitoRelatado || '-') + '</p>'
+                + '<p><strong>Diagnóstico:</strong><br>' + escHtml(os.diagnostico || '-') + '</p>'
+                + '<p><strong>Serviço executado:</strong><br>' + escHtml(os.servicoExecutado || '-') + '</p>'
+                + '<p><strong>Técnico:</strong> ' + escHtml(os.tecnicoResponsavel || '-') + '</p>'
+                + (os.observacao ? '<p><strong>Observação:</strong><br>' + escHtml(os.observacao) + '</p>' : '')
+                + '<p><strong>Total:</strong> ' + moeda(os.valorTotal || 0) + '</p>'
+                + '<p><strong>Abertura:</strong> ' + dataHoraBr(os.dataAbertura) + '</p>'
+                + '</body></html>';
+            return h;
+        }
+
+        function abrirJanelaImpressaoOs(os) {
+            var w = window.open('', '_blank', 'noopener,noreferrer');
+            if (!w) {
+                showAlert('Permita pop-up para abrir a impressão.', 'warning');
+                return;
+            }
+            w.document.write(montarHtmlImpressaoOs(os));
+            w.document.close();
+            w.focus();
+            try {
+                w.print();
+            } catch (e1) {
+                console.warn(e1);
             }
         }
 
@@ -353,11 +402,16 @@
                 var eraNovaOs = !id;
                 showAlert('OS salva com sucesso.', 'success');
                 try {
+                    if (saved) {
+                        setTimeout(function () {
+                            abrirJanelaImpressaoOs(saved);
+                        }, 220);
+                    }
                     var chk = document.getElementById('enviarWhatsappAoSalvar');
                     if (eraNovaOs && saved && chk && chk.checked) {
                         setTimeout(function () {
                             enviarOsParaWhatsAppCliente(saved);
-                        }, 400);
+                        }, 1100);
                     }
                 } catch (e2) {
                     console.warn(e2);
@@ -509,33 +563,7 @@
                     return;
                 }
                 var os = await res.json();
-                var nomeEmp = nomeEmpresaAtual();
-                var w = window.open('', '_blank');
-                if (!w) {
-                    showAlert('Permita pop-up para impressão.', 'warning');
-                    return;
-                }
-                var html = '<html><head><title>OS #' + (os.numeroOs || os.id) + '</title></head><body style="font-family:Arial,sans-serif;padding:20px;">'
-                    + '<h2>Ordem de Serviço #' + (os.numeroOs || os.id) + '</h2>'
-                    + (nomeEmp ? '<p style="color:#555;margin-top:-8px;">' + nomeEmp.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>' : '')
-                    + '<p><strong>Status:</strong> ' + (os.status || '-') + '</p>'
-                    + '<p><strong>Cliente:</strong> ' + (os.nomeCliente || '-') + '</p>'
-                    + '<p><strong>Contato:</strong> ' + (os.contatoCliente || '-') + '</p>'
-                    + '<p><strong>Equipamento:</strong> ' + (os.equipamento || '-') + '</p>'
-                    + '<p><strong>Marca/Modelo:</strong> ' + (os.marca || '-') + ' / ' + (os.modelo || '-') + '</p>'
-                    + '<p><strong>Nº Série:</strong> ' + (os.numeroSerie || '-') + '</p>'
-                    + '<p><strong>Defeito:</strong><br>' + (os.defeitoRelatado || '-') + '</p>'
-                    + '<p><strong>Diagnóstico:</strong><br>' + (os.diagnostico || '-') + '</p>'
-                    + '<p><strong>Serviço executado:</strong><br>' + (os.servicoExecutado || '-') + '</p>'
-                    + '<p><strong>Técnico:</strong> ' + (os.tecnicoResponsavel || '-') + '</p>'
-                    + (os.observacao ? '<p><strong>Observação:</strong><br>' + (os.observacao || '-') + '</p>' : '')
-                    + '<p><strong>Total:</strong> ' + moeda(os.valorTotal || 0) + '</p>'
-                    + '<p><strong>Abertura:</strong> ' + dataHoraBr(os.dataAbertura) + '</p>'
-                    + '</body></html>';
-                w.document.write(html);
-                w.document.close();
-                w.focus();
-                w.print();
+                abrirJanelaImpressaoOs(os);
             } catch (e) {
                 console.error(e);
                 showAlert('Erro na impressão da OS.', 'error');
