@@ -1,0 +1,87 @@
+-- Alinha ordens_servico com a entidade JPA (validate). Tabelas criadas manualmente ou por
+-- script antigo podem faltar colunas; idempotente via INFORMATION_SCHEMA.
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'codigo_cliente') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN codigo_cliente VARCHAR(40) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'telefone_cliente') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN telefone_cliente VARCHAR(40) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'setor_cliente') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN setor_cliente VARCHAR(80) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'nome_contato') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN nome_contato VARCHAR(120) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'patrimonio') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN patrimonio VARCHAR(120) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'acessorios') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN acessorios TEXT NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'tipo_ordem_servico') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN tipo_ordem_servico VARCHAR(40) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'contrato_identificacao') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN contrato_identificacao VARCHAR(120) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'nf_compra') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN nf_compra VARCHAR(60) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'data_compra') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN data_compra DATE NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'loja_compra') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN loja_compra VARCHAR(120) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'numero_certificado') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN numero_certificado VARCHAR(80) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'senha_equipamento') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN senha_equipamento VARCHAR(120) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'os_externa') > 0,
+ 'SELECT 1', 'ALTER TABLE ordens_servico ADD COLUMN os_externa VARCHAR(80) NULL'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND INDEX_NAME = 'uk_os_empresa_numero') > 0,
+ 'SELECT 1', 'CREATE UNIQUE INDEX uk_os_empresa_numero ON ordens_servico (empresa_id, numero_os)'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND INDEX_NAME = 'idx_os_empresa_status_data') > 0,
+ 'SELECT 1', 'CREATE INDEX idx_os_empresa_status_data ON ordens_servico (empresa_id, status, data_abertura)'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND INDEX_NAME = 'idx_os_empresa_cliente') > 0,
+ 'SELECT 1', 'CREATE INDEX idx_os_empresa_cliente ON ordens_servico (empresa_id, nome_cliente)'));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
