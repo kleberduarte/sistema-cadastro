@@ -16,36 +16,38 @@ import java.util.List;
 public class CorsConfig {
 
     /**
-     * Sempre permitidas além de {@code cors.allowed-origins} (Live Server, testes locais).
-     * Evita depender só de variável de ambiente no Render ao desenvolver com front em :5500.
+     * Padrões + origens extras. Usamos {@link CorsConfiguration#setAllowedOriginPatterns} para incluir
+     * qualquer front no Render (ex.: static em {@code *.onrender.com}) chamando a API em outro host
+     * ({@code sistema-cadastro-kfd8.onrender.com}). Com {@code setAllowedOrigins} fixo isso falhava no CORS.
      */
-    private static final List<String> EXTRA_LOCAL_DEV_ORIGINS = List.of(
+    private static final List<String> DEFAULT_ORIGIN_PATTERNS = List.of(
+            "https://*.onrender.com",
+            "http://localhost:*",
+            "http://127.0.0.1:*",
             "http://localhost:5500",
             "http://127.0.0.1:5500",
+            "http://localhost:8080",
             "http://localhost",
-            "http://127.0.0.1",
-            "http://localhost:8080"
+            "http://127.0.0.1"
     );
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
             @Value("${cors.allowed-origins:}") String allowedOriginsProperty) {
         CorsConfiguration configuration = new CorsConfiguration();
-        LinkedHashSet<String> origins = new LinkedHashSet<>();
+        LinkedHashSet<String> patterns = new LinkedHashSet<>(DEFAULT_ORIGIN_PATTERNS);
         if (allowedOriginsProperty != null && !allowedOriginsProperty.isBlank()) {
             for (String part : allowedOriginsProperty.split(",")) {
                 String o = part.trim();
                 if (!o.isEmpty()) {
-                    origins.add(o);
+                    patterns.add(o);
                 }
             }
         }
-        origins.addAll(EXTRA_LOCAL_DEV_ORIGINS);
 
-        configuration.setAllowedOrigins(new ArrayList<>(origins));
+        configuration.setAllowedOriginPatterns(new ArrayList<>(patterns));
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        // Com credentials, listar headers evita preflight falhar em alguns browsers (Authorization, etc.).
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
