@@ -9,6 +9,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+/**
+ * Migrações JDBC pós-subida (dev). Em produção costuma ficar desligado ({@code APP_STARTUP_MIGRATIONS_ENABLED=false})
+ * e o Hibernate usa {@code ddl-auto=validate}; a tabela {@code ordens_servico} é criada antes pelo Flyway
+ * ({@code db/migration}), pois este {@code ApplicationRunner} executa depois do EntityManagerFactory.
+ */
 @Configuration
 @ConditionalOnProperty(value = "app.startup.migrations.enabled", havingValue = "true", matchIfMissing = true)
 public class InformaticaSchemaMigration {
