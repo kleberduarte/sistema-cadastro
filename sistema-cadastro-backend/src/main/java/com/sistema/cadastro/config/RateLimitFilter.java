@@ -47,10 +47,17 @@ public class RateLimitFilter implements Filter {
 
         String clientIp = getClientIP(httpRequest);
         String endpoint = httpRequest.getRequestURI();
+        String method = httpRequest.getMethod();
         boolean relaxForLocal = skipLocalhost && isLoopbackOrLocal(clientIp);
 
+        // Preflight CORS (OPTIONS) nunca deve sofrer rate limit/bloqueio de login.
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         // Verifica se é uma tentativa de login
-        if (endpoint.contains("/api/auth/login") && !relaxForLocal) {
+        if ("POST".equalsIgnoreCase(method) && endpoint.contains("/api/auth/login") && !relaxForLocal) {
             if (isLoginBlocked(clientIp)) {
                 int segundos = (int) (LOGIN_BLOCK_TIME / 1000L);
                 writeRateLimitJson(httpResponse, String.format(Locale.ROOT,
