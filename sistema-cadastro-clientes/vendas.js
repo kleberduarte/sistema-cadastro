@@ -1782,9 +1782,7 @@ function selectPaymentMethod(method) {
     if(creditOptions) creditOptions.style.display = (method === 'CREDITO') ? 'block' : 'none';
     if(pixFields) pixFields.style.display = (method === 'PIX') ? 'block' : 'none';
 
-    if (method === 'CREDITO') {
-        updateInstallmentsInfo();
-    } else {
+    if (method !== 'CREDITO') {
         const installmentsInfo = document.getElementById('installments-info');
         if (installmentsInfo) { installmentsInfo.style.display = 'none'; installmentsInfo.innerHTML = ''; }
     }
@@ -1802,6 +1800,11 @@ function selectPaymentMethod(method) {
         paymentValueInput.value = remaining > 0 ? remaining.toFixed(2).replace('.', ',') : '';
         paymentValueInput.focus();
         paymentValueInput.select();
+    }
+
+    // Parcelas dependem do valor do campo: atualizar depois de preencher o input
+    if (method === 'CREDITO' && typeof updateInstallmentsInfo === 'function') {
+        updateInstallmentsInfo();
     }
 }
 
@@ -1864,14 +1867,18 @@ function renderAddedPayments() {
         const paymentDiv = document.createElement('div');
         paymentDiv.className = 'added-payment-item';
         const valor = typeof p.valor === 'number' ? p.valor : parseFloat(p.valor || 0);
-        let text = `${p.forma}: ${fmt(valor)}`;
+        let details = '';
         if (p.forma === 'CREDITO' && p.parcelas > 1) {
             const valorParcela = valor / p.parcelas;
-            text += ` (${p.parcelas}x de ${fmt(valorParcela)})`;
+            details = `${p.parcelas}x de ${fmt(valorParcela)}`;
         }
         paymentDiv.innerHTML = `
-            <span>${text}</span>
-            <button onclick="removePayment(${index})" class="btn-remove-item" title="Remover Pagamento">&times;</button>
+            <div class="added-payment-main">
+                <span class="added-payment-method">${p.forma}</span>
+                <span class="added-payment-value">${fmt(valor)}</span>
+            </div>
+            ${details ? `<span class="added-payment-details">${details}</span>` : ''}
+            <button onclick="removePayment(${index})" class="btn-remove-payment" title="Remover pagamento" aria-label="Remover pagamento ${p.forma}">&times;</button>
         `;
         listDiv.appendChild(paymentDiv);
     });
@@ -2003,22 +2010,42 @@ async function processPayment() {
     }
 }
 
+function getPaymentValueInputAmount() {
+    const valueInput = document.getElementById('payment-value-input');
+    if (!valueInput) return 0;
+    return parseFloat(String(valueInput.value).replace(',', '.')) || 0;
+}
+
+/** Atualiza textos do select (Nx de R$ …) conforme valor a pagar no campo. */
+function refreshInstallmentSelectLabels() {
+    const installmentsSelect = document.getElementById('installments');
+    if (!installmentsSelect) return;
+    const valor = getPaymentValueInputAmount();
+    const prev = installmentsSelect.value;
+    const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    for (let i = 0; i < installmentsSelect.options.length; i++) {
+        const opt = installmentsSelect.options[i];
+        const n = parseInt(opt.value, 10);
+        if (isNaN(n) || n < 1) continue;
+        if (valor > 0) {
+            opt.textContent = n + 'x de ' + fmt(valor / n);
+        } else {
+            opt.textContent = n + 'x';
+        }
+    }
+    if (prev) installmentsSelect.value = prev;
+}
+
 function updateInstallmentsInfo() {
     if (activePaymentMethod !== 'CREDITO') return;
-    const valueInput = document.getElementById('payment-value-input');
     const installmentsSelect = document.getElementById('installments');
     const infoEl = document.getElementById('installments-info');
-    if (!infoEl || !valueInput || !installmentsSelect) return;
-    const valor = parseFloat(String(valueInput.value).replace(',', '.')) || 0;
-    const n = parseInt(installmentsSelect.value, 10) || 1;
-    if (valor <= 0 || n <= 1) {
+    if (!installmentsSelect) return;
+    refreshInstallmentSelectLabels();
+    if (infoEl) {
         infoEl.style.display = 'none';
         infoEl.innerHTML = '';
-        return;
     }
-    const valorParcela = valor / n;
-    infoEl.innerHTML = `<p><strong>Valor por parcela:</strong> ${valorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>`;
-    infoEl.style.display = 'block';
 }
 
 // =================================================================
@@ -2026,11 +2053,46 @@ function updateInstallmentsInfo() {
 // =================================================================
 
 function getPixStoreKey() {
-    // Integrar com config.js
-    if (window.clientParams && window.clientParams.chavePix) {
-        return window.clientParams.chavePix;
+    // Prioridade: valor exposto pelo config.js
+    if (window.PIX_STORE_KEY && String(window.PIX_STORE_KEY).trim()) {
+        return String(window.PIX_STORE_KEY).trim();
     }
-    return 'seu-email-ou-chave-pix-padrao'; // Chave padrão
+    // Fallback seguro: parâmetros persistidos no navegador
+    try {
+        const raw = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.chavePix && String(parsed.chavePix).trim()) {
+                return String(parsed.chavePix).trim();
+            }
+        }
+    } catch (_) {}
+    return '';
+}
+
+function getPixMerchantName() {
+    const fallback = 'Sua Loja';
+    try {
+        const raw = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            const fromStorage = parsed && parsed.nomeEmpresa ? String(parsed.nomeEmpresa).trim() : '';
+            if (fromStorage) return fromStorage.substring(0, 25);
+        }
+    } catch (_) {}
+    const fromWindow = window.clientParams && window.clientParams.nomeEmpresa
+        ? String(window.clientParams.nomeEmpresa).trim()
+        : '';
+    return (fromWindow || fallback).substring(0, 25);
+}
+
+function isPixKeyPlaceholder(pixKey) {
+    const key = String(pixKey || '').trim().toLowerCase();
+    return !key
+        || key === 'seu-email-ou-chave-pix-padrao'
+        || key === 'pix@lojapdv.com'
+        || key === 'chave pix'
+        || key === 'sua-chave-pix';
 }
 
 function formatCopiaECola(id, value) {
@@ -2045,12 +2107,18 @@ function generatePixQRCode() {
     const totalPaid = currentPayments.reduce((sum, p) => sum + p.valor, 0);
     const amountToPay = Math.max(0, getCartTotal() - totalPaid);
     
-    if (!pixKey || amountToPay <= 0) {
-        document.getElementById('pix-qrcode').innerHTML = '<p>Erro ao gerar QR Code (verifique valor e chave PIX).</p>';
+    if (amountToPay <= 0) {
+        document.getElementById('pix-qrcode').innerHTML = '<p>Erro ao gerar QR Code (valor inválido).</p>';
+        document.getElementById('copy-pix-btn').style.display = 'none';
+        return;
+    }
+    if (isPixKeyPlaceholder(pixKey)) {
+        document.getElementById('pix-qrcode').innerHTML = '<p>Configure a Chave PIX em Parâmetros para gerar o QR Code.</p>';
+        document.getElementById('copy-pix-btn').style.display = 'none';
         return;
     }
     
-    const merchantName = (window.clientParams?.nomeEmpresa || 'Sua Loja').substring(0, 25);
+    const merchantName = getPixMerchantName();
     const merchantCity = 'SAO PAULO';
 
     let payload = '';

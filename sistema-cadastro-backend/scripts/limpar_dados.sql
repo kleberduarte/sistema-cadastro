@@ -4,6 +4,9 @@
 -- ATENÇÃO: ESTE SCRIPT APAGA DADOS TRANSACIONAIS PERMANENTEMENTE.
 --          USE COM CUIDADO E APENAS EM AMBIENTE DE DESENVOLVIMENTO.
 -- =====================================================================
+-- OBS: Para preparacao comercial (manter somente adm.super), use:
+--      scripts/reset_ambiente_comercial.sql
+-- =====================================================================
 
 -- Para executar este script sem erros de dependência (chaves estrangeiras),
 -- desabilitamos temporariamente a verificação.

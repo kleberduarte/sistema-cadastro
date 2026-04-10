@@ -50,6 +50,31 @@ function sendFile(res, filePath) {
   });
 }
 
+function tryResolveLegacyAssetPath(pathname, filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (!['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico'].includes(ext)) {
+    return null;
+  }
+  // Compatibilidade: arquivos antigos na raiz agora vivem em assets/images ou assets/icons.
+  if (pathname.indexOf('/') !== pathname.lastIndexOf('/')) {
+    return null; // só tenta para /arquivo.ext na raiz
+  }
+  const baseName = path.basename(filePath);
+  const candidates = [
+    safePath(path.join('assets', 'images', baseName)),
+    safePath(path.join('assets', 'icons', baseName)),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch (_) {
+      // ignora e tenta próximo caminho
+    }
+  }
+  return null;
+}
+
 function handleRequest(req, res) {
   let pathname;
   try {
@@ -76,6 +101,10 @@ function handleRequest(req, res) {
 
   fs.stat(filePath, (err, st) => {
     if (err) {
+      const fallback = tryResolveLegacyAssetPath(pathname, filePath);
+      if (fallback) {
+        return sendFile(res, fallback);
+      }
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Não encontrado: ' + pathname);
     }

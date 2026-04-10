@@ -222,9 +222,9 @@
                         </div>
                     </div>
 
-                    <div id="credit-options" class="payment-details" style="display: none; margin-top: 10px;">
+                    <div id="credit-options" class="payment-details credit-installments-block" style="display: none; margin-top: 10px;">
                         <label for="installments">Parcelas</label>
-                        <select id="installments" onchange="if(typeof updateInstallmentsInfo==='function') updateInstallmentsInfo()">
+                        <select id="installments" class="installments-select" onchange="if(typeof updateInstallmentsInfo==='function') updateInstallmentsInfo()">
                             <option value="1">1x</option>
                             <option value="2">2x</option>
                             <option value="3">3x</option>

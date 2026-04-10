@@ -56,9 +56,15 @@ public class VendaService {
         Usuario usuario = usuarioOpt.get();
         long empresaVenda = empresaScopeService.resolveForWrite(logado, empresaIdParam);
 
-        long empresaVendedor = (usuario.getEmpresaId() != null && usuario.getEmpresaId() >= 1)
-                ? usuario.getEmpresaId()
-                : empresaScopeService.empresaPadrao();
+        long empresaVendedor;
+        if (usuario.getEmpresaId() != null && usuario.getEmpresaId() >= 1) {
+            empresaVendedor = usuario.getEmpresaId();
+        } else if (logado.getRole() == Role.ADM && logado.getId().equals(usuario.getId())) {
+            // Super ADM operando no PDV sem vínculo fixo de empresa: usa o tenant da requisição.
+            empresaVendedor = empresaVenda;
+        } else {
+            empresaVendedor = empresaScopeService.empresaPadrao();
+        }
         if (empresaVendedor != empresaVenda) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vendedor não pertence à empresa selecionada.");
         }

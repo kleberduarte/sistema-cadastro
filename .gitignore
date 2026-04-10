@@ -23,3 +23,9 @@ sistema-cadastro-clientes/node_modules/
 
 # Segredos locais (Aiven / env)
 sistema-cadastro-backend/env-aiven.local.cmd
+
+# Relatorios/artefatos operacionais locais
+relatorios-go-live/
+backup_antes_golive_*.sql
+performance_*.log
+resumo_golive_*.txt
