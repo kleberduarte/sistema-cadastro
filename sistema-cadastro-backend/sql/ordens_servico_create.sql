@@ -1,0 +1,54 @@
+-- Criação manual da tabela ordens_servico (MySQL 8+).
+-- Mesmo DDL que db/migration/V20260410120000__create_ordens_servico.sql (Flyway).
+-- Use se precisar aplicar no banco sem passar pelo Flyway.
+
+-- Opcional: remover antes de recriar em ambiente de teste
+-- DROP TABLE IF EXISTS ordens_servico;
+
+CREATE TABLE ordens_servico (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    empresa_id BIGINT NOT NULL,
+    numero_os BIGINT NOT NULL,
+    cliente_id BIGINT NULL,
+    nome_cliente VARCHAR(180) NULL,
+    contato_cliente VARCHAR(120) NULL,
+    codigo_cliente VARCHAR(40) NULL,
+    telefone_cliente VARCHAR(40) NULL,
+    setor_cliente VARCHAR(80) NULL,
+    nome_contato VARCHAR(120) NULL,
+    equipamento VARCHAR(140) NOT NULL,
+    marca VARCHAR(80) NULL,
+    modelo VARCHAR(120) NULL,
+    numero_serie VARCHAR(120) NULL,
+    patrimonio VARCHAR(120) NULL,
+    acessorios TEXT NULL,
+    tipo_ordem_servico VARCHAR(40) NULL,
+    defeito_relatado TEXT NULL,
+    diagnostico TEXT NULL,
+    servico_executado TEXT NULL,
+    tecnico_responsavel VARCHAR(120) NULL,
+    observacao TEXT NULL,
+    contrato_identificacao VARCHAR(120) NULL,
+    nf_compra VARCHAR(60) NULL,
+    data_compra DATE NULL,
+    loja_compra VARCHAR(120) NULL,
+    numero_certificado VARCHAR(80) NULL,
+    senha_equipamento VARCHAR(120) NULL,
+    os_externa VARCHAR(80) NULL,
+    valor_servico DECIMAL(10,2) NULL,
+    desconto DECIMAL(10,2) NULL,
+    valor_total DECIMAL(10,2) NULL,
+    status VARCHAR(30) NOT NULL,
+    data_abertura TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    data_previsao_entrega TIMESTAMP NULL,
+    data_conclusao TIMESTAMP NULL,
+    data_entrega TIMESTAMP NULL,
+    venda_id BIGINT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE UNIQUE INDEX uk_os_empresa_numero ON ordens_servico (empresa_id, numero_os);
+CREATE INDEX idx_os_empresa_status_data ON ordens_servico (empresa_id, status, data_abertura);
+CREATE INDEX idx_os_empresa_cliente ON ordens_servico (empresa_id, nome_cliente);
