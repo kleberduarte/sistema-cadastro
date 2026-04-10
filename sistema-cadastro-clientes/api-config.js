@@ -7,10 +7,12 @@
  *
  * Desenvolvimento (Live Server em 127.0.0.1 / localhost): o padrão é o Spring local
  * em http://127.0.0.1:8080/api (DES testa sem depender do Render).
- * Para apontar para a API no Render:
- *   - antes deste script: <script>window.USE_RENDER_API = true;</script>, ou
- *   - na URL: ?remoteApi=1 (ou ?api=remote ou ?api=render)
- * Ainda dá para forçar local explicitamente: ?localApi=1 ou ?api=local (redundante se já é o padrão).
+ * Para apontar para a API no Render (ex.: testar PRD com o front no Live Server):
+ *   - URL: ?remoteApi=1 (ou ?api=remote ou ?api=render) — guarda na sessão; proximos reloads usam Render
+ *   - ou: <script>window.USE_RENDER_API = true;</script> antes deste script
+ * Para voltar ao Spring local na mesma sessao: ?localApi=1 ou ?api=local
+ *
+ * Quando o front roda em qualquer host que nao seja localhost (site em producao), a API padrao e o Render.
  *
  * Deve ser o primeiro script nas páginas que chamam a API.
  */
@@ -20,6 +22,8 @@
     var PROD = 'https://sistema-cadastro-kfd8.onrender.com/api';
     /** Spring Boot local (DES). */
     var LOCAL = 'http://127.0.0.1:8080/api';
+    /** sessionStorage: lembrar escolha "usar API Render" no Live Server. */
+    var SS_RENDER = 'sistemaCadastroUseRenderApi';
     var inferred = PROD;
     try {
         var h = w.location && w.location.hostname ? String(w.location.hostname) : '';
@@ -27,10 +31,26 @@
         if (onLoopback) {
             var sp = w.location && w.location.search ? new URLSearchParams(w.location.search) : null;
             var apiParam = sp ? String(sp.get('api') || '').toLowerCase() : '';
+            var wantLocalExplicit = (sp && sp.get('localApi') === '1') || apiParam === 'local';
+            if (wantLocalExplicit && w.sessionStorage) {
+                try {
+                    w.sessionStorage.removeItem(SS_RENDER);
+                } catch (_) {}
+            }
+            if (sp && sp.get('remoteApi') === '1' && w.sessionStorage) {
+                try {
+                    w.sessionStorage.setItem(SS_RENDER, '1');
+                } catch (_) {}
+            }
+            var persistedRemote = false;
+            try {
+                persistedRemote = w.sessionStorage && w.sessionStorage.getItem(SS_RENDER) === '1';
+            } catch (_) {}
             var explicitRemote = w.USE_RENDER_API === true
                     || (sp && sp.get('remoteApi') === '1')
                     || apiParam === 'remote'
-                    || apiParam === 'render';
+                    || apiParam === 'render'
+                    || persistedRemote;
             if (w.USE_LOCAL_API === false) {
                 explicitRemote = true;
             }
