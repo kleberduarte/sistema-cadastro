@@ -5,18 +5,36 @@
  *   <script>window.API_URL = 'https://seu-backend.com/api';</script>
  *   <script src="api-config.js"></script>
  *
+ * Desenvolvimento com Live Server (127.0.0.1 / localhost): o padrão é a API no Render
+ * (evita ERR_CONNECTION_REFUSED quando o Spring não está no 8080).
+ * Para apontar para o backend local:
+ *   - antes deste script: <script>window.USE_LOCAL_API = true;</script>, ou
+ *   - na URL: ?localApi=1 (ou ?api=local)
+ *
  * Deve ser o primeiro script nas páginas que chamam a API.
  */
 (function (w) {
     if (!w) return;
     /** Produção (Render); usado quando o front não roda em localhost. */
     var PROD = 'https://sistema-cadastro-kfd8.onrender.com/api';
-    /** Live Server (ex.: http://127.0.0.1:5500) + Spring local em 8080. */
+    /** Spring Boot local (quando USE_LOCAL_API ou ?localApi=1). */
     var LOCAL = 'http://127.0.0.1:8080/api';
     var inferred = PROD;
     try {
         var h = w.location && w.location.hostname ? String(w.location.hostname) : '';
-        if (/^(127\.0\.0\.1|localhost)$/i.test(h)) {
+        var onLoopback = /^(127\.0\.0\.1|localhost)$/i.test(h);
+        var wantLocal = false;
+        if (onLoopback) {
+            if (w.USE_LOCAL_API === true) {
+                wantLocal = true;
+            } else if (w.location && w.location.search) {
+                var sp = new URLSearchParams(w.location.search);
+                if (sp.get('localApi') === '1' || String(sp.get('api') || '').toLowerCase() === 'local') {
+                    wantLocal = true;
+                }
+            }
+        }
+        if (onLoopback && wantLocal) {
             inferred = LOCAL;
         }
     } catch (_) {}
