@@ -493,6 +493,8 @@ async function loadClientParams() {
 // Aplicar estilos personalizados do cliente
 function applyClientStyles(params) {
     if (!params) return;
+    /** pdvs-monitor.html já tem logo em #pdvMonitorLogo (pdvs-monitor.js); não duplicar com .header-logo. */
+    var isPdvsMonitorPage = document.body.classList.contains('page-pdvs-monitor');
     // Capacidades por tenant (farmácia, PMC etc.) para telas como PDV/produtos.
     window.__tenantFeatures = {
         segmento: params.segmento || '',
@@ -510,15 +512,13 @@ function applyClientStyles(params) {
 
     // Aplicar nome da empresa ao título da página
     if (params.nomeEmpresa) {
-        document.title = params.nomeEmpresa;
-        
-        // Atualizar título no header (se existir)
-        const titleElement = document.querySelector('header h1');
-        if (titleElement) {
-            titleElement.textContent = params.nomeEmpresa;
+        if (!isPdvsMonitorPage) {
+            document.title = params.nomeEmpresa;
+            const titleElement = document.querySelector('header h1');
+            if (titleElement) {
+                titleElement.textContent = params.nomeEmpresa;
+            }
         }
-        
-        // Atualizar título na tela de login
         const loginTitle = document.querySelector('.login-header h1');
         if (loginTitle) {
             loginTitle.textContent = params.nomeEmpresa;
@@ -541,17 +541,24 @@ function applyClientStyles(params) {
     }
     if (usarLogoMarcaCliente) {
         var esc = resolveLogoUrlForBrowser(logoUrl).replace(/"/g, '&quot;');
-        var logoContainer = document.querySelector('.header-logo');
-        if (!logoContainer) {
-            var header = document.querySelector('header .header-content');
-            if (header) {
-                logoContainer = document.createElement('div');
-                logoContainer.className = 'header-logo';
-                header.appendChild(logoContainer);
+        if (isPdvsMonitorPage) {
+            try {
+                var hlRm = document.querySelector('header .header-logo');
+                if (hlRm) hlRm.remove();
+            } catch (_) {}
+        } else {
+            var logoContainer = document.querySelector('.header-logo');
+            if (!logoContainer) {
+                var header = document.querySelector('header .header-content');
+                if (header) {
+                    logoContainer = document.createElement('div');
+                    logoContainer.className = 'header-logo';
+                    header.appendChild(logoContainer);
+                }
             }
-        }
-        if (logoContainer) {
-            logoContainer.innerHTML = '<img src="' + esc + '" alt="Logo" style="max-height: 50px; margin-right: 15px;" onerror="this.style.display=\'none\';">';
+            if (logoContainer) {
+                logoContainer.innerHTML = '<img src="' + esc + '" alt="Logo" style="max-height: 50px; margin-right: 15px;" onerror="this.style.display=\'none\';">';
+            }
         }
         var loginLogoContainer = document.querySelector('.login-logo');
         if (!loginLogoContainer) {
