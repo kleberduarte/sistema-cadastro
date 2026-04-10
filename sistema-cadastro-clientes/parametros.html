@@ -110,41 +110,92 @@
             .param-modulos-carousel__controls { justify-content: space-between; width: 100%; }
         }
 
-        /* Status da empresa: cadastro ativo no sistema */
-        .param-ativo-card {
-            margin: 1.25rem 0 1rem;
-            padding: 16px 18px;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
-            background: #fff;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+        /* Abas Farmácia / Informática (parâmetros específicos); personalização comum fica em #paramSharedPersonalizacao */
+        .param-module-tabs {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            justify-content: space-between;
-            gap: 16px;
+            gap: 8px;
+            margin: 14px 0 18px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #0f172a;
         }
-        .param-ativo-card__copy {
-            flex: 1;
-            min-width: 200px;
-        }
-        .param-ativo-card__title {
-            margin: 0 0 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #0f172a;
-        }
-        .param-ativo-card__hint {
+        .param-module-tabs .param-modulos-carousel__dot {
             margin: 0;
-            font-size: 0.88rem;
-            line-height: 1.45;
-            color: #64748b;
         }
-        .param-ativo-card__control {
+        .param-module-panel[hidden] {
+            display: none !important;
+        }
+        .param-module-panel:not([hidden]) {
+            display: block;
+        }
+        .param-module-panel h2:first-child,
+        .param-module-panel > .param-farmacia-lead:first-child {
+            margin-top: 0;
+        }
+        .param-empresa-context {
+            margin: 0 0 16px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        .param-empresa-context h3 {
+            margin: 0 0 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #334155;
+        }
+        .param-shared-personalizacao {
+            margin: 0 0 20px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .param-acoes-empresa {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* Mesma formatação de section h2 (ex.: Configurações de Personalização) + toggle à direita */
+        .param-selecionar-empresa-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .param-selecionar-empresa-header__title {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
+            font-weight: bold;
+            line-height: 1.2;
+            border: none;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+        .param-selecionar-empresa-header__ativo {
             display: flex;
             align-items: center;
             gap: 12px;
             flex-shrink: 0;
+            margin-left: auto;
+        }
+        /* Tema da empresa selecionada (cores em --param-cor-primaria / --param-cor-secundaria) */
+        #paramAtivoTemaWrap {
+            --param-cor-primaria: #667eea;
+            --param-cor-secundaria: #764ba2;
+        }
+        #paramAtivoTemaWrap .param-ativo-badge:not(.is-off) {
+            color: var(--param-cor-primaria);
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid var(--param-cor-primaria);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
         }
         .param-ativo-badge {
             font-size: 0.78rem;
@@ -155,10 +206,12 @@
             border-radius: 999px;
             background: #ecfdf5;
             color: #047857;
+            border: 1px solid transparent;
         }
         .param-ativo-badge.is-off {
             background: #f1f5f9;
             color: #64748b;
+            border-color: transparent;
         }
         .param-ativo-toggle {
             position: relative;
@@ -194,6 +247,9 @@
         }
         .param-ativo-toggle input:focus-visible + .param-ativo-toggle__track {
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.35);
+        }
+        #paramAtivoTemaWrap .param-ativo-toggle input:checked + .param-ativo-toggle__track {
+            background: linear-gradient(135deg, var(--param-cor-primaria) 0%, var(--param-cor-secundaria) 100%);
         }
         .param-ativo-toggle input:checked + .param-ativo-toggle__track {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -349,7 +405,22 @@
 
             <main>
             <section class="form-section">
-                <h2>Selecionar Empresa</h2>
+                <div class="param-selecionar-empresa-header">
+                    <h2 class="param-selecionar-empresa-header__title" id="paramSelecionarEmpresaTitulo">Selecionar Empresa</h2>
+                    <div id="paramAtivoTemaWrap" class="param-selecionar-empresa-header__ativo super-admin-only" hidden>
+                        <span id="ativoStatusBadge" class="param-ativo-badge" aria-live="polite">Ativa</span>
+                        <label class="param-ativo-toggle" title="Ativar ou pausar cadastro desta empresa no sistema">
+                            <input type="checkbox" id="ativo" checked
+                                aria-label="Cadastro ativo no sistema. Ligado: a empresa entra em consultas de cadastros ativos. Desligado: fica fora desse filtro (pausar sem apagar dados).">
+                            <span class="param-ativo-toggle__track"><span class="param-ativo-toggle__thumb"></span></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="paramModuleTabsBar" class="param-module-tabs" role="tablist" aria-label="Módulos: clique para abrir e carregar parâmetros; clique de novo na mesma opção para fechar e limpar opções do módulo">
+                    <button type="button" class="param-modulos-carousel__dot is-active" id="paramTabFarmacia" role="tab" aria-selected="true" aria-controls="paramPanelFarmacia" data-param-tab="0">Farmácia</button>
+                    <button type="button" class="param-modulos-carousel__dot" id="paramTabInformatica" role="tab" aria-selected="false" aria-controls="paramPanelInformatica" data-param-tab="1">Informática</button>
+                </div>
                 
                 <div class="form-group">
                     <label for="empresaSelect">Selecione a Empresa:</label>
@@ -361,21 +432,21 @@
                 <!-- Campo oculto para armazenar o ID (não visível ao usuário) -->
                 <input type="hidden" id="empresaId">
 
-                <hr style="margin: 20px 0;">
+                <div class="param-empresa-context">
+                    <h3>Dados da empresa</h3>
+                    <div class="form-group">
+                        <label for="nomeEmpresa">Nome da Empresa</label>
+                        <input type="text" id="nomeEmpresa" placeholder="Nome da empresa que aparecerá no sistema" autocomplete="organization">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="logoUrl">URL do Logo</label>
+                        <input type="text" id="logoUrl" placeholder="https://exemplo.com/logo.png" autocomplete="off">
+                    </div>
+                </div>
 
+                <!-- Comum a qualquer empresa: personalização. Visível em Farmácia e Informática (abaixo dos dados da empresa). -->
+                <div class="param-shared-personalizacao" id="paramSharedPersonalizacao">
                 <h2>Configurações de Personalização</h2>
-
-                <div class="form-group">
-                    <label for="nomeEmpresa">Nome da Empresa</label>
-                    <input type="text" id="nomeEmpresa" placeholder="Nome da empresa que aparecerá no sistema" autocomplete="organization">
-                    <small id="hintNomeEmpresaAdm" style="display:block;margin-top:6px;color:#666;font-size:0.88rem;line-height:1.45;">Ao entrar, carregamos a <strong>empresa padrão</strong> (ID do sistema). Limpe o nome para iniciar um <strong>novo cadastro</strong> — será gerado um <strong>novo ID</strong>, sem alterar o cadastro do ID padrão.</small>
-                    <small id="hintNomeEmpresaEmpresa" style="display:none;margin-top:6px;color:#666;font-size:0.88rem;line-height:1.45;">Ajuste o nome, cores e demais dados que aparecem no sistema e no PDV para <strong>a sua empresa</strong>.</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="logoUrl">URL do Logo</label>
-                    <input type="text" id="logoUrl" placeholder="https://exemplo.com/logo.png" autocomplete="off">
-                </div>
 
                 <h3>Cores do Sistema</h3>
                 
@@ -436,18 +507,15 @@
                     <input type="tel" id="suporteWhatsapp" placeholder="DDD + número, ex: 11999998888" autocomplete="tel">
                 </div>
 
-                <div class="param-modulos-carousel" role="region" aria-roledescription="carousel" aria-label="Módulos adicionais">
-                    <div class="param-modulos-carousel__top">
-                        <h3 class="param-modulos-carousel__title">Módulos adicionais</h3>
-                        <div class="param-modulos-carousel__controls">
-                            <button type="button" class="param-modulos-carousel__arrow" id="paramModulosPrev" aria-controls="paramModulosTrack" aria-label="Módulo anterior">‹</button>
-                            <button type="button" class="param-modulos-carousel__arrow" id="paramModulosNext" aria-controls="paramModulosTrack" aria-label="Próximo módulo">›</button>
-                        </div>
-                    </div>
-                    <div class="param-modulos-carousel__viewport">
-                        <div class="param-modulos-carousel__track" id="paramModulosTrack">
-                            <div class="param-modulos-carousel__slide" role="group" aria-roledescription="slide" aria-label="1 de 2: Farmácia">
-                                <h4>Módulo Farmácia</h4>
+                <h3 style="margin-top:1.5rem;">Pré-visualização</h3>
+                <div id="preview" style="padding: 20px; border: 1px solid #ccc; border-radius: 8px; margin-top: 10px;">
+                    <h4 id="previewEmpresa" style="margin-bottom: 10px;">Nome da Empresa</h4>
+                    <button id="previewBotao" style="padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Botão de Exemplo</button>
+                </div>
+                </div><!-- /paramSharedPersonalizacao -->
+
+                <div id="paramPanelFarmacia" class="param-module-panel" role="tabpanel" aria-labelledby="paramTabFarmacia">
+                                <h2 style="margin-top:0;">Módulo Farmácia</h2>
                                 <p class="param-farmacia-lead">Regras de farmácia, lotes no PDV e preço máximo (PMC). Ative o módulo para aplicar validações na venda e no cadastro de produtos.</p>
 
                                 <div class="param-farmacia-panel">
@@ -526,46 +594,61 @@
                                     <small style="display:block;margin-top:12px;color:#64748b;font-size:0.85rem;line-height:1.45;">A importação e a sincronização atualizam a base regulatória e o valor de PMC associado aos produtos.</small>
                                     <div id="pmcResultado" style="margin-top:10px;font-size:0.92rem;color:#334155;"></div>
                                 </div>
-                            </div>
-                            <div class="param-modulos-carousel__slide" role="group" aria-roledescription="slide" aria-label="2 de 2: Informática">
-                                <h4>Módulo Informática</h4>
+                </div><!-- /paramPanelFarmacia -->
+
+                <div id="paramPanelInformatica" class="param-module-panel" role="tabpanel" aria-labelledby="paramTabInformatica" hidden>
+                                <h2 style="margin-top:0;">Módulo Informática</h2>
                                 <p style="margin:0 0 12px;color:#64748b;font-size:0.9rem;line-height:1.5;">Habilita a tela de Ordem de Serviço no menu, para assistência técnica e manutenção.</p>
                                 <div class="form-row">
                                     <label><input type="checkbox" id="moduloInformaticaAtivo"> Ativar módulo informática (Ordem de Serviço)</label>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="param-modulos-carousel__dots" role="tablist" aria-label="Escolher módulo">
-                        <button type="button" class="param-modulos-carousel__dot is-active" id="paramModulosDot0" role="tab" aria-selected="true" aria-controls="paramModulosTrack">Farmácia</button>
-                        <button type="button" class="param-modulos-carousel__dot" id="paramModulosDot1" role="tab" aria-selected="false" aria-controls="paramModulosTrack">Informática</button>
-                    </div>
-                </div>
+                                <div class="param-informatica-os-print" style="margin-top:18px;padding-top:16px;border-top:1px solid #e2e8f0;">
+                                    <p class="param-farmacia-panel__kicker" style="margin-bottom:10px;">Dados da empresa na impressão da OS</p>
+                                    <p style="margin:0 0 12px;color:#64748b;font-size:0.86rem;line-height:1.45;">Aparecem no cabeçalho e rodapé do modelo de ordem de serviço (papel). O logo continua usando o campo <strong>URL do Logo</strong> acima.</p>
+                                    <div class="form-group">
+                                        <label for="enderecoLinha1Os">Endereço (logradouro, nº, bairro)</label>
+                                        <input type="text" id="enderecoLinha1Os" maxlength="500" placeholder="Ex.: AV. EXEMPLO, 129 - CENTRO" autocomplete="street-address">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cidadeUfOs">Cidade / UF</label>
+                                        <input type="text" id="cidadeUfOs" maxlength="200" placeholder="Ex.: CARAPICUIBA - SP" autocomplete="address-level2">
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="cnpjOs">CNPJ</label>
+                                            <input type="text" id="cnpjOs" maxlength="24" placeholder="00.000.000/0001-00" autocomplete="off">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="inscricaoMunicipalOs">Inscrição municipal</label>
+                                            <input type="text" id="inscricaoMunicipalOs" maxlength="40" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="telefoneComercialOs">Telefone comercial</label>
+                                            <input type="text" id="telefoneComercialOs" maxlength="40" placeholder="Ex.: (11) 4183-7330" autocomplete="tel">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="faxOs">Fax</label>
+                                            <input type="text" id="faxOs" maxlength="40" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="emailComercialOs">E-mail comercial</label>
+                                        <input type="email" id="emailComercialOs" maxlength="255" placeholder="contato@empresa.com.br" autocomplete="email">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="textoTermosOs">Texto de termos / observações legais (rodapé da OS)</label>
+                                        <textarea id="textoTermosOs" rows="6" placeholder="Deixe em branco para usar o texto padrão do sistema na impressão."></textarea>
+                                        <small style="display:block;margin-top:6px;color:#64748b;font-size:0.85rem;line-height:1.45;">Prazos de retirada, taxas de armazenagem, backup, etc.</small>
+                                    </div>
+                                </div>
+                </div><!-- /paramPanelInformatica -->
 
-                <div class="param-ativo-card" role="group" aria-labelledby="paramAtivoTitulo">
-                    <div class="param-ativo-card__copy">
-                        <p id="paramAtivoTitulo" class="param-ativo-card__title">Cadastro desta empresa no sistema</p>
-                        <p id="paramAtivoHint" class="param-ativo-card__hint">Com <strong>ligado</strong>, a empresa entra nas consultas e recursos que consideram apenas cadastros ativos. Com <strong>desligado</strong>, fica fora desse filtro (útil para pausar sem apagar dados).</p>
-                    </div>
-                    <div class="param-ativo-card__control">
-                        <span id="ativoStatusBadge" class="param-ativo-badge">Ativa</span>
-                        <label class="param-ativo-toggle" title="Ativar ou pausar cadastro">
-                            <input type="checkbox" id="ativo" checked aria-describedby="paramAtivoHint">
-                            <span class="param-ativo-toggle__track"><span class="param-ativo-toggle__thumb"></span></span>
-                        </label>
-                    </div>
-                </div>
-
+                <div class="param-acoes-empresa">
                 <button class="btn btn-primary" onclick="salvarParametros()">💾 Salvar Parâmetros</button>
                 <button type="button" class="btn btn-secondary" id="btnRestaurarParametros" onclick="resetarParametros()">↩️ Restaurar</button>
                 <button type="button" class="btn btn-danger admin-only" id="btnExcluirEmpresa" onclick="excluirCadastroEmpresa()" disabled title="Remove o cadastro de parâmetros desta empresa">🗑️ Excluir cadastro desta empresa</button>
-            </section>
-
-            <section class="form-section">
-                <h3>Pré-visualização</h3>
-                <div id="preview" style="padding: 20px; border: 1px solid #ccc; border-radius: 8px; margin-top: 10px;">
-                    <h4 id="previewEmpresa" style="margin-bottom: 10px;">Nome da Empresa</h4>
-                    <button id="previewBotao" style="padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Botão de Exemplo</button>
                 </div>
             </section>
             </main>
@@ -635,20 +718,6 @@
             }
         }
 
-        /** Textos de ajuda: ADM vê fluxo de ID padrão / novo cadastro; ADMIN_EMPRESA só orientação da própria empresa. */
-        function aplicarTextoAjudaNomeEmpresa() {
-            var adm = document.getElementById('hintNomeEmpresaAdm');
-            var emp = document.getElementById('hintNomeEmpresaEmpresa');
-            if (!adm || !emp) return;
-            if (isPerfilAdminEmpresa()) {
-                adm.style.display = 'none';
-                emp.style.display = 'block';
-            } else {
-                adm.style.display = 'block';
-                emp.style.display = 'none';
-            }
-        }
-
         function atualizarBadgeEmpresaAtiva() {
             var cb = document.getElementById('ativo');
             var badge = document.getElementById('ativoStatusBadge');
@@ -666,44 +735,178 @@
             }
         }
 
-        function setupParamModulosCarousel() {
-            var track = document.getElementById('paramModulosTrack');
-            var prev = document.getElementById('paramModulosPrev');
-            var next = document.getElementById('paramModulosNext');
-            var dot0 = document.getElementById('paramModulosDot0');
-            var dot1 = document.getElementById('paramModulosDot1');
-            if (!track || !prev || !next) return;
-            var total = 2;
-            var index = 0;
-            function go(i) {
-                index = ((i % total) + total) % total;
-                track.style.transform = 'translateX(-' + (index * 100) + '%)';
-                [dot0, dot1].forEach(function (d, idx) {
-                    if (!d) return;
-                    d.classList.toggle('is-active', idx === index);
-                    d.setAttribute('aria-selected', idx === index ? 'true' : 'false');
-                });
+        /**
+         * Carrossel Farmácia / Informática: 1º clique abre o painel e aplica parâmetros do último carregamento;
+         * 2º clique na mesma aba limpa os campos daquele módulo, desmarca "Ativar módulo" e fecha os painéis.
+         */
+        function setupParamModulosTabs() {
+            var tabs = [
+                { btn: document.getElementById('paramTabFarmacia'), panel: document.getElementById('paramPanelFarmacia') },
+                { btn: document.getElementById('paramTabInformatica'), panel: document.getElementById('paramPanelInformatica') }
+            ];
+            var KEY = 'paramModuloCarouselV4';
+            var KEY_TAB_POR_EMPRESA = 'paramCarouselTabEmp_';
+            var carouselModuloIdxAtivo = null;
+
+            function readCarouselTabSalvoParaEmpresa(empresaId) {
+                if (empresaId == null || empresaId === '') return null;
+                try {
+                    var s = sessionStorage.getItem(KEY_TAB_POR_EMPRESA + String(empresaId));
+                    if (s === 'none') return null;
+                    if (s === '0' || s === '1') return parseInt(s, 10);
+                } catch (_) {}
+                return null;
             }
-            prev.addEventListener('click', function () { go(index - 1); });
-            next.addEventListener('click', function () { go(index + 1); });
-            if (dot0) dot0.addEventListener('click', function () { go(0); });
-            if (dot1) dot1.addEventListener('click', function () { go(1); });
-            go(0);
+
+            function persistCarouselTabParaEmpresaAtual(idx) {
+                if (!ultimosParametrosEmpresa || ultimosParametrosEmpresa.empresaId == null) return;
+                try {
+                    var k = KEY_TAB_POR_EMPRESA + String(ultimosParametrosEmpresa.empresaId);
+                    var s = idx === null || idx === undefined ? 'none' : String(idx);
+                    sessionStorage.setItem(k, s);
+                } catch (_) {}
+            }
+
+            /** Ordem: aba salva desta empresa → aba global da sessão → primeiro módulo ativo (Farmácia, senão Informática). */
+            function resolverIndiceCarrosselAposCarregar(params) {
+                if (!params) return null;
+                var per = readCarouselTabSalvoParaEmpresa(params.empresaId);
+                if (per !== null && per !== undefined && indiceCarrosselPermitido(per, params)) {
+                    return per;
+                }
+                var saved = readSavedCarousel();
+                if (saved !== null && saved !== undefined && indiceCarrosselPermitido(saved, params)) {
+                    return saved;
+                }
+                if (params.moduloFarmaciaAtivo) return 0;
+                if (params.moduloInformaticaAtivo) return 1;
+                return null;
+            }
+
+            function readSavedCarousel() {
+                try {
+                    var s = sessionStorage.getItem(KEY);
+                    if (s === 'none') return null;
+                    if (s === '0' || s === '1') return parseInt(s, 10);
+                    var v3 = sessionStorage.getItem('paramModuloTabIdxV3');
+                    if (v3 !== null && v3 !== '') {
+                        var n3 = parseInt(v3, 10);
+                        if (!isNaN(n3) && n3 >= 0 && n3 <= 1) return n3;
+                    }
+                    var v2 = sessionStorage.getItem('paramModuloTabIdxV2');
+                    if (v2 !== null && v2 !== '') {
+                        var n2 = parseInt(v2, 10);
+                        if (!isNaN(n2) && n2 >= 2 && n2 <= 3) return 1;
+                        if (!isNaN(n2) && n2 >= 0 && n2 <= 1) return 0;
+                    }
+                    var leg = sessionStorage.getItem('paramModuloTabIdx');
+                    if (leg !== null && leg !== '') {
+                        var o = parseInt(leg, 10);
+                        if (!isNaN(o) && o === 2) return 1;
+                        if (!isNaN(o) && o >= 0 && o <= 1) return o;
+                    }
+                } catch (_) {}
+                return null;
+            }
+
+            function showNenhumPainelModulo() {
+                tabs.forEach(function (t) {
+                    if (t.btn) {
+                        t.btn.classList.remove('is-active');
+                        t.btn.setAttribute('aria-selected', 'false');
+                    }
+                    if (t.panel) t.panel.setAttribute('hidden', 'hidden');
+                });
+                carouselModuloIdxAtivo = null;
+                try {
+                    sessionStorage.setItem(KEY, 'none');
+                } catch (_) {}
+                persistCarouselTabParaEmpresaAtual(null);
+            }
+
+            function showPainelModulo(idx) {
+                idx = Math.max(0, Math.min(tabs.length - 1, idx));
+                tabs.forEach(function (t, i) {
+                    if (!t.btn || !t.panel) return;
+                    var on = i === idx;
+                    t.btn.classList.toggle('is-active', on);
+                    t.btn.setAttribute('aria-selected', on ? 'true' : 'false');
+                    if (on) {
+                        t.panel.removeAttribute('hidden');
+                    } else {
+                        t.panel.setAttribute('hidden', 'hidden');
+                    }
+                });
+                carouselModuloIdxAtivo = idx;
+                try {
+                    sessionStorage.setItem(KEY, String(idx));
+                } catch (_) {}
+                persistCarouselTabParaEmpresaAtual(idx);
+            }
+
+            function sincronizarCarrosselModulosAposCarregarEmpresa() {
+                aplicarVisibilidadeBotoesCarrosselPorEmpresa(ultimosParametrosEmpresa);
+                if (!ultimosParametrosEmpresa) {
+                    showNenhumPainelModulo();
+                    return;
+                }
+                var p = ultimosParametrosEmpresa;
+                if (!p.moduloFarmaciaAtivo && !p.moduloInformaticaAtivo) {
+                    showNenhumPainelModulo();
+                    return;
+                }
+                var idx = resolverIndiceCarrosselAposCarregar(p);
+                if (idx === null || idx === undefined) {
+                    showNenhumPainelModulo();
+                    return;
+                }
+                showPainelModulo(idx);
+                if (idx === 0) aplicarParametrosModuloFarmaciaDeUltimos();
+                else aplicarParametrosModuloInformaticaDeUltimos();
+            }
+
+            tabs.forEach(function (t, i) {
+                if (!t.btn) return;
+                t.btn.addEventListener('click', function () {
+                    if (!indiceCarrosselPermitido(i, permissoesCarrosselParaInteracao())) {
+                        return;
+                    }
+                    if (carouselModuloIdxAtivo === i) {
+                        if (i === 0) {
+                            limparCamposModuloFarmaciaNoFormulario();
+                            var mf = document.getElementById('moduloFarmaciaAtivo');
+                            if (mf) mf.checked = false;
+                        } else {
+                            limparCamposModuloInformaticaNoFormulario();
+                            var mi = document.getElementById('moduloInformaticaAtivo');
+                            if (mi) mi.checked = false;
+                        }
+                        showNenhumPainelModulo();
+                        return;
+                    }
+                    showPainelModulo(i);
+                    if (i === 0) aplicarParametrosModuloFarmaciaDeUltimos();
+                    else aplicarParametrosModuloInformaticaDeUltimos();
+                });
+            });
+
+            window.sincronizarCarrosselModulosAposCarregarEmpresa = sincronizarCarrosselModulosAposCarregarEmpresa;
+            sincronizarCarrosselModulosAposCarregarEmpresa();
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
             if (!checkAuth()) return;
             if (!checkPermission('adm')) return;
             displayUserName();
-            setupParamModulosCarousel();
+            setupParamModulosTabs();
             setupParamAtivoToggle();
             try {
                 if (typeof syncCurrentUserFromApi === 'function') {
                     await syncCurrentUserFromApi();
                 }
             } catch (_) {}
+            if (typeof setupMenuByRole === 'function') setupMenuByRole();
             aplicarVisibilidadeRestaurar();
-            aplicarTextoAjudaNomeEmpresa();
             setupPreviewListeners();
             carregarEmpresas(); // Carregar lista + aplicar contexto de empresa ao iniciar
         });
@@ -800,6 +1003,12 @@
             atualizarBotaoExcluirEmpresa();
 
             if (!empresaId) {
+                ultimosParametrosEmpresa = null;
+                aplicarVisibilidadeBotoesCarrosselPorEmpresa(null);
+                if (typeof window.sincronizarCarrosselModulosAposCarregarEmpresa === 'function') {
+                    window.sincronizarCarrosselModulosAposCarregarEmpresa();
+                }
+                aplicarTemaControleAtivoParametros(null);
                 return;
             }
 
@@ -869,6 +1078,9 @@
                 chavePix: DEFAULT_PIX_KEY,
                 suporteEmail: '',
                 suporteWhatsapp: '',
+                moduloFarmaciaAtivo: false,
+                moduloInformaticaAtivo: false,
+                __forcarCarrosselAmbos: true,
                 ativo: true
             });
         }
@@ -884,6 +1096,11 @@
                 document.getElementById('empresaId').value = '';
                 parametroId = null;
                 parametrosModoNovoCadastro = true;
+                ultimosParametrosEmpresa = null;
+                aplicarVisibilidadeBotoesCarrosselPorEmpresa(null);
+                if (typeof window.sincronizarCarrosselModulosAposCarregarEmpresa === 'function') {
+                    window.sincronizarCarrosselModulosAposCarregarEmpresa();
+                }
                 atualizarBotaoExcluirEmpresa();
                 atualizarPreVisualizacao();
                 return;
@@ -909,6 +1126,26 @@
             }
         }
 
+        /** Aplica corPrimaria/corSecundaria do cadastro ao badge ATIVA e ao toggle (Super Admin). */
+        function aplicarTemaControleAtivoParametros(params) {
+            var P = (typeof window !== 'undefined' && window.SISTEMA_THEME_PADRAO) ? window.SISTEMA_THEME_PADRAO : {};
+            var cp;
+            var cs;
+            if (params && (params.corPrimaria || params.corSecundaria)) {
+                cp = params.corPrimaria || P.corPrimaria || '#667eea';
+                cs = params.corSecundaria || P.corSecundaria || '#764ba2';
+            } else {
+                var elP = document.getElementById('corPrimaria');
+                var elS = document.getElementById('corSecundaria');
+                cp = (elP && elP.value) ? elP.value : (P.corPrimaria || '#667eea');
+                cs = (elS && elS.value) ? elS.value : (P.corSecundaria || '#764ba2');
+            }
+            var wrap = document.getElementById('paramAtivoTemaWrap');
+            if (!wrap) return;
+            wrap.style.setProperty('--param-cor-primaria', cp);
+            wrap.style.setProperty('--param-cor-secundaria', cs);
+        }
+
         // Atualizar pré-visualização
         function atualizarPreVisualizacao() {
             const nomeEmpresa = document.getElementById('nomeEmpresa').value || 'Nome da Empresa';
@@ -929,6 +1166,118 @@
             
             previewBotao.style.background = 'linear-gradient(135deg, ' + corPrimaria + ' 0%, ' + corSecundaria + ' 100%)';
             previewBotao.style.color = corBotaoTexto;
+
+            aplicarTemaControleAtivoParametros({
+                corPrimaria: corPrimaria,
+                corSecundaria: corSecundaria
+            });
+        }
+
+        /** Limpa só os campos do módulo Farmácia (quando o módulo não está ativo no cadastro). */
+        function limparCamposModuloFarmaciaNoFormulario() {
+            var seg = document.getElementById('segmento');
+            if (seg) seg.value = '';
+            var pm = document.getElementById('farmaciaPmcModo');
+            if (pm) pm.value = 'ALERTA';
+            ['farmaciaLoteValidadeObrigatorio', 'farmaciaControladosAtivo', 'farmaciaAntimicrobianosAtivo', 'farmaciaPmcAtivo'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.checked = false;
+            });
+            var pmcRes = document.getElementById('pmcResultado');
+            if (pmcRes) pmcRes.textContent = '';
+            var pmcFile = document.getElementById('pmcFile');
+            if (pmcFile) pmcFile.value = '';
+        }
+
+        /** Limpa só os campos do módulo Informática / OS (quando o módulo não está ativo). */
+        function limparCamposModuloInformaticaNoFormulario() {
+            ['enderecoLinha1Os', 'cidadeUfOs', 'cnpjOs', 'inscricaoMunicipalOs', 'telefoneComercialOs', 'faxOs', 'emailComercialOs', 'textoTermosOs'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+        }
+
+        /** Último JSON de parâmetros da empresa (para o carrossel reaplicar ao reabrir uma aba). */
+        var ultimosParametrosEmpresa = null;
+
+        /** Só exibe botões do carrossel dos módulos ativos no cadastro. params == null → ambos (novo cadastro / sem empresa). */
+        function aplicarVisibilidadeBotoesCarrosselPorEmpresa(params) {
+            var farm = true;
+            var info = true;
+            if (params != null && typeof params === 'object') {
+                if (params.__forcarCarrosselAmbos) {
+                    farm = true;
+                    info = true;
+                } else {
+                    farm = !!params.moduloFarmaciaAtivo;
+                    info = !!params.moduloInformaticaAtivo;
+                }
+            }
+            var b0 = document.getElementById('paramTabFarmacia');
+            var b1 = document.getElementById('paramTabInformatica');
+            var bar = document.getElementById('paramModuleTabsBar');
+            if (b0) b0.style.display = farm ? '' : 'none';
+            if (b1) b1.style.display = info ? '' : 'none';
+            if (bar) bar.style.display = farm || info ? '' : 'none';
+        }
+
+        function indiceCarrosselPermitido(idx, params) {
+            if (params == null || typeof params !== 'object') return true;
+            if (params.__forcarCarrosselAmbos) return true;
+            if (idx === 0) return !!params.moduloFarmaciaAtivo;
+            if (idx === 1) return !!params.moduloInformaticaAtivo;
+            return false;
+        }
+
+        function permissoesCarrosselParaInteracao() {
+            if (ultimosParametrosEmpresa == null) {
+                return { moduloFarmaciaAtivo: true, moduloInformaticaAtivo: true };
+            }
+            return ultimosParametrosEmpresa;
+        }
+
+        function aplicarParametrosModuloFarmaciaDeUltimos() {
+            var p = ultimosParametrosEmpresa;
+            if (!p) return;
+            var farmaciaOn = !!p.moduloFarmaciaAtivo;
+            document.getElementById('moduloFarmaciaAtivo').checked = farmaciaOn;
+            if (farmaciaOn) {
+                document.getElementById('segmento').value = p.segmento || '';
+                document.getElementById('farmaciaLoteValidadeObrigatorio').checked = !!p.farmaciaLoteValidadeObrigatorio;
+                document.getElementById('farmaciaControladosAtivo').checked = !!p.farmaciaControladosAtivo;
+                document.getElementById('farmaciaAntimicrobianosAtivo').checked = !!p.farmaciaAntimicrobianosAtivo;
+                document.getElementById('farmaciaPmcAtivo').checked = !!p.farmaciaPmcAtivo;
+                document.getElementById('farmaciaPmcModo').value = p.farmaciaPmcModo || 'ALERTA';
+            } else {
+                limparCamposModuloFarmaciaNoFormulario();
+            }
+        }
+
+        function aplicarParametrosModuloInformaticaDeUltimos() {
+            var p = ultimosParametrosEmpresa;
+            if (!p) return;
+            var informaticaOn = !!p.moduloInformaticaAtivo;
+            document.getElementById('moduloInformaticaAtivo').checked = informaticaOn;
+            if (informaticaOn) {
+                var elEnd = document.getElementById('enderecoLinha1Os');
+                if (elEnd) elEnd.value = p.enderecoLinha1Os != null ? String(p.enderecoLinha1Os) : '';
+                var elCid = document.getElementById('cidadeUfOs');
+                if (elCid) elCid.value = p.cidadeUfOs != null ? String(p.cidadeUfOs) : '';
+                var elCnpj = document.getElementById('cnpjOs');
+                if (elCnpj) elCnpj.value = p.cnpj != null ? String(p.cnpj) : '';
+                var elIm = document.getElementById('inscricaoMunicipalOs');
+                if (elIm) elIm.value = p.inscricaoMunicipal != null ? String(p.inscricaoMunicipal) : '';
+                var elTel = document.getElementById('telefoneComercialOs');
+                if (elTel) elTel.value = p.telefoneComercial != null ? String(p.telefoneComercial) : '';
+                var elFax = document.getElementById('faxOs');
+                if (elFax) elFax.value = p.fax != null ? String(p.fax) : '';
+                var elEm = document.getElementById('emailComercialOs');
+                if (elEm) elEm.value = p.emailComercial != null ? String(p.emailComercial) : '';
+                var elTerm = document.getElementById('textoTermosOs');
+                if (elTerm) elTerm.value = p.textoTermosOs != null ? String(p.textoTermosOs) : '';
+            } else {
+                limparCamposModuloInformaticaNoFormulario();
+            }
         }
 
         // Preencher formulário com os parâmetros
@@ -947,18 +1296,56 @@
             document.getElementById('chavePix').value = (params.chavePix && params.chavePix.trim()) ? params.chavePix : DEFAULT_PIX_KEY;
             document.getElementById('suporteEmail').value = params.suporteEmail != null ? String(params.suporteEmail) : '';
             document.getElementById('suporteWhatsapp').value = params.suporteWhatsapp != null ? String(params.suporteWhatsapp) : '';
-            document.getElementById('segmento').value = params.segmento || '';
-            document.getElementById('moduloFarmaciaAtivo').checked = !!params.moduloFarmaciaAtivo;
-            document.getElementById('farmaciaLoteValidadeObrigatorio').checked = !!params.farmaciaLoteValidadeObrigatorio;
-            document.getElementById('farmaciaControladosAtivo').checked = !!params.farmaciaControladosAtivo;
-            document.getElementById('farmaciaAntimicrobianosAtivo').checked = !!params.farmaciaAntimicrobianosAtivo;
-            document.getElementById('farmaciaPmcAtivo').checked = !!params.farmaciaPmcAtivo;
-            document.getElementById('farmaciaPmcModo').value = params.farmaciaPmcModo || 'ALERTA';
-            document.getElementById('moduloInformaticaAtivo').checked = !!params.moduloInformaticaAtivo;
+
+            var farmaciaOn = !!params.moduloFarmaciaAtivo;
+            document.getElementById('moduloFarmaciaAtivo').checked = farmaciaOn;
+            if (farmaciaOn) {
+                document.getElementById('segmento').value = params.segmento || '';
+                document.getElementById('farmaciaLoteValidadeObrigatorio').checked = !!params.farmaciaLoteValidadeObrigatorio;
+                document.getElementById('farmaciaControladosAtivo').checked = !!params.farmaciaControladosAtivo;
+                document.getElementById('farmaciaAntimicrobianosAtivo').checked = !!params.farmaciaAntimicrobianosAtivo;
+                document.getElementById('farmaciaPmcAtivo').checked = !!params.farmaciaPmcAtivo;
+                document.getElementById('farmaciaPmcModo').value = params.farmaciaPmcModo || 'ALERTA';
+            } else {
+                limparCamposModuloFarmaciaNoFormulario();
+            }
+
+            var informaticaOn = !!params.moduloInformaticaAtivo;
+            document.getElementById('moduloInformaticaAtivo').checked = informaticaOn;
+            if (informaticaOn) {
+                var elEnd = document.getElementById('enderecoLinha1Os');
+                if (elEnd) elEnd.value = params.enderecoLinha1Os != null ? String(params.enderecoLinha1Os) : '';
+                var elCid = document.getElementById('cidadeUfOs');
+                if (elCid) elCid.value = params.cidadeUfOs != null ? String(params.cidadeUfOs) : '';
+                var elCnpj = document.getElementById('cnpjOs');
+                if (elCnpj) elCnpj.value = params.cnpj != null ? String(params.cnpj) : '';
+                var elIm = document.getElementById('inscricaoMunicipalOs');
+                if (elIm) elIm.value = params.inscricaoMunicipal != null ? String(params.inscricaoMunicipal) : '';
+                var elTel = document.getElementById('telefoneComercialOs');
+                if (elTel) elTel.value = params.telefoneComercial != null ? String(params.telefoneComercial) : '';
+                var elFax = document.getElementById('faxOs');
+                if (elFax) elFax.value = params.fax != null ? String(params.fax) : '';
+                var elEm = document.getElementById('emailComercialOs');
+                if (elEm) elEm.value = params.emailComercial != null ? String(params.emailComercial) : '';
+                var elTerm = document.getElementById('textoTermosOs');
+                if (elTerm) elTerm.value = params.textoTermosOs != null ? String(params.textoTermosOs) : '';
+            } else {
+                limparCamposModuloInformaticaNoFormulario();
+            }
+
             document.getElementById('ativo').checked = params.ativo !== false;
             atualizarBadgeEmpresaAtiva();
 
             atualizarPreVisualizacao();
+
+            try {
+                ultimosParametrosEmpresa = JSON.parse(JSON.stringify(params));
+            } catch (e) {
+                ultimosParametrosEmpresa = params;
+            }
+            if (typeof window.sincronizarCarrosselModulosAposCarregarEmpresa === 'function') {
+                window.sincronizarCarrosselModulosAposCarregarEmpresa();
+            }
         }
 
         // Obter valores do formulário
@@ -995,7 +1382,17 @@
                 farmaciaPmcAtivo: document.getElementById('farmaciaPmcAtivo').checked,
                 farmaciaPmcModo: document.getElementById('farmaciaPmcModo').value || 'ALERTA',
                 moduloInformaticaAtivo: document.getElementById('moduloInformaticaAtivo').checked,
-                ativo: document.getElementById('ativo').checked
+                enderecoLinha1Os: (function () { var e = document.getElementById('enderecoLinha1Os'); return e && e.value ? e.value.trim() : null; })(),
+                cidadeUfOs: (function () { var e = document.getElementById('cidadeUfOs'); return e && e.value ? e.value.trim() : null; })(),
+                cnpj: (function () { var e = document.getElementById('cnpjOs'); return e && e.value ? e.value.trim() : null; })(),
+                inscricaoMunicipal: (function () { var e = document.getElementById('inscricaoMunicipalOs'); return e && e.value ? e.value.trim() : null; })(),
+                telefoneComercial: (function () { var e = document.getElementById('telefoneComercialOs'); return e && e.value ? e.value.trim() : null; })(),
+                fax: (function () { var e = document.getElementById('faxOs'); return e && e.value ? e.value.trim() : null; })(),
+                emailComercial: (function () { var e = document.getElementById('emailComercialOs'); return e && e.value ? e.value.trim() : null; })(),
+                textoTermosOs: (function () { var e = document.getElementById('textoTermosOs'); return e && e.value ? e.value.trim() : null; })(),
+                ativo: (typeof isSuperAdmin === 'function' && isSuperAdmin())
+                    ? document.getElementById('ativo').checked
+                    : undefined
             };
         }
 

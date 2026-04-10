@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,6 +37,18 @@ public class OrdemServico {
     @Column(name = "contato_cliente", length = 120)
     private String contatoCliente;
 
+    @Column(name = "codigo_cliente", length = 40)
+    private String codigoCliente;
+
+    @Column(name = "telefone_cliente", length = 40)
+    private String telefoneCliente;
+
+    @Column(name = "setor_cliente", length = 80)
+    private String setorCliente;
+
+    @Column(name = "nome_contato", length = 120)
+    private String nomeContato;
+
     @Column(name = "equipamento", nullable = false, length = 140)
     private String equipamento;
 
@@ -47,6 +60,15 @@ public class OrdemServico {
 
     @Column(name = "numero_serie", length = 120)
     private String numeroSerie;
+
+    @Column(name = "patrimonio", length = 120)
+    private String patrimonio;
+
+    @Column(name = "acessorios", columnDefinition = "TEXT")
+    private String acessorios;
+
+    @Column(name = "tipo_ordem_servico", length = 40)
+    private String tipoOrdemServico;
 
     @Column(name = "defeito_relatado", columnDefinition = "TEXT")
     private String defeitoRelatado;
@@ -62,6 +84,27 @@ public class OrdemServico {
 
     @Column(name = "observacao", columnDefinition = "TEXT")
     private String observacao;
+
+    @Column(name = "contrato_identificacao", length = 120)
+    private String contratoIdentificacao;
+
+    @Column(name = "nf_compra", length = 60)
+    private String nfCompra;
+
+    @Column(name = "data_compra")
+    private LocalDate dataCompra;
+
+    @Column(name = "loja_compra", length = 120)
+    private String lojaCompra;
+
+    @Column(name = "numero_certificado", length = 80)
+    private String numeroCertificado;
+
+    @Column(name = "senha_equipamento", length = 120)
+    private String senhaEquipamento;
+
+    @Column(name = "os_externa", length = 80)
+    private String osExterna;
 
     @Column(name = "valor_servico", precision = 10, scale = 2)
     private BigDecimal valorServico;

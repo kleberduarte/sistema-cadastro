@@ -33,7 +33,12 @@ function resolveLogoUrlForBrowser(sanitized) {
     }
     if (typeof window === 'undefined' || !window.location) return sanitized;
     try {
-        return new URL(sanitized, window.location.href).href;
+        var base = window.location.href;
+        // Com .../parametros.html/ (barra após .html), sp.png viraria .../parametros.html/sp.png (404).
+        if (/\/[^/]+\.html\/$/i.test(base)) {
+            base = base.replace(/\/$/, '');
+        }
+        return new URL(sanitized, base).href;
     } catch (_) {
         return sanitized;
     }
@@ -131,15 +136,7 @@ function applyCompanyFavicon(logoUrl) {
         return;
     }
 
-    var faviconSrc = clean;
-    try {
-        if (clean.indexOf('http://') !== 0 &&
-            clean.indexOf('https://') !== 0 &&
-            clean.indexOf('data:') !== 0 &&
-            clean.indexOf('//') !== 0) {
-            faviconSrc = new URL(clean, window.location.href).href;
-        }
-    } catch (_) {}
+    var faviconSrc = resolveLogoUrlForBrowser(clean);
 
     var mime = guessFaviconMime(faviconSrc);
     // Bust cache para forçar o browser a trocar o ícone da aba.

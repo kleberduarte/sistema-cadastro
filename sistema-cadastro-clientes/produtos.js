@@ -19,6 +19,8 @@ let bulkDeletePending = false;
 document.addEventListener('DOMContentLoaded', function() {
     if (!checkPermission('adm')) return;
     displayUserName();
+    atualizarVisibilidadeBlocoFarmaciaProdutos();
+    window.addEventListener('focus', atualizarVisibilidadeBlocoFarmaciaProdutos);
     loadProducts(0);
     setupEventListeners();
     updatePromoToggleVisual();
@@ -30,6 +32,32 @@ function updatePromoToggleVisual() {
     if (!card || !checkbox) return;
     if (checkbox.checked) card.classList.add('is-active');
     else card.classList.remove('is-active');
+}
+
+function readEmpresaParamsFromStorage() {
+    try {
+        var raw = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch (e) {
+        return null;
+    }
+}
+
+/** Bloco Farmácia / PMC no formulário de produto só para empresas com módulo farmácia ativo (Parâmetros). */
+function empresaTemModuloFarmacia() {
+    var p = readEmpresaParamsFromStorage();
+    return !!(p && p.moduloFarmaciaAtivo);
+}
+
+function atualizarVisibilidadeBlocoFarmaciaProdutos() {
+    var card = document.getElementById('productFormFarmaciaCard');
+    if (!card) return;
+    if (empresaTemModuloFarmacia()) {
+        card.removeAttribute('hidden');
+    } else {
+        card.setAttribute('hidden', 'hidden');
+    }
 }
 
 // Configurar event listeners
@@ -791,7 +819,7 @@ function validateForm(formData) {
     if (!formData.tipo || formData.tipo === '') {
         errors.tipo = 'Selecione o tipo';
     }
-    if (formData.pmc != null && formData.pmc < 0) {
+    if (empresaTemModuloFarmacia() && formData.pmc != null && formData.pmc < 0) {
         errors.pmc = 'PMC não pode ser negativo';
     }
     
@@ -857,9 +885,54 @@ async function handleSubmit(e) {
     const qtdPagarRaw = qtdPagarEl ? String(qtdPagarEl.value || '').trim() : '';
     const promoQtdLevarValue = qtdLevarRaw ? parseInt(qtdLevarRaw, 10) : null;
     const promoQtdPagarValue = qtdPagarRaw ? parseInt(qtdPagarRaw, 10) : null;
-    const pmcRaw = (document.getElementById('pmc').value || '').trim();
-    const pmcValue = pmcRaw ? parseFloat(pmcRaw.replace(/\./g, '').replace(',', '.')) : null;
-    
+
+    var farmaciaOn = empresaTemModuloFarmacia();
+    var tipoControle;
+    var exigeReceita;
+    var exigeLote;
+    var exigeValidade;
+    var registroMs;
+    var gtinEan;
+    var pmcVal;
+    if (farmaciaOn) {
+        var pmcRaw = (document.getElementById('pmc').value || '').trim();
+        var pmcParsed = pmcRaw ? parseFloat(pmcRaw.replace(/\./g, '').replace(',', '.')) : null;
+        tipoControle = document.getElementById('tipoControle').value || 'COMUM';
+        exigeReceita = !!document.getElementById('exigeReceita').checked;
+        exigeLote = !!document.getElementById('exigeLote').checked;
+        exigeValidade = !!document.getElementById('exigeValidade').checked;
+        registroMs = (document.getElementById('registroMs').value || '').trim() || null;
+        gtinEan = (document.getElementById('gtinEan').value || '').trim() || null;
+        pmcVal = isNaN(pmcParsed) ? null : pmcParsed;
+    } else if (editingProductId) {
+        var prev = products.find(function (p) { return p.id === editingProductId; });
+        if (prev) {
+            tipoControle = prev.tipoControle || 'COMUM';
+            exigeReceita = !!prev.exigeReceita;
+            exigeLote = !!prev.exigeLote;
+            exigeValidade = !!prev.exigeValidade;
+            registroMs = prev.registroMs != null && String(prev.registroMs).trim() !== '' ? String(prev.registroMs).trim() : null;
+            gtinEan = prev.gtinEan != null && String(prev.gtinEan).trim() !== '' ? String(prev.gtinEan).trim() : null;
+            pmcVal = prev.pmc != null && !isNaN(Number(prev.pmc)) ? Number(prev.pmc) : null;
+        } else {
+            tipoControle = 'COMUM';
+            exigeReceita = false;
+            exigeLote = false;
+            exigeValidade = false;
+            registroMs = null;
+            gtinEan = null;
+            pmcVal = null;
+        }
+    } else {
+        tipoControle = 'COMUM';
+        exigeReceita = false;
+        exigeLote = false;
+        exigeValidade = false;
+        registroMs = null;
+        gtinEan = null;
+        pmcVal = null;
+    }
+
     const formData = {
         nome: document.getElementById('name').value.trim(),
         descricao: document.getElementById('description').value.trim(),
@@ -878,13 +951,13 @@ async function handleSubmit(e) {
 
         promoQtdLevar: promoQtdLevarValue,
         promoQtdPagar: promoQtdPagarValue,
-        tipoControle: (document.getElementById('tipoControle').value || 'COMUM'),
-        exigeReceita: !!document.getElementById('exigeReceita').checked,
-        exigeLote: !!document.getElementById('exigeLote').checked,
-        exigeValidade: !!document.getElementById('exigeValidade').checked,
-        registroMs: (document.getElementById('registroMs').value || '').trim() || null,
-        gtinEan: (document.getElementById('gtinEan').value || '').trim() || null,
-        pmc: isNaN(pmcValue) ? null : pmcValue
+        tipoControle: tipoControle,
+        exigeReceita: exigeReceita,
+        exigeLote: exigeLote,
+        exigeValidade: exigeValidade,
+        registroMs: registroMs,
+        gtinEan: gtinEan,
+        pmc: pmcVal
     };
     
     // Revalidar unicidade do código (digitado manualmente ou por leitor)
@@ -1180,15 +1253,25 @@ function editProduct(id) {
         document.getElementById('category').value = product.categoria || '';
         document.getElementById('productCode').value = product.codigoProduto || '';
         document.getElementById('tipo').value = product.tipo || '';
-        document.getElementById('tipoControle').value = product.tipoControle || 'COMUM';
-        document.getElementById('exigeReceita').checked = !!product.exigeReceita;
-        document.getElementById('exigeLote').checked = !!product.exigeLote;
-        document.getElementById('exigeValidade').checked = !!product.exigeValidade;
-        document.getElementById('registroMs').value = product.registroMs || '';
-        document.getElementById('gtinEan').value = product.gtinEan || '';
-        document.getElementById('pmc').value = product.pmc != null
-            ? parseFloat(product.pmc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-            : '';
+        if (empresaTemModuloFarmacia()) {
+            document.getElementById('tipoControle').value = product.tipoControle || 'COMUM';
+            document.getElementById('exigeReceita').checked = !!product.exigeReceita;
+            document.getElementById('exigeLote').checked = !!product.exigeLote;
+            document.getElementById('exigeValidade').checked = !!product.exigeValidade;
+            document.getElementById('registroMs').value = product.registroMs || '';
+            document.getElementById('gtinEan').value = product.gtinEan || '';
+            document.getElementById('pmc').value = product.pmc != null
+                ? parseFloat(product.pmc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : '';
+        } else {
+            document.getElementById('tipoControle').value = 'COMUM';
+            document.getElementById('exigeReceita').checked = false;
+            document.getElementById('exigeLote').checked = false;
+            document.getElementById('exigeValidade').checked = false;
+            document.getElementById('registroMs').value = '';
+            document.getElementById('gtinEan').value = '';
+            document.getElementById('pmc').value = '';
+        }
 
         // Promoções
         const promoEnabledEl = document.getElementById('promoEnabled');

@@ -88,6 +88,32 @@ public class ParametroEmpresa {
     @Column(name = "modulo_informatica_ativo")
     private Boolean moduloInformaticaAtivo = false;
 
+    /** Endereço (logradouro) para cabeçalho da impressão da OS. */
+    @Column(name = "endereco_linha1_os", length = 500)
+    private String enderecoLinha1Os;
+
+    @Column(name = "cidade_uf_os", length = 200)
+    private String cidadeUfOs;
+
+    @Column(name = "cnpj", length = 24)
+    private String cnpj;
+
+    @Column(name = "inscricao_municipal", length = 40)
+    private String inscricaoMunicipal;
+
+    @Column(name = "telefone_comercial", length = 40)
+    private String telefoneComercial;
+
+    @Column(name = "fax", length = 40)
+    private String fax;
+
+    @Column(name = "email_comercial", length = 255)
+    private String emailComercial;
+
+    /** Texto legal do rodapé da OS; se vazio, o cliente usa texto padrão na impressão. */
+    @Column(name = "texto_termos_os", columnDefinition = "TEXT")
+    private String textoTermosOs;
+
     @Column(name = "ativo")
     private Boolean ativo = true;
 }

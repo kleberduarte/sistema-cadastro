@@ -33,7 +33,8 @@ public class ParametroEmpresaController {
             }
             dto.setEmpresaId(requester.getEmpresaId());
         }
-        return ResponseEntity.ok(service.salvar(dto));
+        boolean permitirAlterarAtivo = requester != null && requester.getRole() == Role.ADM;
+        return ResponseEntity.ok(service.salvar(dto, permitirAlterarAtivo));
     }
 
     @GetMapping("/empresa/{empresaId}")

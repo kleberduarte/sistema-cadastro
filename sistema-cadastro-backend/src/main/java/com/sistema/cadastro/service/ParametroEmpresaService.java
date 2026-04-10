@@ -28,6 +28,14 @@ public class ParametroEmpresaService {
 
     @Transactional
     public ParametroEmpresaDTO salvar(ParametroEmpresaDTO dto) {
+        return salvar(dto, true);
+    }
+
+    /**
+     * @param permitirAlterarAtivo somente Super Admin (ADM) pode alterar pausa/ativação do cadastro no sistema.
+     */
+    @Transactional
+    public ParametroEmpresaDTO salvar(ParametroEmpresaDTO dto, boolean permitirAlterarAtivo) {
         validarContatosSuporte(dto);
 
         ParametroEmpresa parametro;
@@ -71,7 +79,22 @@ public class ParametroEmpresaService {
         parametro.setFarmaciaPmcAtivo(dto.getFarmaciaPmcAtivo() != null ? dto.getFarmaciaPmcAtivo() : false);
         parametro.setFarmaciaPmcModo(normalizePmcMode(dto.getFarmaciaPmcModo()));
         parametro.setModuloInformaticaAtivo(dto.getModuloInformaticaAtivo() != null ? dto.getModuloInformaticaAtivo() : false);
-        parametro.setAtivo(dto.getAtivo() == null ? true : dto.getAtivo());
+        parametro.setEnderecoLinha1Os(emptyToNull(dto.getEnderecoLinha1Os()));
+        parametro.setCidadeUfOs(emptyToNull(dto.getCidadeUfOs()));
+        parametro.setCnpj(emptyToNull(dto.getCnpj()));
+        parametro.setInscricaoMunicipal(emptyToNull(dto.getInscricaoMunicipal()));
+        parametro.setTelefoneComercial(emptyToNull(dto.getTelefoneComercial()));
+        parametro.setFax(emptyToNull(dto.getFax()));
+        parametro.setEmailComercial(emptyToNull(dto.getEmailComercial()));
+        parametro.setTextoTermosOs(emptyToNull(dto.getTextoTermosOs()));
+        if (permitirAlterarAtivo) {
+            parametro.setAtivo(dto.getAtivo() == null ? true : dto.getAtivo());
+        } else {
+            if (parametro.getId() == null) {
+                parametro.setAtivo(true);
+            }
+            // registro existente: mantém o valor já carregado do banco (ignora dto.ativo)
+        }
 
         parametro = repository.save(parametro);
         return toDTO(parametro);
@@ -202,6 +225,14 @@ public class ParametroEmpresaService {
         dto.setFarmaciaPmcAtivo(entity.getFarmaciaPmcAtivo());
         dto.setFarmaciaPmcModo(entity.getFarmaciaPmcModo());
         dto.setModuloInformaticaAtivo(entity.getModuloInformaticaAtivo());
+        dto.setEnderecoLinha1Os(entity.getEnderecoLinha1Os());
+        dto.setCidadeUfOs(entity.getCidadeUfOs());
+        dto.setCnpj(entity.getCnpj());
+        dto.setInscricaoMunicipal(entity.getInscricaoMunicipal());
+        dto.setTelefoneComercial(entity.getTelefoneComercial());
+        dto.setFax(entity.getFax());
+        dto.setEmailComercial(entity.getEmailComercial());
+        dto.setTextoTermosOs(entity.getTextoTermosOs());
         dto.setAtivo(entity.getAtivo());
         return dto;
     }

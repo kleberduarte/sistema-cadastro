@@ -64,6 +64,32 @@ public class InformaticaSchemaMigration {
             safeExec(jdbc, "CREATE UNIQUE INDEX uk_os_empresa_numero ON ordens_servico (empresa_id, numero_os)");
             safeExec(jdbc, "CREATE INDEX idx_os_empresa_status_data ON ordens_servico (empresa_id, status, data_abertura)");
             safeExec(jdbc, "CREATE INDEX idx_os_empresa_cliente ON ordens_servico (empresa_id, nome_cliente)");
+
+            // Campos adicionais — formulário tipo assistência (cliente, equipamento, contrato/garantia)
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN codigo_cliente VARCHAR(40) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN telefone_cliente VARCHAR(40) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN setor_cliente VARCHAR(80) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN nome_contato VARCHAR(120) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN acessorios TEXT NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN patrimonio VARCHAR(120) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN tipo_ordem_servico VARCHAR(40) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN contrato_identificacao VARCHAR(120) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN nf_compra VARCHAR(60) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN data_compra DATE NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN loja_compra VARCHAR(120) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN numero_certificado VARCHAR(80) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN senha_equipamento VARCHAR(120) NULL");
+            safeExec(jdbc, "ALTER TABLE ordens_servico ADD COLUMN os_externa VARCHAR(80) NULL");
+
+            // Cabeçalho/rodapé da OS na impressão (por empresa)
+            safeExec(jdbc, "ALTER TABLE parametros_empresa ADD COLUMN endereco_linha1_os VARCHAR(500) NULL");
+            safeExec(jdbc, "ALTER TABLE parametros_empresa ADD COLUMN cidade_uf_os VARCHAR(200) NULL");
+            safeExec(jdbc, "ALTER TABLE parametros_empresa ADD COLUMN cnpj VARCHAR(24) NULL");
+            safeExec(jdbc, "ALTER TABLE parametros_empresa ADD COLUMN inscricao_municipal VARCHAR(40) NULL");
+            safeExec(jdbc, "ALTER TABLE parametros_empresa ADD COLUMN telefone_comercial VARCHAR(40) NULL");
+            safeExec(jdbc, "ALTER TABLE parametros_empresa ADD COLUMN fax VARCHAR(40) NULL");
+            safeExec(jdbc, "ALTER TABLE parametros_empresa ADD COLUMN email_comercial VARCHAR(255) NULL");
+            safeExec(jdbc, "ALTER TABLE parametros_empresa ADD COLUMN texto_termos_os TEXT NULL");
         };
     }
 }

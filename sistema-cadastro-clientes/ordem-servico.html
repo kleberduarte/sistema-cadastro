@@ -51,21 +51,41 @@
                 <section class="form-section">
                     <h2>Cadastro de OS</h2>
                     <input type="hidden" id="osId">
+                    <h3 style="margin:1rem 0 0.5rem;font-size:1rem;color:#475569;">Identificação do cliente</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="nomeCliente">Cliente</label>
+                            <label for="codigoCliente">Código</label>
+                            <input type="text" id="codigoCliente" maxlength="40" placeholder="Código interno / cadastro">
+                        </div>
+                        <div class="form-group">
+                            <label for="nomeCliente">Nome</label>
                             <input type="text" id="nomeCliente" maxlength="180" placeholder="Nome do cliente">
                         </div>
                         <div class="form-group">
-                            <label for="contatoCliente">Contato (WhatsApp para envio automático)</label>
-                            <input type="text" id="contatoCliente" maxlength="120" placeholder="Ex.: 11999998888 ou +55 11 99999-8888">
-                            <small style="display:block;margin-top:6px;color:#64748b;font-size:0.86rem;line-height:1.4;">Use um número de celular com DDD. Ao salvar uma <strong>nova</strong> OS, o sistema pode abrir o WhatsApp com o mesmo texto da impressão.</small>
+                            <label for="telefoneCliente">Telefone</label>
+                            <input type="text" id="telefoneCliente" maxlength="40" placeholder="Fixo ou celular">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="equipamento">Equipamento *</label>
-                            <input type="text" id="equipamento" maxlength="140" placeholder="Notebook, Desktop, Impressora..." required>
+                            <label for="setorCliente">Setor</label>
+                            <input type="text" id="setorCliente" maxlength="80">
+                        </div>
+                        <div class="form-group">
+                            <label for="nomeContato">Contato (pessoa)</label>
+                            <input type="text" id="nomeContato" maxlength="120" placeholder="Nome do contato no cliente">
+                        </div>
+                        <div class="form-group">
+                            <label for="contatoCliente">WhatsApp (envio automático)</label>
+                            <input type="text" id="contatoCliente" maxlength="120" placeholder="Ex.: 11999998888">
+                            <small style="display:block;margin-top:6px;color:#64748b;font-size:0.86rem;line-height:1.4;">Ao salvar uma <strong>nova</strong> OS, pode abrir o WhatsApp com o resumo.</small>
+                        </div>
+                    </div>
+                    <h3 style="margin:1rem 0 0.5rem;font-size:1rem;color:#475569;">Equipamento</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="equipamento">Tipo de equipamento *</label>
+                            <input type="text" id="equipamento" maxlength="140" placeholder="Notebook, Desktop..." required>
                         </div>
                         <div class="form-group">
                             <label for="marca">Marca</label>
@@ -78,20 +98,58 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="numeroSerie">Nº de Série</label>
+                            <label for="numeroSerie">Nº de série</label>
                             <input type="text" id="numeroSerie" maxlength="120">
                         </div>
                         <div class="form-group">
-                            <label for="tecnicoResponsavel">Técnico</label>
-                            <input type="text" id="tecnicoResponsavel" maxlength="120">
+                            <label for="patrimonio">Patrimônio</label>
+                            <input type="text" id="patrimonio" maxlength="120">
                         </div>
                         <div class="form-group">
-                            <label for="dataPrevisaoEntrega">Previsão de Entrega</label>
-                            <input type="datetime-local" id="dataPrevisaoEntrega">
+                            <label for="tipoOrdemServico">Tipo da ordem (impressão)</label>
+                            <input type="text" id="tipoOrdemServico" maxlength="40" placeholder="Ex.: ORÇAMENTO, GARANTIA">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="defeitoRelatado">Defeito Relatado</label>
+                        <label for="acessorios">Acessórios que acompanham</label>
+                        <textarea id="acessorios" rows="2" placeholder="Fonte, mochila, cabos..."></textarea>
+                    </div>
+                    <h3 style="margin:1rem 0 0.5rem;font-size:1rem;color:#475569;">Contrato e garantia</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contratoIdentificacao">Identificação do contrato</label>
+                            <input type="text" id="contratoIdentificacao" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="nfCompra">NF compra</label>
+                            <input type="text" id="nfCompra" maxlength="60">
+                        </div>
+                        <div class="form-group">
+                            <label for="dataCompra">Data da compra</label>
+                            <input type="date" id="dataCompra">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="lojaCompra">Loja da compra</label>
+                            <input type="text" id="lojaCompra" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="numeroCertificado">Nº certificado</label>
+                            <input type="text" id="numeroCertificado" maxlength="80">
+                        </div>
+                        <div class="form-group">
+                            <label for="osExterna">OS externa</label>
+                            <input type="text" id="osExterna" maxlength="80">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="senhaEquipamento">Senha do equipamento (BIOS/Windows)</label>
+                        <input type="text" id="senhaEquipamento" maxlength="120" placeholder="Evite salvar senhas reais em ambiente compartilhado" autocomplete="off">
+                    </div>
+                    <h3 style="margin:1rem 0 0.5rem;font-size:1rem;color:#475569;">Serviço</h3>
+                    <div class="form-group">
+                        <label for="defeitoRelatado">Defeito reclamado</label>
                         <textarea id="defeitoRelatado" rows="2"></textarea>
                     </div>
                     <div class="form-group">
@@ -99,21 +157,31 @@
                         <textarea id="diagnostico" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="servicoExecutado">Serviço Executado</label>
+                        <label for="servicoExecutado">Serviço executado</label>
                         <textarea id="servicoExecutado" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="observacao">Observação</label>
+                        <label for="observacao">Observações gerais</label>
                         <textarea id="observacao" rows="2"></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
+                            <label for="tecnicoResponsavel">Técnico</label>
+                            <input type="text" id="tecnicoResponsavel" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="dataPrevisaoEntrega">Previsão de entrega</label>
+                            <input type="datetime-local" id="dataPrevisaoEntrega">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="valorServico">Valor Serviço</label>
-                            <input type="number" id="valorServico" min="0" step="0.01">
+                            <input type="text" id="valorServico" name="valorServico" inputmode="decimal" autocomplete="off" placeholder="0,00">
                         </div>
                         <div class="form-group">
                             <label for="desconto">Desconto</label>
-                            <input type="number" id="desconto" min="0" step="0.01">
+                            <input type="text" id="desconto" name="desconto" inputmode="decimal" autocomplete="off" placeholder="0,00">
                         </div>
                         <div class="form-group">
                             <label for="statusOs">Status</label>
@@ -243,6 +311,60 @@
             }
         }
 
+        /** Hex #RGB ou #RRGGBB (parâmetros da empresa); fallback seguro para CSS. */
+        function corHexSeguraParaCss(v, fallback) {
+            var s = String(v == null ? '' : v).trim();
+            if (/^#[0-9A-Fa-f]{3}$/.test(s) || /^#[0-9A-Fa-f]{6}$/.test(s)) return s;
+            return fallback;
+        }
+
+        function hexParaRgb(hex) {
+            var h = String(hex || '').replace(/^#/, '');
+            if (h.length === 3) {
+                h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+            }
+            if (!/^[0-9A-Fa-f]{6}$/.test(h)) return null;
+            var n = parseInt(h, 16);
+            return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+        }
+
+        function rgbaHex(hex, alpha) {
+            var c = hexParaRgb(hex);
+            if (!c) return 'rgba(102,126,234,' + alpha + ')';
+            return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + alpha + ')';
+        }
+
+        /** Mesmas cores da retaguarda / Parâmetros (gradiente do body e tema do ID empresa). */
+        function temaEmpresaParaImpressaoOs() {
+            var P0 = (typeof window !== 'undefined' && window.SISTEMA_THEME_PADRAO) ? window.SISTEMA_THEME_PADRAO : {
+                corPrimaria: '#667eea',
+                corSecundaria: '#764ba2',
+                corTexto: '#333333'
+            };
+            try {
+                var raw = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
+                if (!raw) {
+                    return {
+                        corPrimaria: P0.corPrimaria,
+                        corSecundaria: P0.corSecundaria,
+                        corTexto: P0.corTexto
+                    };
+                }
+                var p = JSON.parse(raw);
+                return {
+                    corPrimaria: corHexSeguraParaCss(p.corPrimaria, P0.corPrimaria),
+                    corSecundaria: corHexSeguraParaCss(p.corSecundaria, P0.corSecundaria),
+                    corTexto: corHexSeguraParaCss(p.corTexto, P0.corTexto)
+                };
+            } catch (_) {
+                return {
+                    corPrimaria: P0.corPrimaria,
+                    corSecundaria: P0.corSecundaria,
+                    corTexto: P0.corTexto
+                };
+            }
+        }
+
         function escHtml(s) {
             if (s == null || s === '') return '';
             return String(s)
@@ -252,27 +374,190 @@
                 .replace(/"/g, '&quot;');
         }
 
-        /** HTML da página de impressão (mesmo layout do botão Imprimir). */
+        function parametrosEmpresaParaOs() {
+            try {
+                var raw = localStorage.getItem('empresaParams') || localStorage.getItem('clientParams');
+                if (!raw) return {};
+                return JSON.parse(raw);
+            } catch (_) {
+                return {};
+            }
+        }
+
+        function padNumeroOsImpressao(n) {
+            var s = String(n == null ? '' : n);
+            if (!s) return '00000000';
+            while (s.length < 8) s = '0' + s;
+            return s;
+        }
+
+        function dataSomenteBr(v) {
+            if (!v) return '—';
+            var s = String(v);
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+                var p = s.substring(0, 10).split('-');
+                return p[2] + '/' + p[1] + '/' + p[0];
+            }
+            try {
+                return new Date(v).toLocaleDateString('pt-BR');
+            } catch (_) {
+                return s;
+            }
+        }
+
+        function textoTermosRodapePadraoOs() {
+            return 'Solicitamos senhas de acesso quando necessário para diagnóstico. Não nos responsabilizamos por perda de dados — recomenda-se backup prévio. '
+                + 'Prazo para retirada com orçamento aprovado: 15 dias; com orçamento não aprovado: 5 dias. Após o prazo, poderá ser cobrada taxa de armazenagem. '
+                + 'Equipamentos não retirados no prazo poderão ser descartados conforme política interna. Agradecemos a preferência.';
+        }
+
+        /** Impressão modelo assistência (bordas pretas, campos completos) + dados fiscais em Parâmetros. */
         function montarHtmlImpressaoOs(os) {
-            var nomeEmp = nomeEmpresaAtual();
-            var h = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>OS #' + (os.numeroOs || os.id) + '</title></head><body style="font-family:Arial,sans-serif;padding:20px;">'
-                + '<h2>Ordem de Serviço #' + (os.numeroOs || os.id) + '</h2>'
-                + (nomeEmp ? '<p style="color:#555;margin-top:-8px;">' + escHtml(nomeEmp) + '</p>' : '')
-                + '<p><strong>Status:</strong> ' + escHtml(os.status || '-') + '</p>'
-                + '<p><strong>Cliente:</strong> ' + escHtml(os.nomeCliente || '-') + '</p>'
-                + '<p><strong>Contato:</strong> ' + escHtml(os.contatoCliente || '-') + '</p>'
-                + '<p><strong>Equipamento:</strong> ' + escHtml(os.equipamento || '-') + '</p>'
-                + '<p><strong>Marca/Modelo:</strong> ' + escHtml(os.marca || '-') + ' / ' + escHtml(os.modelo || '-') + '</p>'
-                + '<p><strong>Nº Série:</strong> ' + escHtml(os.numeroSerie || '-') + '</p>'
-                + '<p><strong>Defeito:</strong><br>' + escHtml(os.defeitoRelatado || '-') + '</p>'
-                + '<p><strong>Diagnóstico:</strong><br>' + escHtml(os.diagnostico || '-') + '</p>'
-                + '<p><strong>Serviço executado:</strong><br>' + escHtml(os.servicoExecutado || '-') + '</p>'
-                + '<p><strong>Técnico:</strong> ' + escHtml(os.tecnicoResponsavel || '-') + '</p>'
-                + (os.observacao ? '<p><strong>Observação:</strong><br>' + escHtml(os.observacao) + '</p>' : '')
-                + '<p><strong>Total:</strong> ' + moeda(os.valorTotal || 0) + '</p>'
-                + '<p><strong>Abertura:</strong> ' + dataHoraBr(os.dataAbertura) + '</p>'
+            var emp = parametrosEmpresaParaOs();
+            var nomeEmp = (emp.nomeEmpresa && String(emp.nomeEmpresa).trim()) ? String(emp.nomeEmpresa).trim() : nomeEmpresaAtual();
+            var num = os.numeroOs != null ? os.numeroOs : os.id;
+            var numFmt = padNumeroOsImpressao(num);
+            var rawLogo = (emp.logoUrl && String(emp.logoUrl).trim()) ? String(emp.logoUrl).trim() : '';
+            var logoUrlAbs = '';
+            if (rawLogo) {
+                var cleanL = typeof sanitizeLogoUrlForDisplay === 'function' ? sanitizeLogoUrlForDisplay(rawLogo) : rawLogo;
+                logoUrlAbs = typeof resolveLogoUrlForBrowser === 'function' ? resolveLogoUrlForBrowser(cleanL) : cleanL;
+            }
+            var logoImg = logoUrlAbs
+                ? ('<img src="' + escHtml(logoUrlAbs) + '" alt="" style="max-width:140px;max-height:72px;object-fit:contain;display:block;">')
+                : '<span style="font-size:11px;color:#666;">Logo</span>';
+            var end1 = emp.enderecoLinha1Os ? String(emp.enderecoLinha1Os) : '';
+            var cid = emp.cidadeUfOs ? String(emp.cidadeUfOs) : '';
+            var cnpj = emp.cnpj ? String(emp.cnpj) : '';
+            var inscM = emp.inscricaoMunicipal ? String(emp.inscricaoMunicipal) : '';
+            var linhaCidade = '';
+            if (cid || cnpj || inscM) {
+                linhaCidade = cid;
+                if (cnpj) linhaCidade += (linhaCidade ? ' — ' : '') + 'CNPJ: ' + cnpj;
+                if (inscM) linhaCidade += (linhaCidade ? ' — ' : '') + 'Insc. municipal: ' + inscM;
+            }
+            var fone = emp.telefoneComercial ? String(emp.telefoneComercial) : '';
+            var fax = emp.fax ? String(emp.fax) : '';
+            var em = emp.emailComercial ? String(emp.emailComercial) : '';
+            var linhaFone = '';
+            if (fone) linhaFone += 'Fone: ' + fone;
+            if (fax) linhaFone += (linhaFone ? ' — ' : '') + 'Fax: ' + fax;
+            if (em) linhaFone += (linhaFone ? ' / ' : '') + 'E-mail: ' + em;
+            var termos = (emp.textoTermosOs && String(emp.textoTermosOs).trim()) ? String(emp.textoTermosOs).trim() : textoTermosRodapePadraoOs();
+            var tipoOs = os.tipoOrdemServico ? String(os.tipoOrdemServico) : '—';
+            var bcPayload = String(numFmt).replace(/\D/g, '') || String(num);
+            var css = ''
+                + 'body{margin:0;padding:10mm 8mm;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+                + 'table.os-b{width:100%;border-collapse:collapse}'
+                + 'table.os-b td,table.os-b th{border:1px solid #000;padding:4px 6px;vertical-align:top}'
+                + '.os-lbl{font-size:9px;font-weight:normal;text-transform:uppercase;color:#333}'
+                + '.os-val{font-size:11px;font-weight:bold;margin-top:2px}'
+                + '.os-sec{font-size:10px;font-weight:bold;text-transform:uppercase;margin:0 0 4px}'
+                + '.os-osbig{font-size:15px;font-weight:bold}'
+                + '.os-termos{font-size:8px;line-height:1.35;text-align:justify}'
+                + '.os-assin{min-height:56px;border:1px solid #000;margin-top:6px;padding:6px;font-size:9px}'
+                + '@page{size:A4;margin:10mm}'
+                + '@media print{body{padding:0}}';
+
+            function cel(label, val) {
+                return '<td><span class="os-lbl">' + escHtml(label) + '</span><div class="os-val">' + escHtml(val || '—') + '</div></td>';
+            }
+            var rowCliente = '<tr>'
+                + cel('Código', os.codigoCliente)
+                + cel('Nome', os.nomeCliente)
+                + cel('Telefone', os.telefoneCliente)
+                + cel('Setor', os.setorCliente)
+                + cel('Contato', os.nomeContato)
+                + '</tr>';
+
+            var rowAcessorios = '<tr><td colspan="5"><span class="os-lbl">Acessórios</span><div class="os-val" style="white-space:pre-wrap;font-weight:normal;font-size:10.5px;min-height:36px;">' + escHtml(os.acessorios || '—') + '</div></td></tr>';
+
+            var rowEquip = '<tr>'
+                + cel('Número de série', os.numeroSerie)
+                + cel('Patrimônio', os.patrimonio)
+                + cel('Modelo', os.modelo)
+                + cel('Marca', os.marca)
+                + cel('Tipo de equipamento', os.equipamento)
+                + '</tr>';
+
+            var rowContrato = '<tr>'
+                + cel('Identificação do contrato', os.contratoIdentificacao)
+                + cel('NF compra', os.nfCompra)
+                + cel('Data compra', dataSomenteBr(os.dataCompra))
+                + cel('Loja da compra', os.lojaCompra)
+                + '<td></td>'
+                + '</tr>';
+            rowContrato += '<tr>'
+                + cel('Nº certificado', os.numeroCertificado)
+                + cel('Senha', os.senhaEquipamento)
+                + cel('OS externa', os.osExterna)
+                + '<td colspan="2"><span class="os-lbl">Status interno</span><div class="os-val">' + escHtml(os.status || '—') + '</div></td>'
+                + '</tr>';
+
+            var rowObsDef = '<tr>'
+                + '<td colspan="3"><span class="os-lbl">Observações gerais</span><div style="white-space:pre-wrap;font-size:10.5px;min-height:64px;margin-top:4px;">' + escHtml(os.observacao || '—') + '</div></td>'
+                + '<td colspan="2"><span class="os-lbl">Defeito reclamado</span><div style="white-space:pre-wrap;font-size:10.5px;min-height:64px;margin-top:4px;">' + escHtml(os.defeitoRelatado || '—') + '</div></td>'
+                + '</tr>';
+
+            var rowDiag = '<tr><td colspan="5"><span class="os-lbl">Diagnóstico</span><div style="white-space:pre-wrap;font-size:10.5px;min-height:40px;margin-top:4px;">' + escHtml(os.diagnostico || '—') + '</div></td></tr>';
+            var rowServ = '<tr><td colspan="5"><span class="os-lbl">Serviço executado</span><div style="white-space:pre-wrap;font-size:10.5px;min-height:40px;margin-top:4px;">' + escHtml(os.servicoExecutado || '—') + '</div></td></tr>';
+
+            var footerLinha = '<table class="os-b" style="margin-top:8px"><tr>'
+                + '<td style="width:58%;" class="os-termos">' + escHtml(termos).replace(/\n/g, '<br>') + '</td>'
+                + '<td style="width:42%;vertical-align:top;text-align:center">'
+                + '<div class="os-assin">Carimbo e assinatura da empresa prestadora do serviço</div>'
+                + '<svg id="osBarcode" style="max-width:100%;height:48px;margin-top:8px"></svg>'
+                + '<div style="margin-top:6px;font-weight:bold;font-size:11px">VIA DO CLIENTE</div>'
+                + '</td></tr></table>';
+
+            var headEmp = ''
+                + (nomeEmp ? '<div style="font-weight:bold;text-align:center;font-size:12px">' + escHtml(nomeEmp) + '</div>' : '')
+                + (end1 ? '<div style="text-align:center;font-size:10px;margin-top:2px">' + escHtml(end1) + '</div>' : '')
+                + (linhaCidade ? '<div style="text-align:center;font-size:10px">' + escHtml(linhaCidade) + '</div>' : '')
+                + (linhaFone ? '<div style="text-align:center;font-size:10px">' + escHtml(linhaFone) + '</div>' : '');
+
+            var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
+                + '<meta name="viewport" content="width=device-width,initial-scale=1"><title>O.S. ' + escHtml(numFmt) + '</title>'
+                + '<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/JsBarcode.all.min.js"><\/script>'
+                + '<style>' + css + '</style></head><body>'
+                + '<table class="os-b"><tr>'
+                + '<td style="width:18%">' + logoImg + '</td>'
+                + '<td style="width:38%"><div class="os-osbig">O.S. ' + escHtml(numFmt) + '</div>'
+                + '<div style="margin-top:4px"><strong>Data</strong> ' + escHtml(dataHoraBr(os.dataAbertura)) + '</div>'
+                + '<div style="margin-top:6px"><strong>Tipo da Ordem de Serviço:</strong> ' + escHtml(tipoOs) + '</div>'
+                + '<div style="margin-top:6px"><strong>Status:</strong> ' + escHtml(os.status || '—') + '</div></td>'
+                + '<td style="width:44%">' + headEmp + '</td>'
+                + '</tr></table>'
+
+                + '<p class="os-sec" style="margin-top:10px">Identificação do cliente</p>'
+                + '<table class="os-b">' + rowCliente + rowAcessorios + '</table>'
+
+                + '<p class="os-sec" style="margin-top:10px">Identificação do equipamento</p>'
+                + '<table class="os-b">' + rowEquip + '</table>'
+
+                + '<p class="os-sec" style="margin-top:10px">Dados do contrato e da garantia</p>'
+                + '<table class="os-b">' + rowContrato + '</table>'
+
+                + '<p class="os-sec" style="margin-top:10px">Observações e defeito</p>'
+                + '<table class="os-b">' + rowObsDef + rowDiag + rowServ + '</table>'
+
+                + '<table class="os-b" style="margin-top:8px"><tr>'
+                + cel('Técnico', os.tecnicoResponsavel)
+                + cel('WhatsApp / contato', os.contatoCliente)
+                + cel('Previsão entrega', os.dataPrevisaoEntrega ? dataHoraBr(os.dataPrevisaoEntrega) : '—')
+                + cel('Total', moeda(os.valorTotal || 0))
+                + '<td></td>'
+                + '</tr></table>'
+
+                + footerLinha
+
+                + '<script>'
+                + 'document.addEventListener("DOMContentLoaded",function(){'
+                + 'try{if(typeof JsBarcode!=="undefined"){JsBarcode("#osBarcode",' + JSON.stringify(bcPayload) + ',{format:"CODE128",displayValue:true,height:36,width:1.3,margin:0});}}catch(e){}}'
+                + '});'
+                + '<\/script>'
                 + '</body></html>';
-            return h;
+            return html;
         }
 
         function abrirJanelaImpressaoOs(os) {
@@ -367,12 +652,15 @@
             linhas.push('*Ordem de Serviço #' + (os.numeroOs || os.id) + '*');
             if (nomeEmp) linhas.push('_' + nomeEmp + '_');
             linhas.push('');
+            linhas.push('*Tipo:* ' + (os.tipoOrdemServico || '-'));
             linhas.push('*Status:* ' + (os.status || '-'));
             linhas.push('*Cliente:* ' + (os.nomeCliente || '-'));
-            linhas.push('*Contato:* ' + (os.contatoCliente || '-'));
+            linhas.push('*Código / Tel / Setor:* ' + (os.codigoCliente || '-') + ' | ' + (os.telefoneCliente || '-') + ' | ' + (os.setorCliente || '-'));
+            linhas.push('*Contato (pessoa):* ' + (os.nomeContato || '-'));
+            linhas.push('*WhatsApp:* ' + (os.contatoCliente || '-'));
             linhas.push('*Equipamento:* ' + (os.equipamento || '-'));
-            linhas.push('*Marca / Modelo:* ' + (os.marca || '-') + ' / ' + (os.modelo || '-'));
-            linhas.push('*Nº série:* ' + (os.numeroSerie || '-'));
+            linhas.push('*Marca / Modelo / Série / Patrim.:* ' + (os.marca || '-') + ' / ' + (os.modelo || '-') + ' / ' + (os.numeroSerie || '-') + ' / ' + (os.patrimonio || '-'));
+            if (os.acessorios) linhas.push('*Acessórios:* ' + os.acessorios);
             linhas.push('*Defeito:* ' + (os.defeitoRelatado || '-'));
             linhas.push('*Diagnóstico:* ' + (os.diagnostico || '-'));
             linhas.push('*Serviço executado:* ' + (os.servicoExecutado || '-'));
@@ -408,24 +696,84 @@
             return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
         }
 
+        function toInputDate(v) {
+            if (!v) return '';
+            var s = String(v);
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+            try {
+                var d = new Date(v);
+                var pad = function (n) { return String(n).padStart(2, '0'); };
+                return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+            } catch (_) {
+                return '';
+            }
+        }
+
+        /** Converte texto no formato brasileiro (ex.: 1.234,56) para número. */
+        function parseDecimalMoedaBr(raw) {
+            var s = String(raw || '').trim();
+            if (!s) return 0;
+            var n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+            return isNaN(n) ? 0 : n;
+        }
+
+        function formatarMoedaOsCampo(num) {
+            if (num == null || num === '') return '';
+            var n = Number(num);
+            if (isNaN(n)) return '';
+            return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        /** Mesma lógica do PMC em produtos: só dígitos → centavos → exibição pt-BR. */
+        function setupMoedaOsInputs() {
+            ['valorServico', 'desconto'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', function (e) {
+                    var v = e.target.value.replace(/\D/g, '');
+                    if (v.length > 0) {
+                        v = parseInt(v, 10) / 100;
+                        e.target.value = v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    } else {
+                        e.target.value = '';
+                    }
+                });
+            });
+        }
+
         function osPayloadFromForm() {
-            var valorServico = parseFloat(document.getElementById('valorServico').value || '0');
-            var desconto = parseFloat(document.getElementById('desconto').value || '0');
+            var valorServico = parseDecimalMoedaBr(document.getElementById('valorServico').value);
+            var desconto = parseDecimalMoedaBr(document.getElementById('desconto').value);
+            var dc = document.getElementById('dataCompra').value || '';
             return {
                 nomeCliente: document.getElementById('nomeCliente').value || null,
                 contatoCliente: document.getElementById('contatoCliente').value || null,
+                codigoCliente: document.getElementById('codigoCliente').value || null,
+                telefoneCliente: document.getElementById('telefoneCliente').value || null,
+                setorCliente: document.getElementById('setorCliente').value || null,
+                nomeContato: document.getElementById('nomeContato').value || null,
                 equipamento: document.getElementById('equipamento').value || null,
                 marca: document.getElementById('marca').value || null,
                 modelo: document.getElementById('modelo').value || null,
                 numeroSerie: document.getElementById('numeroSerie').value || null,
+                patrimonio: document.getElementById('patrimonio').value || null,
+                acessorios: document.getElementById('acessorios').value || null,
+                tipoOrdemServico: document.getElementById('tipoOrdemServico').value || null,
                 defeitoRelatado: document.getElementById('defeitoRelatado').value || null,
                 diagnostico: document.getElementById('diagnostico').value || null,
                 servicoExecutado: document.getElementById('servicoExecutado').value || null,
                 tecnicoResponsavel: document.getElementById('tecnicoResponsavel').value || null,
                 observacao: document.getElementById('observacao').value || null,
-                valorServico: isNaN(valorServico) ? 0 : valorServico,
-                desconto: isNaN(desconto) ? 0 : desconto,
-                valorTotal: Math.max(0, (isNaN(valorServico) ? 0 : valorServico) - (isNaN(desconto) ? 0 : desconto)),
+                contratoIdentificacao: document.getElementById('contratoIdentificacao').value || null,
+                nfCompra: document.getElementById('nfCompra').value || null,
+                dataCompra: dc ? dc : null,
+                lojaCompra: document.getElementById('lojaCompra').value || null,
+                numeroCertificado: document.getElementById('numeroCertificado').value || null,
+                senhaEquipamento: document.getElementById('senhaEquipamento').value || null,
+                osExterna: document.getElementById('osExterna').value || null,
+                valorServico: Math.max(0, valorServico),
+                desconto: Math.max(0, desconto),
+                valorTotal: Math.max(0, valorServico - desconto),
                 status: document.getElementById('statusOs').value || 'ABERTA',
                 dataPrevisaoEntrega: document.getElementById('dataPrevisaoEntrega').value ? new Date(document.getElementById('dataPrevisaoEntrega').value).toISOString() : null
             };
@@ -482,28 +830,43 @@
 
         function preencherFormularioOs(os) {
             document.getElementById('osId').value = os.id || '';
+            document.getElementById('codigoCliente').value = os.codigoCliente || '';
             document.getElementById('nomeCliente').value = os.nomeCliente || '';
+            document.getElementById('telefoneCliente').value = os.telefoneCliente || '';
+            document.getElementById('setorCliente').value = os.setorCliente || '';
+            document.getElementById('nomeContato').value = os.nomeContato || '';
             document.getElementById('contatoCliente').value = os.contatoCliente || '';
             document.getElementById('equipamento').value = os.equipamento || '';
             document.getElementById('marca').value = os.marca || '';
             document.getElementById('modelo').value = os.modelo || '';
             document.getElementById('numeroSerie').value = os.numeroSerie || '';
+            document.getElementById('patrimonio').value = os.patrimonio || '';
+            document.getElementById('acessorios').value = os.acessorios || '';
+            document.getElementById('tipoOrdemServico').value = os.tipoOrdemServico || '';
             document.getElementById('defeitoRelatado').value = os.defeitoRelatado || '';
             document.getElementById('diagnostico').value = os.diagnostico || '';
             document.getElementById('servicoExecutado').value = os.servicoExecutado || '';
             document.getElementById('tecnicoResponsavel').value = os.tecnicoResponsavel || '';
             document.getElementById('observacao').value = os.observacao || '';
-            document.getElementById('valorServico').value = os.valorServico || 0;
-            document.getElementById('desconto').value = os.desconto || 0;
+            document.getElementById('contratoIdentificacao').value = os.contratoIdentificacao || '';
+            document.getElementById('nfCompra').value = os.nfCompra || '';
+            document.getElementById('dataCompra').value = toInputDate(os.dataCompra);
+            document.getElementById('lojaCompra').value = os.lojaCompra || '';
+            document.getElementById('numeroCertificado').value = os.numeroCertificado || '';
+            document.getElementById('senhaEquipamento').value = os.senhaEquipamento || '';
+            document.getElementById('osExterna').value = os.osExterna || '';
+            document.getElementById('valorServico').value = formatarMoedaOsCampo(os.valorServico != null ? os.valorServico : '');
+            document.getElementById('desconto').value = formatarMoedaOsCampo(os.desconto != null ? os.desconto : '');
             document.getElementById('statusOs').value = os.status || 'ABERTA';
             document.getElementById('dataPrevisaoEntrega').value = toInputDateTime(os.dataPrevisaoEntrega);
         }
 
         function limparFormularioOs() {
             document.getElementById('osId').value = '';
-            ['nomeCliente','contatoCliente','equipamento','marca','modelo','numeroSerie','defeitoRelatado','diagnostico','servicoExecutado','tecnicoResponsavel','observacao'].forEach(function (id) {
+            ['codigoCliente','nomeCliente','telefoneCliente','setorCliente','nomeContato','contatoCliente','equipamento','marca','modelo','numeroSerie','patrimonio','acessorios','tipoOrdemServico','defeitoRelatado','diagnostico','servicoExecutado','tecnicoResponsavel','observacao','contratoIdentificacao','nfCompra','lojaCompra','numeroCertificado','senhaEquipamento','osExterna'].forEach(function (id) {
                 document.getElementById(id).value = '';
             });
+            document.getElementById('dataCompra').value = '';
             document.getElementById('valorServico').value = '';
             document.getElementById('desconto').value = '';
             document.getElementById('statusOs').value = 'ABERTA';
@@ -650,6 +1013,7 @@
             if (!checkAuth()) return;
             displayUserName();
             if (!(await validarModuloInformaticaAtivo())) return;
+            setupMoedaOsInputs();
             carregarOrdensServico();
         });
     </script>

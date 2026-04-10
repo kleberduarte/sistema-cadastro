@@ -33,5 +33,14 @@ public class ParametroEmpresaDTO {
     private Boolean farmaciaPmcAtivo;
     private String farmaciaPmcModo;
     private Boolean moduloInformaticaAtivo;
+    /** Dados para cabeçalho/rodapé da impressão da ordem de serviço. */
+    private String enderecoLinha1Os;
+    private String cidadeUfOs;
+    private String cnpj;
+    private String inscricaoMunicipal;
+    private String telefoneComercial;
+    private String fax;
+    private String emailComercial;
+    private String textoTermosOs;
     private Boolean ativo;
 }

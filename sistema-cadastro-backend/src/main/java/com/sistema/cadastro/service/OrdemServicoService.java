@@ -176,15 +176,29 @@ public class OrdemServicoService {
         os.setClienteId(req.getClienteId());
         os.setNomeCliente(trimToNull(req.getNomeCliente()));
         os.setContatoCliente(trimToNull(req.getContatoCliente()));
+        os.setCodigoCliente(trimToNull(req.getCodigoCliente()));
+        os.setTelefoneCliente(trimToNull(req.getTelefoneCliente()));
+        os.setSetorCliente(trimToNull(req.getSetorCliente()));
+        os.setNomeContato(trimToNull(req.getNomeContato()));
         os.setEquipamento(trimToNull(req.getEquipamento()));
         os.setMarca(trimToNull(req.getMarca()));
         os.setModelo(trimToNull(req.getModelo()));
         os.setNumeroSerie(trimToNull(req.getNumeroSerie()));
+        os.setPatrimonio(trimToNull(req.getPatrimonio()));
+        os.setAcessorios(trimToNull(req.getAcessorios()));
+        os.setTipoOrdemServico(trimToNull(req.getTipoOrdemServico()));
         os.setDefeitoRelatado(trimToNull(req.getDefeitoRelatado()));
         os.setDiagnostico(trimToNull(req.getDiagnostico()));
         os.setServicoExecutado(trimToNull(req.getServicoExecutado()));
         os.setTecnicoResponsavel(trimToNull(req.getTecnicoResponsavel()));
         os.setObservacao(trimToNull(req.getObservacao()));
+        os.setContratoIdentificacao(trimToNull(req.getContratoIdentificacao()));
+        os.setNfCompra(trimToNull(req.getNfCompra()));
+        os.setDataCompra(req.getDataCompra());
+        os.setLojaCompra(trimToNull(req.getLojaCompra()));
+        os.setNumeroCertificado(trimToNull(req.getNumeroCertificado()));
+        os.setSenhaEquipamento(trimToNull(req.getSenhaEquipamento()));
+        os.setOsExterna(trimToNull(req.getOsExterna()));
         os.setValorServico(nonNegative(req.getValorServico()));
         os.setDesconto(nonNegative(req.getDesconto()));
         os.setValorTotal(nonNegative(req.getValorTotal()));
@@ -280,15 +294,29 @@ public class OrdemServicoService {
                 os.getClienteId(),
                 os.getNomeCliente(),
                 os.getContatoCliente(),
+                os.getCodigoCliente(),
+                os.getTelefoneCliente(),
+                os.getSetorCliente(),
+                os.getNomeContato(),
                 os.getEquipamento(),
                 os.getMarca(),
                 os.getModelo(),
                 os.getNumeroSerie(),
+                os.getPatrimonio(),
+                os.getAcessorios(),
+                os.getTipoOrdemServico(),
                 os.getDefeitoRelatado(),
                 os.getDiagnostico(),
                 os.getServicoExecutado(),
                 os.getTecnicoResponsavel(),
                 os.getObservacao(),
+                os.getContratoIdentificacao(),
+                os.getNfCompra(),
+                os.getDataCompra(),
+                os.getLojaCompra(),
+                os.getNumeroCertificado(),
+                os.getSenhaEquipamento(),
+                os.getOsExterna(),
                 os.getValorServico(),
                 os.getDesconto(),
                 os.getValorTotal(),

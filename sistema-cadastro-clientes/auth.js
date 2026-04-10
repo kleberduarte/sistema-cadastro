@@ -92,6 +92,12 @@ function isAdmin() {
     return role === 'ADM' || role === 'ADMIN_EMPRESA';
 }
 
+/** Super Admin (retaguarda global) — perfil ADM. */
+function isSuperAdmin() {
+    const user = getCurrentUser();
+    return user && normalizeUserRole(user.role) === 'ADM';
+}
+
 // Verificar se o usuário é Vendedor
 function isVendedor() {
     const user = getCurrentUser();
@@ -245,6 +251,9 @@ async function logout() {
 
 // Ocultar elementos baseados no perfil
 function setupMenuByRole() {
+    const user = getCurrentUser();
+    const role = user ? normalizeUserRole(user.role) : '';
+
     if (!isAdmin()) {
         // Ocultar itens de menu que só admins podem ver
         const menuItems = document.querySelectorAll('.menu-item-admin');
@@ -258,6 +267,17 @@ function setupMenuByRole() {
             section.style.display = 'none';
         });
     }
+
+    // Elementos exclusivos do Super Admin (ADM)
+    document.querySelectorAll('.super-admin-only').forEach((el) => {
+        if (role === 'ADM') {
+            el.removeAttribute('hidden');
+            el.style.display = '';
+        } else {
+            el.setAttribute('hidden', 'hidden');
+            el.style.display = 'none';
+        }
+    });
 }
 
 // Funções utilitárias para chamadas API
