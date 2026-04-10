@@ -1,7 +1,7 @@
 -- Ordem de serviço (módulo informática). Em prod (ddl-auto=validate) a tabela precisa existir
 -- antes do Hibernate; migrations JDBC (ApplicationRunner) executam após o EMF e não resolvem.
 
-CREATE TABLE ordens_servico (
+CREATE TABLE IF NOT EXISTS ordens_servico (
     id BIGINT NOT NULL AUTO_INCREMENT,
     empresa_id BIGINT NOT NULL,
     numero_os BIGINT NOT NULL,
@@ -45,6 +45,26 @@ CREATE TABLE ordens_servico (
     PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX uk_os_empresa_numero ON ordens_servico (empresa_id, numero_os);
-CREATE INDEX idx_os_empresa_status_data ON ordens_servico (empresa_id, status, data_abertura);
-CREATE INDEX idx_os_empresa_cliente ON ordens_servico (empresa_id, nome_cliente);
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND INDEX_NAME = 'uk_os_empresa_numero') > 0,
+ 'SELECT 1',
+ 'CREATE UNIQUE INDEX uk_os_empresa_numero ON ordens_servico (empresa_id, numero_os)'));
+PREPARE stmt FROM @s;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND INDEX_NAME = 'idx_os_empresa_status_data') > 0,
+ 'SELECT 1',
+ 'CREATE INDEX idx_os_empresa_status_data ON ordens_servico (empresa_id, status, data_abertura)'));
+PREPARE stmt FROM @s;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+ (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordens_servico' AND INDEX_NAME = 'idx_os_empresa_cliente') > 0,
+ 'SELECT 1',
+ 'CREATE INDEX idx_os_empresa_cliente ON ordens_servico (empresa_id, nome_cliente)'));
+PREPARE stmt FROM @s;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
