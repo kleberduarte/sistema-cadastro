@@ -5,11 +5,12 @@
  *   <script>window.API_URL = 'https://seu-backend.com/api';</script>
  *   <script src="api-config.js"></script>
  *
- * Desenvolvimento com Live Server (127.0.0.1 / localhost): o padrão é a API no Render
- * (evita ERR_CONNECTION_REFUSED quando o Spring não está no 8080).
- * Para apontar para o backend local:
- *   - antes deste script: <script>window.USE_LOCAL_API = true;</script>, ou
- *   - na URL: ?localApi=1 (ou ?api=local)
+ * Desenvolvimento (Live Server em 127.0.0.1 / localhost): o padrão é o Spring local
+ * em http://127.0.0.1:8080/api (evita CORS/502 do Render enquanto você testa em DES).
+ * Para usar a API do Render sem subir o backend local:
+ *   - antes deste script: <script>window.USE_RENDER_API = true;</script>, ou
+ *   - na URL: ?remoteApi=1 (ou ?api=remote ou ?api=render)
+ * Ainda é possível forçar local explicitamente: ?localApi=1 ou ?api=local
  *
  * Deve ser o primeiro script nas páginas que chamam a API.
  */
@@ -17,25 +18,29 @@
     if (!w) return;
     /** Produção (Render); usado quando o front não roda em localhost. */
     var PROD = 'https://sistema-cadastro-kfd8.onrender.com/api';
-    /** Spring Boot local (quando USE_LOCAL_API ou ?localApi=1). */
+    /** Spring Boot local (DES). */
     var LOCAL = 'http://127.0.0.1:8080/api';
     var inferred = PROD;
     try {
         var h = w.location && w.location.hostname ? String(w.location.hostname) : '';
         var onLoopback = /^(127\.0\.0\.1|localhost)$/i.test(h);
-        var wantLocal = false;
         if (onLoopback) {
-            if (w.USE_LOCAL_API === true) {
-                wantLocal = true;
-            } else if (w.location && w.location.search) {
-                var sp = new URLSearchParams(w.location.search);
-                if (sp.get('localApi') === '1' || String(sp.get('api') || '').toLowerCase() === 'local') {
-                    wantLocal = true;
-                }
+            var sp = w.location && w.location.search ? new URLSearchParams(w.location.search) : null;
+            var apiParam = sp ? String(sp.get('api') || '').toLowerCase() : '';
+            var explicitLocal = w.USE_LOCAL_API === true
+                    || (sp && sp.get('localApi') === '1')
+                    || apiParam === 'local';
+            var explicitRemote = w.USE_RENDER_API === true
+                    || (sp && sp.get('remoteApi') === '1')
+                    || apiParam === 'remote'
+                    || apiParam === 'render';
+            if (explicitLocal) {
+                inferred = LOCAL;
+            } else if (explicitRemote || w.USE_LOCAL_API === false) {
+                inferred = PROD;
+            } else {
+                inferred = LOCAL;
             }
-        }
-        if (onLoopback && wantLocal) {
-            inferred = LOCAL;
         }
     } catch (_) {}
     if (!w.API_URL) {
