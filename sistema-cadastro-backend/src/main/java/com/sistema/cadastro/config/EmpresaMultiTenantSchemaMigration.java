@@ -35,7 +35,7 @@ public class EmpresaMultiTenantSchemaMigration {
             try {
                 jdbc.execute("ALTER TABLE produtos ADD COLUMN empresa_id BIGINT NULL");
             } catch (Exception e) {
-                if (!e.getMessage().contains("Duplicate column")) {
+                if (!StartupSqlExceptionSupport.isBenignDuplicateOrExists(e)) {
                     log.warn("produtos.empresa_id: {}", e.getMessage());
                 }
             }
@@ -63,7 +63,7 @@ public class EmpresaMultiTenantSchemaMigration {
             try {
                 jdbc.execute("ALTER TABLE clientes ADD COLUMN empresa_id BIGINT NULL");
             } catch (Exception e) {
-                if (!e.getMessage().contains("Duplicate column")) {
+                if (!StartupSqlExceptionSupport.isBenignDuplicateOrExists(e)) {
                     log.warn("clientes.empresa_id: {}", e.getMessage());
                 }
             }
@@ -96,7 +96,7 @@ public class EmpresaMultiTenantSchemaMigration {
             try {
                 jdbc.execute("ALTER TABLE vendas ADD COLUMN empresa_id BIGINT NULL");
             } catch (Exception e) {
-                if (!e.getMessage().contains("Duplicate column")) {
+                if (!StartupSqlExceptionSupport.isBenignDuplicateOrExists(e)) {
                     log.warn("vendas.empresa_id: {}", e.getMessage());
                 }
             }

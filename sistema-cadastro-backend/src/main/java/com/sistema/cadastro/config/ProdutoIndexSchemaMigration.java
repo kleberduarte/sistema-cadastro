@@ -27,12 +27,10 @@ public class ProdutoIndexSchemaMigration {
             jdbc.execute(createSql);
             log.info("Índice {} criado ou já presente.", indexName);
         } catch (Exception e) {
-            String msg = e.getMessage() != null ? e.getMessage() : "";
-            if (msg.contains("Duplicate key name")
-                    || msg.contains("already exists")
-                    || msg.contains("Duplicate")) {
+            if (StartupSqlExceptionSupport.isBenignDuplicateOrExists(e)) {
                 log.debug("Índice {} já existe — ignorando.", indexName);
             } else {
+                String msg = e.getMessage() != null ? e.getMessage() : "";
                 log.warn("Não foi possível criar índice {}: {}", indexName, msg);
             }
         }

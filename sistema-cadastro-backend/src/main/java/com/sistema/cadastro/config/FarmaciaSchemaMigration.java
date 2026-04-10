@@ -18,11 +18,11 @@ public class FarmaciaSchemaMigration {
         try {
             jdbc.execute(sql);
         } catch (Exception e) {
-            String m = e.getMessage() == null ? "" : e.getMessage();
-            if (m.contains("Duplicate column name") || m.contains("already exists") || m.contains("Duplicate key name")) {
-                log.debug("Migração já aplicada: {}", m);
+            if (StartupSqlExceptionSupport.isBenignDuplicateOrExists(e)) {
+                log.debug("Migração já aplicada (schema ok): {}", e.getMessage());
                 return;
             }
+            String m = e.getMessage() == null ? "" : e.getMessage();
             log.warn("Falha em migração de farmácia: {}", m);
         }
     }
