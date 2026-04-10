@@ -621,6 +621,17 @@ async function loadProducts(opts) {
             products = await response.json();
             if (opts.quiet) {
                 console.log('PDV: ' + products.length + ' produtos em cache.');
+                if (products.length === 0) {
+                    var eidLog = '';
+                    try {
+                        var sel = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId');
+                        if (sel) eidLog = ' empresaId=' + sel + '.';
+                    } catch (e) {}
+                    console.warn(
+                        'PDV: nenhum produto retornado pela API.' + eidLog +
+                        ' Em DES o MySQL local costuma estar vazio ou sem itens para essa empresa; no PRD os dados são outro banco. Cadastre/importe produtos na retaguarda (DES) ou restaure um dump.'
+                    );
+                }
             } else {
                 showAlert(`${products.length} produtos carregados.`, 'success');
             }
@@ -1395,10 +1406,11 @@ function renderSearchResults() {
     const resultsBody = document.getElementById('product-search-results-body');
     resultsBody.innerHTML = '';
 
-    const filtered = products.filter(p => 
-        p.nome.toLowerCase().includes(searchTerm) || 
-        p.codigoProduto.toLowerCase().includes(searchTerm)
-    );
+    const filtered = products.filter(p => {
+        var nome = (p.nome != null ? String(p.nome) : '').toLowerCase();
+        var cod = (p.codigoProduto != null ? String(p.codigoProduto) : '').toLowerCase();
+        return nome.includes(searchTerm) || cod.includes(searchTerm);
+    });
 
     if (filtered.length === 0) {
         resultsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum produto encontrado.</td></tr>';
@@ -1787,11 +1799,6 @@ function selectPaymentMethod(method) {
         if (installmentsInfo) { installmentsInfo.style.display = 'none'; installmentsInfo.innerHTML = ''; }
     }
 
-    if (method === 'PIX') {
-        // Gera QR Code com o valor restante
-        generatePixQRCode();
-    }
-
     // Preenche o valor restante automaticamente
     const remaining = Math.max(0, getCartTotal() - currentPayments.reduce((sum, p) => sum + p.valor, 0));
     const paymentValueInput = document.getElementById('payment-value-input');
@@ -1805,6 +1812,10 @@ function selectPaymentMethod(method) {
     // Parcelas dependem do valor do campo: atualizar depois de preencher o input
     if (method === 'CREDITO' && typeof updateInstallmentsInfo === 'function') {
         updateInstallmentsInfo();
+    }
+
+    if (method === 'PIX') {
+        void generatePixQRCode();
     }
 }
 
@@ -2088,11 +2099,39 @@ function getPixMerchantName() {
 
 function isPixKeyPlaceholder(pixKey) {
     const key = String(pixKey || '').trim().toLowerCase();
+    // Não bloquear e-mails de exemplo válidos como chave PIX (ex.: padrão do cadastro).
     return !key
         || key === 'seu-email-ou-chave-pix-padrao'
-        || key === 'pix@lojapdv.com'
         || key === 'chave pix'
         || key === 'sua-chave-pix';
+}
+
+/** Atualiza chave PIX a partir da API (evita cache/localStorage desatualizado no PDV). */
+async function refreshPixKeyFromServer() {
+    try {
+        const token = (typeof getToken === 'function') ? getToken() : localStorage.getItem(AUTH_TOKEN_KEY_LOCAL);
+        if (!token) return;
+        const eid = localStorage.getItem('selectedEmpresaId') || localStorage.getItem('selectedClienteId');
+        if (!eid || parseInt(eid, 10) < 1) return;
+        const apiBase = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8080/api';
+        const url = apiBase + '/parametros-empresa/empresa/' + encodeURIComponent(String(eid).trim());
+        const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        if (!r.ok) return;
+        const p = await r.json();
+        if (!p || !p.chavePix) return;
+        const ck = String(p.chavePix).trim();
+        if (!ck) return;
+        window.PIX_STORE_KEY = ck;
+        try {
+            let prev = {};
+            const rawEp = localStorage.getItem('empresaParams');
+            if (rawEp) prev = JSON.parse(rawEp);
+            localStorage.setItem('empresaParams', JSON.stringify(Object.assign({}, prev, p)));
+        } catch (_) { /* ignore */ }
+        if (typeof window.clientParams !== 'undefined') {
+            window.clientParams = Object.assign({}, window.clientParams || {}, p);
+        }
+    } catch (_) { /* rede / CORS */ }
 }
 
 function formatCopiaECola(id, value) {
@@ -2101,7 +2140,8 @@ function formatCopiaECola(id, value) {
     return `${id}${len}${valueStr}`;
 }
 
-function generatePixQRCode() {
+async function generatePixQRCode() {
+    await refreshPixKeyFromServer();
     const pixKey = getPixStoreKey();
     // O valor do PIX deve ser o que falta pagar, não necessariamente o total
     const totalPaid = currentPayments.reduce((sum, p) => sum + p.valor, 0);

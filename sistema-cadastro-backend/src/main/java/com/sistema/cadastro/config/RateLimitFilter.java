@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -18,6 +20,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Component
 public class RateLimitFilter implements Filter {
+
+    private final CorsConfigurationSource corsConfigurationSource;
+
+    public RateLimitFilter(CorsConfigurationSource corsConfigurationSource) {
+        this.corsConfigurationSource = corsConfigurationSource;
+    }
 
     /** Máximo de requisições por janela (por IP). SPA + várias abas pode estourar 60/min facilmente. */
     @Value("${app.rate-limit.max-requests-per-minute:180}")
@@ -60,7 +68,7 @@ public class RateLimitFilter implements Filter {
         if ("POST".equalsIgnoreCase(method) && endpoint.contains("/api/auth/login") && !relaxForLocal) {
             if (isLoginBlocked(clientIp)) {
                 int segundos = (int) (LOGIN_BLOCK_TIME / 1000L);
-                writeRateLimitJson(httpResponse, String.format(Locale.ROOT,
+                writeRateLimitJson(httpRequest, httpResponse, String.format(Locale.ROOT,
                         "Muitas tentativas de login. Tente novamente em %d segundos.", segundos));
                 return;
             }
@@ -70,7 +78,7 @@ public class RateLimitFilter implements Filter {
         // Rate limiting geral
         if (!relaxForLocal && isRateLimited(clientIp)) {
             int segundos = (int) (GENERAL_RATE_LIMIT_WINDOW_MS / 1000L);
-            writeRateLimitJson(httpResponse, String.format(Locale.ROOT,
+            writeRateLimitJson(httpRequest, httpResponse, String.format(Locale.ROOT,
                     "Muitas requisições. Tente novamente em %d segundos.", segundos));
             return;
         }
@@ -82,12 +90,39 @@ public class RateLimitFilter implements Filter {
     }
 
     /** Resposta 429 em JSON com UTF-8 (evita caracteres corrompidos no cliente). */
-    private static void writeRateLimitJson(HttpServletResponse httpResponse, String message) throws IOException {
+    private void writeRateLimitJson(HttpServletRequest request, HttpServletResponse httpResponse, String message) throws IOException {
+        applyCorsHeadersForError(request, httpResponse);
         httpResponse.setStatus(429);
         httpResponse.setCharacterEncoding("UTF-8");
         httpResponse.setContentType("application/json;charset=UTF-8");
         String escaped = message.replace("\\", "\\\\").replace("\"", "\\\"");
         httpResponse.getWriter().write("{\"message\":\"" + escaped + "\"}");
+    }
+
+    /**
+     * Respostas escritas diretamente neste filtro precisam repetir CORS; caso contrário o browser
+     * acusa falta de Access-Control-Allow-Origin (ex.: Live Server em :5500).
+     */
+    private void applyCorsHeadersForError(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            CorsConfiguration cfg = corsConfigurationSource.getCorsConfiguration(request);
+            if (cfg == null) {
+                return;
+            }
+            String origin = request.getHeader("Origin");
+            if (origin == null || origin.isEmpty()) {
+                return;
+            }
+            String resolved = cfg.checkOrigin(origin);
+            if (resolved != null) {
+                response.setHeader("Access-Control-Allow-Origin", resolved);
+                if (Boolean.TRUE.equals(cfg.getAllowCredentials())) {
+                    response.setHeader("Access-Control-Allow-Credentials", "true");
+                }
+            }
+        } catch (Exception ignored) {
+            // não bloqueia 429
+        }
     }
 
     private String getClientIP(HttpServletRequest request) {

@@ -38,10 +38,14 @@ public class ParametroEmpresaController {
     }
 
     @GetMapping("/empresa/{empresaId}")
-    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA')")
+    @PreAuthorize("hasAnyRole('ADM','ADMIN_EMPRESA','VENDEDOR')")
     public ResponseEntity<ParametroEmpresaDTO> buscarPorEmpresaId(@PathVariable Long empresaId, Authentication auth) {
         Usuario requester = auth != null && auth.getPrincipal() instanceof Usuario u ? u : null;
         if (requester != null && requester.getRole() == Role.ADMIN_EMPRESA
+                && (requester.getEmpresaId() == null || !requester.getEmpresaId().equals(empresaId))) {
+            return ResponseEntity.status(403).build();
+        }
+        if (requester != null && requester.getRole() == Role.VENDEDOR
                 && (requester.getEmpresaId() == null || !requester.getEmpresaId().equals(empresaId))) {
             return ResponseEntity.status(403).build();
         }
