@@ -10,6 +10,8 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
+# Sem isto, o Spring usa só application.properties (Flyway sem baseline) e falha em DB já existente.
+ENV SPRING_PROFILES_ACTIVE=prod
 # Free tier ~512MB RAM: reserva espaço p/ metaspace/native (OOM na subida = porta nunca abre no Render).
 # Metaspace limitado evita estourar RAM do plano free (~512MB) durante validate Hibernate + subida.
 ENV JAVA_OPTS="-Xms96m -Xmx352m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError"
