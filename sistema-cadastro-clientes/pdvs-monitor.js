@@ -59,7 +59,7 @@
         if (!el) return;
         var nome = getContextEmpresaNome();
         var semNomeSalvo = !nome && eid === EP;
-        if (!isAdminEmpresaProfile() && eid === EP && (semNomeSalvo || nome === 'Sistema de Cadastro')) {
+        if (!isAdminEmpresaProfile() && eid === EP && (semNomeSalvo || nome === 'Veltrix')) {
             el.innerHTML = '<strong>ID ' + eid + '</strong> <span style="opacity:.85">(só PDVs desta empresa)</span>';
         } else {
             el.innerHTML = '<strong>ID ' + eid + '</strong>' + (nome ? ' — ' + escapeHtml(nome) : '') + ' <span style="opacity:.85">(só PDVs desta empresa)</span>';
@@ -88,7 +88,7 @@
 
     function temaPadraoMonitor() {
         return window.SISTEMA_THEME_PADRAO || {
-            nomeEmpresa: 'Sistema de Cadastro',
+            nomeEmpresa: 'Veltrix',
             corPrimaria: '#667eea',
             corSecundaria: '#764ba2',
             corFundo: '#ffffff',
