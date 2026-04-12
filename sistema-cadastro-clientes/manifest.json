@@ -1,6 +1,6 @@
 {
-  "name": "Sistema de Cadastro",
-  "short_name": "Cadastro",
+  "name": "Veltrix",
+  "short_name": "Veltrix",
   "description": "Consulta de precos, vendas simples e estoque no celular.",
   "start_url": "./login.html?empresaId=1",
   "scope": "./",

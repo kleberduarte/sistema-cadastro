@@ -7,7 +7,7 @@
     w.EMPRESA_ID_PADRAO_SISTEMA = 1;
 
     w.SISTEMA_THEME_PADRAO = Object.freeze({
-        nomeEmpresa: 'Sistema de Cadastro',
+        nomeEmpresa: 'Veltrix',
         corPrimaria: '#667eea',
         corSecundaria: '#764ba2',
         corFundo: '#ffffff',

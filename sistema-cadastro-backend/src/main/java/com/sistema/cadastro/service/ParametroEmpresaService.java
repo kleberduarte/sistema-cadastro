@@ -126,7 +126,7 @@ public class ParametroEmpresaService {
 
     public ParametroEmpresaDTO getParametrosDefault() {
         ParametroEmpresaDTO dto = new ParametroEmpresaDTO();
-        dto.setNomeEmpresa("Sistema de Cadastro");
+        dto.setNomeEmpresa("Veltrix");
         dto.setCorPrimaria("#667eea");
         dto.setCorSecundaria("#764ba2");
         dto.setCorFundo("#ffffff");
